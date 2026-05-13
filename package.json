@@ -6,7 +6,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "eas:configure": "eas build:configure",
+    "eas:apk": "eas build --platform android --profile preview",
+    "eas:aab": "eas build --platform android --profile production"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -39,6 +42,7 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "babel-preset-expo": "^55.0.21",
+    "eas-cli": "^16.28.0",
     "typescript": "~5.9.2"
   },
   "private": true
