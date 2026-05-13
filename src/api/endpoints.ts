@@ -1,6 +1,5 @@
 /**
- * Same API paths as the web app (`src/components/common/CommonApiURL.js`).
- * Override base URL with EXPO_PUBLIC_API_BASE_URL (no backend changes required).
+ * Same URL layout as web `CommonApiURL.js` (API unchanged).
  */
 const rawBase =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
@@ -12,3 +11,16 @@ const AUTH = "Auth/";
 
 export const LOGIN_API = `${BASE_URL}${AUTH}UserLogin`;
 export const LOGIN_USER_ACCOUNT_CHECK_API = `${BASE_URL}${AUTH}UserAccountCheck?`;
+
+/** Relative to BASE_URL for authenticated GET/POST (matches web CommonMethod). */
+export const PATHS = {
+  TRANSACTION: "Transaction/",
+  REPORT: "Report/",
+  DASHBOARD_SUMMARY: "Transaction/GetDashboard?",
+  DASHBOARD_DETAIL: "Transaction/GetDashboardDetail?",
+  REPORT_TRANSACTION: "Report/GetTransactionReport?",
+  REPORT_ALL: "Report/GetAllTransaction?",
+  REPORT_REGIONAL: "Report/GetRegionalSummaryReport?",
+  REPORT_OVERALL: "Report/GetOverallSummaryReport?",
+  REPORT_OTHERS_SUMMARY: "Report/GetOthersSummaryReport?",
+} as const;

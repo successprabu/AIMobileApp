@@ -15,8 +15,10 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { useTranslation } from "react-i18next";
 import { LOGIN_API, LOGIN_USER_ACCOUNT_CHECK_API } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import type { AuthUser } from "../types/auth";
 
 type UserTypeOption = { userType: string; userTypeDescription: string };
 
@@ -25,17 +27,8 @@ type AccountCheckRow = {
   userTypeDescription: string;
 };
 
-function validateLoginInput(username: string, password: string): string | null {
-  if (!/^\d+$/.test(username.trim())) {
-    return "Please enter a valid mobile number.";
-  }
-  if (password.length < 6 || password.length > 16) {
-    return "Password must be between 6 and 16 characters.";
-  }
-  return null;
-}
-
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +41,20 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const webOrigin = process.env.EXPO_PUBLIC_WEB_APP_URL?.replace(/\/$/, "");
+
+  const validateLoginInput = (u: string, p: string): string | null => {
+    if (!/^\d+$/.test(u.trim())) {
+      return t("mobile_invalid_mobile", {
+        defaultValue: "Please enter a valid mobile number.",
+      });
+    }
+    if (p.length < 6 || p.length > 16) {
+      return t("mobile_invalid_password", {
+        defaultValue: "Password must be between 6 and 16 characters.",
+      });
+    }
+    return null;
+  };
 
   const handleUsernameBlur = async () => {
     if (!username.trim()) return;
@@ -84,11 +91,11 @@ export default function LoginScreen() {
           setUserTypeDescription(options[0].userTypeDescription);
         }
       } else {
-        setLoginError("No user found for this mobile number.");
+        setLoginError(t("no_user_found"));
         setUserTypes([]);
       }
     } catch {
-      setLoginError("Something went wrong while checking the account.");
+      setLoginError(t("an_error_occurred"));
       setUserTypes([]);
     } finally {
       setCheckingUser(false);
@@ -114,7 +121,7 @@ export default function LoginScreen() {
       const response = await axios.post(LOGIN_API, payload);
       const data = response.data as {
         result?: boolean;
-        data?: import("../types/auth").AuthUser;
+        data?: AuthUser;
         message?: string;
       };
 
@@ -124,16 +131,18 @@ export default function LoginScreen() {
         if (decoded.exp != null && decoded.exp > now) {
           await signIn(data.data);
         } else {
-          setLoginError("Session expired. Please try again.");
+          setLoginError(
+            t("session_expired", {
+              defaultValue: "Session expired. Please try again.",
+            })
+          );
         }
       } else {
-        setLoginError(data.message ?? "Login failed.");
+        setLoginError(data.message ?? t("mobile_login_failed", { defaultValue: "Login failed." }));
       }
     } catch (error) {
       const err = error as { response?: { data?: { message?: string } } };
-      setLoginError(
-        err.response?.data?.message ?? "Something went wrong. Please try again."
-      );
+      setLoginError(err.response?.data?.message ?? t("an_error_occurred"));
     } finally {
       setLoading(false);
     }
@@ -142,8 +151,11 @@ export default function LoginScreen() {
   const openWeb = (path: string) => {
     if (!webOrigin) {
       Alert.alert(
-        "Website",
-        "Set EXPO_PUBLIC_WEB_APP_URL in .env to open sign-up and password recovery in the browser."
+        t("mobile_web_title", { defaultValue: "Website" }),
+        t("mobile_web_env_hint", {
+          defaultValue:
+            "Set EXPO_PUBLIC_WEB_APP_URL in .env to open sign-up and password recovery in the browser.",
+        })
       );
       return;
     }
@@ -160,8 +172,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Accounts</Text>
-          <Text style={styles.subtitle}>Sign in with your mobile number</Text>
+          <Text style={styles.title}>{t("my_accounts")}</Text>
+          <Text style={styles.subtitle}>
+            {t("mobile_login_subtitle", {
+              defaultValue: "Sign in with your mobile number",
+            })}
+          </Text>
         </View>
 
         {loginError ? (
@@ -170,13 +186,13 @@ export default function LoginScreen() {
           </View>
         ) : null}
 
-        <Text style={styles.label}>Mobile number</Text>
+        <Text style={styles.label}>{t("mobile_number")}</Text>
         <TextInput
           style={styles.input}
           value={username}
           onChangeText={setUsername}
           onEndEditing={handleUsernameBlur}
-          placeholder="Mobile number"
+          placeholder={t("enter_mobile_number")}
           keyboardType="phone-pad"
           autoCapitalize="none"
           editable={!loading}
@@ -185,13 +201,13 @@ export default function LoginScreen() {
           <ActivityIndicator style={styles.inlineSpinner} />
         ) : null}
 
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>{t("password")}</Text>
         <View style={styles.passwordRow}>
           <TextInput
             style={[styles.input, styles.passwordInput]}
             value={password}
             onChangeText={setPassword}
-            placeholder="Password"
+            placeholder={t("enter_password")}
             secureTextEntry={!showPassword}
             editable={!loading}
           />
@@ -200,13 +216,17 @@ export default function LoginScreen() {
             style={styles.togglePwd}
             hitSlop={8}
           >
-            <Text style={styles.togglePwdText}>{showPassword ? "Hide" : "Show"}</Text>
+            <Text style={styles.togglePwdText}>
+              {showPassword
+                ? t("mobile_hide", { defaultValue: "Hide" })
+                : t("mobile_show", { defaultValue: "Show" })}
+            </Text>
           </Pressable>
         </View>
 
         {userTypes.length > 1 ? (
           <>
-            <Text style={styles.label}>Account type</Text>
+            <Text style={styles.label}>{t("userType")}</Text>
             <View style={styles.pickerWrap}>
               <Picker
                 selectedValue={userType}
@@ -238,16 +258,16 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
+            <Text style={styles.buttonText}>{t("sign_in")}</Text>
           )}
         </Pressable>
 
         <View style={styles.links}>
           <Pressable onPress={() => openWeb("/forgot-password")}>
-            <Text style={styles.link}>Forgot password</Text>
+            <Text style={styles.link}>{t("forgot_password")}</Text>
           </Pressable>
           <Pressable onPress={() => openWeb("/purchase")}>
-            <Text style={styles.link}>Sign up</Text>
+            <Text style={styles.link}>{t("sign_up")}</Text>
           </Pressable>
         </View>
       </ScrollView>
