@@ -28,4 +28,5 @@ export const PATHS = {
   AUTH_ADD_CUSTOMER: "Auth/AddCustomer",
   MASTER_UPDATE_CUSTOMER: "Master/UpdateCustomer",
   MASTER_LIST_CUSTOMERS: "Master/GetCustomer",
+  SAVE_TRANSACTION: "Transaction/UpdateTransaction",
 } as const;
