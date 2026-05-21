@@ -3,13 +3,16 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import {
   Button,
   Card,
@@ -33,6 +36,14 @@ import type {
   FunctionSaveResponse,
 } from "../types/function";
 import type { MainStackParamList } from "../navigation/types";
+import {
+  formatDisplayDate,
+  isValidIsoDate,
+  normalizeDateInput,
+  parseIsoToDate,
+  parsePickerToIso,
+  todayIsoDate,
+} from "../utils/date";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -43,7 +54,7 @@ function emptyForm(customerId: number): FunctionFormData {
     id: 0,
     customerId,
     functionName: "",
-    functionDate: "",
+    functionDate: todayIsoDate(),
     mahalName: "",
     funPersionNames: "",
     remarks: "",
@@ -56,46 +67,22 @@ function emptyForm(customerId: number): FunctionFormData {
   };
 }
 
-/** Display dd/MM/yyyy (web list format). */
-function formatDisplayDate(dateStr: string): string {
-  if (!dateStr) return "";
-  try {
-    const slash = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    const d = dateStr.includes("T")
-      ? new Date(dateStr)
-      : slash
-        ? new Date(`${slash[3]}-${slash[2]}-${slash[1]}`)
-        : new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return dateStr;
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch {
-    return dateStr;
-  }
-}
-
-/** yyyy-MM-dd for date picker / API (HTML date input equivalent). */
 function toDateInputValue(dateStr: string): string {
-  if (!dateStr) return "";
+  if (!dateStr) return todayIsoDate();
   if (dateStr.includes("T")) return dateStr.split("T")[0];
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  const m = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  return dateStr;
+  const normalized = normalizeDateInput(dateStr);
+  return isValidIsoDate(normalized) ? normalized : todayIsoDate();
 }
 
-function parsePickerDate(isoDate: string): Date {
-  if (!isoDate) return new Date();
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(y, (m ?? 1) - 1, d ?? 1);
-}
-
-function validateForm(data: FunctionFormData): Partial<Record<keyof FunctionFormData, string>> {
+function validateForm(
+  data: FunctionFormData
+): Partial<Record<keyof FunctionFormData, string>> {
   const err: Partial<Record<keyof FunctionFormData, string>> = {};
   if (!data.functionName.trim()) err.functionName = "required";
-  if (!data.functionDate.trim()) err.functionDate = "required";
+  if (!data.functionDate.trim() || !isValidIsoDate(data.functionDate)) {
+    err.functionDate = "required";
+  }
   if (!data.mahalName.trim()) err.mahalName = "required";
   if (!data.funPersionNames.trim()) err.funPersionNames = "required";
   return err;
@@ -110,12 +97,16 @@ export default function FunctionMasterScreen() {
   const u = user as AuthUser;
   const customerId = (u.customerID as number) ?? 0;
 
-  const [formData, setFormData] = useState<FunctionFormData>(() => emptyForm(customerId));
+  const [formData, setFormData] = useState<FunctionFormData>(() =>
+    emptyForm(customerId)
+  );
+  const [dateText, setDateText] = useState(() => formatDisplayDate(todayIsoDate()));
   const [errors, setErrors] = useState<Partial<Record<keyof FunctionFormData, string>>>({});
   const [functions, setFunctions] = useState<FunctionRecord[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState(new Date());
   const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
 
   useLayoutEffect(() => {
@@ -124,6 +115,54 @@ export default function FunctionMasterScreen() {
 
   const showMessage = (message: string, isError = false) => {
     setSnack({ visible: true, message, isError });
+  };
+
+  const syncDateFromText = (text: string) => {
+    setDateText(text);
+    const iso = normalizeDateInput(text);
+    if (isValidIsoDate(iso)) {
+      setFormData((prev) => ({ ...prev, functionDate: iso }));
+      if (errors.functionDate) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next.functionDate;
+          return next;
+        });
+      }
+    }
+  };
+
+  const applyPickedDate = (selected: Date) => {
+    const iso = parsePickerToIso(selected);
+    setFormData((prev) => ({ ...prev, functionDate: iso }));
+    setDateText(formatDisplayDate(iso));
+    setPickerDate(selected);
+    if (errors.functionDate) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.functionDate;
+        return next;
+      });
+    }
+  };
+
+  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+      if (event.type === "set" && selected) {
+        applyPickedDate(selected);
+      }
+      return;
+    }
+    if (selected) {
+      setPickerDate(selected);
+    }
+  };
+
+  const openDatePicker = () => {
+    const base = parseIsoToDate(formData.functionDate || todayIsoDate());
+    setPickerDate(base);
+    setShowDatePicker(true);
   };
 
   const fetchList = useCallback(async () => {
@@ -144,8 +183,8 @@ export default function FunctionMasterScreen() {
         if (json.message) showMessage(json.message, true);
       }
     } catch (err) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data
-        ?.message;
+      const msg = (err as { response?: { data?: { message?: string } } }).response
+        ?.data?.message;
       showMessage(msg ?? t("an_error_occurred"), true);
       setFunctions([]);
     } finally {
@@ -172,16 +211,19 @@ export default function FunctionMasterScreen() {
   };
 
   const handleClear = () => {
-    setFormData(emptyForm(customerId));
+    const cleared = emptyForm(customerId);
+    setFormData(cleared);
+    setDateText(formatDisplayDate(cleared.functionDate));
     setErrors({});
   };
 
   const handleEdit = (fn: FunctionRecord) => {
+    const iso = toDateInputValue(fn.functionDate ?? "");
     setFormData({
       id: fn.id,
       customerId: fn.customerId ?? customerId,
       functionName: fn.functionName ?? "",
-      functionDate: toDateInputValue(fn.functionDate ?? ""),
+      functionDate: iso,
       mahalName: fn.mahalName ?? "",
       funPersionNames: fn.funPersionNames ?? "",
       remarks: fn.remarks ?? "",
@@ -192,17 +234,26 @@ export default function FunctionMasterScreen() {
       updatedDt: fn.updatedDt ?? dateUTC(),
       isActive: fn.isActive ?? true,
     });
+    setDateText(formatDisplayDate(iso));
     setErrors({});
     scrollRef.current?.scrollTo({ y: 0, animated: true });
     showMessage(t("edit"));
   };
 
   const handleSubmit = async () => {
-    const validation = validateForm(formData);
+    const iso = normalizeDateInput(dateText);
+    const payload: FunctionFormData = {
+      ...formData,
+      functionDate: isValidIsoDate(iso) ? iso : formData.functionDate,
+    };
+
+    const validation = validateForm(payload);
     if (Object.keys(validation).length > 0) {
       setErrors(validation);
       showMessage(
-        t("mobile_required_fields", { defaultValue: "Please fill all required fields." }),
+        t("mobile_required_fields", {
+          defaultValue: "Please fill all required fields (use date DD/MM/YYYY).",
+        }),
         true
       );
       return;
@@ -212,11 +263,13 @@ export default function FunctionMasterScreen() {
     try {
       const json = await authPost<FunctionSaveResponse>(
         PATHS.MASTER_SAVE_FUNCTION,
-        formData as unknown as Record<string, unknown>
+        payload as unknown as Record<string, unknown>
       );
       if (json.result) {
         showMessage(t("saveSuccessMessage"));
-        setFormData(emptyForm(customerId));
+        const cleared = emptyForm(customerId);
+        setFormData(cleared);
+        setDateText(formatDisplayDate(cleared.functionDate));
         setErrors({});
         void fetchList();
       } else {
@@ -229,8 +282,8 @@ export default function FunctionMasterScreen() {
         );
       }
     } catch (err) {
-      const msg = (err as { response?: { data?: { message?: string } } }).response?.data
-        ?.message;
+      const msg = (err as { response?: { data?: { message?: string } } }).response
+        ?.data?.message;
       showMessage(msg ?? t("an_error_occurred"), true);
     } finally {
       setSaving(false);
@@ -257,11 +310,7 @@ export default function FunctionMasterScreen() {
   ) => (
     <TextInput
       key={name}
-      label={
-        required
-          ? `${t(labelKey)} *`
-          : t(labelKey)
-      }
+      label={required ? `${t(labelKey)} *` : t(labelKey)}
       value={String(formData[name] ?? "")}
       onChangeText={(v) => handleChange(name, v)}
       mode="outlined"
@@ -272,6 +321,46 @@ export default function FunctionMasterScreen() {
       error={!!errors[name]}
     />
   );
+
+  const datePickerModal =
+    showDatePicker && Platform.OS !== "web" ? (
+      Platform.OS === "ios" ? (
+        <Modal transparent animationType="slide" visible={showDatePicker}>
+          <Pressable style={styles.modalOverlay} onPress={() => setShowDatePicker(false)}>
+            <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+              <Text variant="titleMedium" style={styles.modalTitle}>
+                {t("functionDate")}
+              </Text>
+              <DateTimePicker
+                value={pickerDate}
+                mode="date"
+                display="spinner"
+                onChange={onPickerChange}
+              />
+              <View style={styles.modalActions}>
+                <Button onPress={() => setShowDatePicker(false)}>{t("cancel")}</Button>
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    applyPickedDate(pickerDate);
+                    setShowDatePicker(false);
+                  }}
+                >
+                  {t("save")}
+                </Button>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : (
+        <DateTimePicker
+          value={pickerDate}
+          mode="date"
+          display="default"
+          onChange={onPickerChange}
+        />
+      )
+    ) : null;
 
   return (
     <KeyboardAvoidingView
@@ -287,45 +376,54 @@ export default function FunctionMasterScreen() {
           <Card.Title title={t("functionCreate")} />
           <Card.Content>
             {field("functionName", "functionName", true)}
-            <Pressable onPress={() => setShowDatePicker(true)}>
-              <View pointerEvents="none">
-                <TextInput
-                  label={`${t("functionDate")} *`}
-                  value={
-                    formData.functionDate
-                      ? formatDisplayDate(formData.functionDate)
-                      : ""
-                  }
-                  placeholder={t("enter_function_date", {
-                    defaultValue: "Select date",
-                  })}
-                  mode="outlined"
-                  style={styles.field}
-                  dense
-                  editable={false}
-                  error={!!errors.functionDate}
-                  right={
-                    <TextInput.Icon icon="calendar" onPress={() => setShowDatePicker(true)} />
-                  }
-                />
-              </View>
-            </Pressable>
-            {showDatePicker ? (
-              <DateTimePicker
-                value={parsePickerDate(formData.functionDate)}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, selected) => {
-                  setShowDatePicker(Platform.OS === "ios");
-                  if (selected) {
-                    const y = selected.getFullYear();
-                    const m = String(selected.getMonth() + 1).padStart(2, "0");
-                    const d = String(selected.getDate()).padStart(2, "0");
-                    handleChange("functionDate", `${y}-${m}-${d}`);
+
+            <Text variant="labelMedium" style={styles.dateLabel}>
+              {t("functionDate")} *
+            </Text>
+            <View style={styles.dateRow}>
+              <TextInput
+                label={t("enter_function_date", { defaultValue: "DD/MM/YYYY" })}
+                value={dateText}
+                onChangeText={syncDateFromText}
+                onBlur={() => {
+                  const iso = normalizeDateInput(dateText);
+                  if (isValidIsoDate(iso)) {
+                    setDateText(formatDisplayDate(iso));
+                    setFormData((prev) => ({ ...prev, functionDate: iso }));
                   }
                 }}
+                mode="outlined"
+                style={[styles.field, styles.dateInput]}
+                dense
+                placeholder="21/05/2026"
+                keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "numeric"}
+                error={!!errors.functionDate}
               />
+              <Button
+                mode="contained-tonal"
+                icon="calendar"
+                onPress={openDatePicker}
+                style={styles.calBtn}
+                compact
+              >
+                {t("mobile_pick_date", { defaultValue: "Pick" })}
+              </Button>
+            </View>
+            {errors.functionDate ? (
+              <Text variant="bodySmall" style={styles.dateErr}>
+                {t("mobile_date_invalid", {
+                  defaultValue: "Enter a valid date (DD/MM/YYYY) or tap Pick.",
+                })}
+              </Text>
             ) : null}
+            <Text variant="bodySmall" style={styles.dateHint}>
+              {t("mobile_date_hint", {
+                defaultValue: "Type date as DD/MM/YYYY or use Pick — same as web date field.",
+              })}
+            </Text>
+
+            {datePickerModal}
+
             {field("mahalName", "mahalName", true)}
             {field("funPersionNames", "funPersionNames", true)}
             {field("remarks", "remarks", false, true)}
@@ -403,6 +501,12 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 32 },
   card: { marginBottom: 16 },
   field: { marginBottom: 10 },
+  dateLabel: { marginBottom: 4, opacity: 0.8 },
+  dateRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  dateInput: { flex: 1, marginBottom: 4 },
+  calBtn: { marginTop: 6 },
+  dateHint: { opacity: 0.6, marginBottom: 10 },
+  dateErr: { color: "#c62828", marginBottom: 6 },
   actions: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -421,4 +525,22 @@ const styles = StyleSheet.create({
   listSpinner: { marginRight: 16 },
   centered: { flex: 1, padding: 24, justifyContent: "center" },
   snackError: { backgroundColor: "#c62828" },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalSheet: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  modalTitle: { marginBottom: 8, textAlign: "center" },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 8,
+  },
 });
