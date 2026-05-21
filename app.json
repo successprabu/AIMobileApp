@@ -19,6 +19,12 @@
     "android": {
       "package": "com.successprabu.aimobileapp",
       "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "RECORD_AUDIO",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
