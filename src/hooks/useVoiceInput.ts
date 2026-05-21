@@ -1,52 +1,66 @@
-import { useCallback, useState } from "react";
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from "expo-speech-recognition";
+import { useCallback, useEffect, useState } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { speechLocaleForLanguage } from "../utils/speechLocale";
+import {
+  isSpeechRecognitionAvailable,
+  isSpeechRecognitionSupported,
+  requestSpeechPermissions,
+  startSpeechRecognition,
+  stopSpeechRecognition,
+  subscribeSpeechEvents,
+} from "../services/speechRecognition";
 
 export function useVoiceInput(onResult: (field: string, transcript: string) => void) {
   const { language } = useLanguage();
   const [recordingField, setRecordingField] = useState<string | null>(null);
+  const supported = isSpeechRecognitionSupported();
 
-  useSpeechRecognitionEvent("result", (event) => {
-    if (!recordingField) return;
-    const transcript = event.results[0]?.transcript ?? "";
-    if (transcript) onResult(recordingField, transcript);
-  });
+  useEffect(() => {
+    if (!supported) return;
 
-  useSpeechRecognitionEvent("end", () => setRecordingField(null));
-  useSpeechRecognitionEvent("error", () => setRecordingField(null));
+    const unsubscribe = subscribeSpeechEvents({
+      onResult: (transcript) => {
+        if (recordingField) onResult(recordingField, transcript);
+      },
+      onEnd: () => setRecordingField(null),
+      onError: () => setRecordingField(null),
+    });
+
+    return unsubscribe ?? undefined;
+  }, [supported, recordingField, onResult]);
 
   const toggleRecording = useCallback(
-    async (field: string) => {
+    async (field: string): Promise<boolean | "unsupported"> => {
+      if (!supported) return "unsupported";
+
       if (recordingField === field) {
-        ExpoSpeechRecognitionModule.stop();
+        stopSpeechRecognition();
         setRecordingField(null);
-        return;
+        return true;
       }
 
-      if (recordingField) {
-        ExpoSpeechRecognitionModule.stop();
-      }
+      if (recordingField) stopSpeechRecognition();
 
-      const available = await ExpoSpeechRecognitionModule.isRecognitionAvailable();
+      const available = await isSpeechRecognitionAvailable();
       if (!available) return false;
 
-      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      if (!perm.granted) return false;
+      const granted = await requestSpeechPermissions();
+      if (!granted) return false;
 
       setRecordingField(field);
-      ExpoSpeechRecognitionModule.start({
+      const started = startSpeechRecognition({
         lang: speechLocaleForLanguage(language),
         interimResults: true,
         continuous: false,
       });
+      if (!started) {
+        setRecordingField(null);
+        return false;
+      }
       return true;
     },
-    [language, recordingField]
+    [language, recordingField, supported]
   );
 
-  return { recordingField, toggleRecording };
+  return { recordingField, toggleRecording, speechSupported: supported };
 }

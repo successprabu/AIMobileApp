@@ -136,6 +136,7 @@
   "pleaseCreateFunction": "Please create function details first.",
   "transactionSaved": "Transaction saved successfully.",
   "speechNotAvailable": "Speech recognition is not available on this device.",
+  "speechRequiresExpoGo": "Voice input needs a dev build (EAS APK). In Expo Go, type or use translation suggestions.",
   "show": "Show",
   "hide": "Hide",
   "transactionList": "Receipt List",

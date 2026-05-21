@@ -142,6 +142,10 @@ export default function NewReceiptScreen() {
 
   const handleVoice = async (field: string) => {
     const ok = await toggleRecording(field);
+    if (ok === "unsupported") {
+      showMessage(t("speechRequiresExpoGo"), true);
+      return;
+    }
     if (ok === false) showMessage(t("speechNotAvailable"), true);
   };
 
