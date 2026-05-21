@@ -4,6 +4,7 @@ import { DrawerToggleButton } from "@react-navigation/drawer";
 import type { MainStackParamList } from "./types";
 import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import ComingSoonScreen from "../screens/ComingSoonScreen";
+import FunctionMasterScreen from "../screens/FunctionMasterScreen";
 import TransactionReportScreen from "../screens/TransactionReportScreen";
 import RegionalReportScreen from "../screens/RegionalReportScreen";
 import SummaryReportScreen from "../screens/SummaryReportScreen";
@@ -30,7 +31,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="MahalBooking" component={ComingSoonScreen} />
       <Stack.Screen name="MahalBookingList" component={ComingSoonScreen} />
       <Stack.Screen name="AddMoitechCustomer" component={ComingSoonScreen} />
-      <Stack.Screen name="FunctionMaster" component={ComingSoonScreen} />
+      <Stack.Screen name="FunctionMaster" component={FunctionMasterScreen} />
       <Stack.Screen name="UserMaster" component={ComingSoonScreen} />
       <Stack.Screen name="Transaction" component={ComingSoonScreen} />
       <Stack.Screen name="TransactionList" component={ComingSoonScreen} />

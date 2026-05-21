@@ -31,7 +31,8 @@
     },
     "plugins": [
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

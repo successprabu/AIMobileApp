@@ -23,4 +23,6 @@ export const PATHS = {
   REPORT_REGIONAL: "Report/GetRegionalSummaryReport?",
   REPORT_OVERALL: "Report/GetOverallSummaryReport?",
   REPORT_OTHERS_SUMMARY: "Report/GetOthersSummaryReport?",
+  MASTER_SAVE_FUNCTION: "Master/UpdateCustomerFunction",
+  MASTER_LIST_FUNCTION: "Master/GetFunction",
 } as const;
