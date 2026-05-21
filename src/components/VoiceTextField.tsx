@@ -38,7 +38,13 @@ export default function VoiceTextField({
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const suggestionFields = ["villageName", "name", "initial", "remarks"];
+  const suggestionFields = [
+    "villageName",
+    "name",
+    "initial",
+    "remarks",
+    "othersRemark",
+  ];
   const canSuggest =
     enableSuggestions &&
     suggestionsEnabled &&

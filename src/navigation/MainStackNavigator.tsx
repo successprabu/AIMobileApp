@@ -7,6 +7,7 @@ import ComingSoonScreen from "../screens/ComingSoonScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
 import TransactionListScreen from "../screens/TransactionListScreen";
 import NewExpensesScreen from "../screens/NewExpensesScreen";
+import AddOthersScreen from "../screens/AddOthersScreen";
 import FunctionMasterScreen from "../screens/FunctionMasterScreen";
 import UserMasterScreen from "../screens/UserMasterScreen";
 import TransactionReportScreen from "../screens/TransactionReportScreen";
@@ -41,7 +42,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="TransactionList" component={TransactionListScreen} />
       <Stack.Screen name="AddExpenses" component={NewExpensesScreen} />
       <Stack.Screen name="ExpensesList" component={ComingSoonScreen} />
-      <Stack.Screen name="Others" component={ComingSoonScreen} />
+      <Stack.Screen name="Others" component={AddOthersScreen} />
       <Stack.Screen name="OthersList" component={ComingSoonScreen} />
       <Stack.Screen name="Handover" component={ComingSoonScreen} />
       <Stack.Screen name="IncomeReport" component={TransactionReportScreen} />

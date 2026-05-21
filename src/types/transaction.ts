@@ -20,6 +20,10 @@ export type TransactionFormData = {
   returnStatus: string;
   returnRemark: string;
   functionId: number;
+  /** Others transaction (type O) */
+  others?: number;
+  othersType?: string;
+  othersRemark?: string;
 };
 
 export type LastRecordResponse = {
@@ -61,7 +65,12 @@ export type ImportRecord = {
   originalText?: string;
 };
 
-export type SuggestionField = "villageName" | "name" | "initial" | "remarks";
+export type SuggestionField =
+  | "villageName"
+  | "name"
+  | "initial"
+  | "remarks"
+  | "othersRemark";
 
 export type TransactionRecord = TransactionFormData & {
   id: number;
