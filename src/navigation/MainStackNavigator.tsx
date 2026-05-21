@@ -6,6 +6,7 @@ import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import ComingSoonScreen from "../screens/ComingSoonScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
 import TransactionListScreen from "../screens/TransactionListScreen";
+import NewExpensesScreen from "../screens/NewExpensesScreen";
 import FunctionMasterScreen from "../screens/FunctionMasterScreen";
 import UserMasterScreen from "../screens/UserMasterScreen";
 import TransactionReportScreen from "../screens/TransactionReportScreen";
@@ -38,7 +39,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="UserMaster" component={UserMasterScreen} />
       <Stack.Screen name="Transaction" component={NewReceiptScreen} />
       <Stack.Screen name="TransactionList" component={TransactionListScreen} />
-      <Stack.Screen name="AddExpenses" component={ComingSoonScreen} />
+      <Stack.Screen name="AddExpenses" component={NewExpensesScreen} />
       <Stack.Screen name="ExpensesList" component={ComingSoonScreen} />
       <Stack.Screen name="Others" component={ComingSoonScreen} />
       <Stack.Screen name="OthersList" component={ComingSoonScreen} />
