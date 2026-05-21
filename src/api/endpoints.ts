@@ -25,4 +25,7 @@ export const PATHS = {
   REPORT_OTHERS_SUMMARY: "Report/GetOthersSummaryReport?",
   MASTER_SAVE_FUNCTION: "Master/UpdateCustomerFunction",
   MASTER_LIST_FUNCTION: "Master/GetFunction",
+  AUTH_ADD_CUSTOMER: "Auth/AddCustomer",
+  MASTER_UPDATE_CUSTOMER: "Master/UpdateCustomer",
+  MASTER_LIST_CUSTOMERS: "Master/GetCustomer",
 } as const;
