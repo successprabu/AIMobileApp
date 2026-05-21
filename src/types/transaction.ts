@@ -62,3 +62,21 @@ export type ImportRecord = {
 };
 
 export type SuggestionField = "villageName" | "name" | "initial" | "remarks";
+
+export type TransactionRecord = TransactionFormData & {
+  id: number;
+};
+
+export type TransactionListResponse = {
+  result?: boolean;
+  message?: string;
+  data?: {
+    transactions?: TransactionRecord[];
+    totalPages?: number;
+  };
+};
+
+export type TransactionDeleteResponse = {
+  result?: boolean;
+  message?: string;
+};

@@ -43,3 +43,15 @@ export async function authPost<T = unknown>(
   });
   return data;
 }
+
+/** POST with query params only (web `CommonMethod.postreq`, e.g. delete). */
+export async function authPostParams<T = unknown>(
+  path: string,
+  params: Record<string, string | number | undefined | null>
+): Promise<T> {
+  const { data } = await axios.post<T>(`${BASE_URL}${path}`, null, {
+    params,
+    headers: await getAuthHeaders(),
+  });
+  return data;
+}
