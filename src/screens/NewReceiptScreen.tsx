@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 import {
-  ActivityIndicator,
   Button,
   Card,
   Divider,
@@ -23,7 +22,6 @@ import { authPost } from "../api/client";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { PATHS } from "../api/endpoints";
 import AutoSaveHeaderSwitch from "../components/AutoSaveHeaderSwitch";
-import TransactionImportModal from "../components/TransactionImportModal";
 import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
@@ -40,10 +38,13 @@ import {
   isTransactionValid,
   validateTransaction,
 } from "../utils/transactionValidation";
+import { useAppTheme } from "../hooks/useAppTheme";
+/* Import / template — re-enable later:
+import TransactionImportModal from "../components/TransactionImportModal";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { importTemplateCsv } from "../utils/transactionImport";
-import { useAppTheme } from "../hooks/useAppTheme";
+*/
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
 
 function dateUTC() {
@@ -97,7 +98,6 @@ export default function NewReceiptScreen() {
   const [lastRecord, setLastRecord] = useState<LastRecordResponse["data"] | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
-  const [showImport, setShowImport] = useState(false);
   const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
 
   const handleSpeechResultBase = useCallback((field: string, transcript: string) => {
@@ -175,15 +175,6 @@ export default function NewReceiptScreen() {
     setErrors({});
   };
 
-  const downloadTemplate = async () => {
-    const csv = importTemplateCsv();
-    const path = `${FileSystem.cacheDirectory}import_template.csv`;
-    await FileSystem.writeAsStringAsync(path, csv);
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(path, { mimeType: "text/csv" });
-    }
-  };
-
   const handleSubmit = useCallback(
     async (source: "manual" | "auto" | "voice" = "manual"): Promise<boolean> => {
       if (saving) return false;
@@ -250,10 +241,6 @@ export default function NewReceiptScreen() {
   });
   const { recordingField, toggleRecording } = useVoiceInput(handleSpeechResult);
 
-  const onImportComplete = useCallback((count: number) => {
-    showMessage(t("importSuccess", { count }));
-  }, [t]);
-
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -266,25 +253,16 @@ export default function NewReceiptScreen() {
         <Text variant="bodySmall" style={[styles.hint, { color: c.textMuted }]}>
           {t("autoSaveHint")}
         </Text>
-        <View style={styles.toolbar}>
-          <View style={styles.switchRow}>
-            <Switch
-              value={autoTranslateEnabled}
-              onValueChange={setAutoTranslateEnabled}
-            />
-            <Text variant="bodyMedium" style={styles.switchLabel}>
-              {t("enableTranslationSuggestions")}
-            </Text>
-          </View>
-          <View style={styles.toolbarBtns}>
-            <Button compact mode="outlined" icon="download" onPress={downloadTemplate}>
-              {t("downloadTemplate")}
-            </Button>
-            <Button compact mode="contained" icon="file-import" onPress={() => setShowImport(true)}>
-              {t("import")}
-            </Button>
-          </View>
+        <View style={styles.switchRow}>
+          <Switch
+            value={autoTranslateEnabled}
+            onValueChange={setAutoTranslateEnabled}
+          />
+          <Text variant="bodyMedium" style={styles.switchLabel}>
+            {t("enableTranslationSuggestions")}
+          </Text>
         </View>
+        {/* Download template / Import — disabled for now; restore from git history when needed */}
 
         {lastRecord?.transaction ? (
           <Card style={styles.card}>
@@ -440,6 +418,34 @@ export default function NewReceiptScreen() {
               style={[inputTheme.style, styles.amountInput]}
             />
 
+            <Divider style={styles.divider} />
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                icon="content-save"
+                onPress={() => void handleSubmit("manual")}
+                loading={saving}
+                disabled={saving}
+                style={styles.actionBtn}
+              >
+                {saving ? t("processing_your_request") : t("save")}
+              </Button>
+              <Button
+                mode="outlined"
+                icon="close"
+                onPress={handleClear}
+                disabled={saving}
+                style={styles.actionBtn}
+              >
+                {t("clearButton")}
+              </Button>
+            </View>
+
+            <Text variant="titleSmall" style={[styles.optionalHeading, { color: c.textMuted }]}>
+              {t("mobile_optional_section", { defaultValue: "Optional" })}
+            </Text>
+
             <Text variant="labelLarge" style={styles.label}>
               {t("mobile")}
             </Text>
@@ -478,40 +484,9 @@ export default function NewReceiptScreen() {
               recordingField={recordingField}
               onToggleVoice={handleVoice}
             />
-
-            <Divider style={styles.divider} />
-
-            <View style={styles.actions}>
-              <Button
-                mode="contained"
-                icon="content-save"
-                onPress={() => void handleSubmit("manual")}
-                loading={saving}
-                disabled={saving}
-                style={styles.actionBtn}
-              >
-                {saving ? t("processing_your_request") : t("save")}
-              </Button>
-              <Button
-                mode="outlined"
-                icon="close"
-                onPress={handleClear}
-                disabled={saving}
-                style={styles.actionBtn}
-              >
-                {t("clearButton")}
-              </Button>
-            </View>
           </Card.Content>
         </Card>
       </ScrollView>
-
-      <TransactionImportModal
-        visible={showImport}
-        onDismiss={() => setShowImport(false)}
-        user={u}
-        onImportComplete={onImportComplete}
-      />
 
       <Snackbar
         visible={snack.visible}
@@ -530,10 +505,9 @@ function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
     hint: { marginBottom: 8, lineHeight: 18 },
-    toolbar: { marginBottom: 12 },
-    switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+    switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
     switchLabel: { marginLeft: 8, flex: 1, color: c.text },
-    toolbarBtns: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+    optionalHeading: { marginTop: 20, marginBottom: 4, fontWeight: "600" },
     card: { marginBottom: 12, backgroundColor: c.card },
     label: { marginTop: 8, marginBottom: 4, color: c.textMuted },
     row2: { flexDirection: "row", gap: 8 },
