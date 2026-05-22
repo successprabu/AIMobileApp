@@ -2,36 +2,33 @@ import "./src/i18n";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Provider as PaperProvider, MD3LightTheme } from "react-native-paper";
-import { colors, paperThemeOverrides } from "./src/theme/appTheme";
+import { Provider as PaperProvider } from "react-native-paper";
+import { ThemeProvider, useThemeContext } from "./src/context/ThemeContext";
 import { AuthProvider } from "./src/context/AuthContext";
 import { LanguageProvider } from "./src/context/LanguageContext";
 import RootNavigator from "./src/navigation/RootNavigator";
 
-const theme = {
-  ...MD3LightTheme,
-  roundness: paperThemeOverrides.roundness,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: colors.primary,
-    secondary: colors.secondary,
-    background: colors.background,
-    surface: colors.surface,
-  },
-};
+function AppInner() {
+  const { paperTheme, mode } = useThemeContext();
+  return (
+    <PaperProvider theme={paperTheme}>
+      <LanguageProvider>
+        <AuthProvider>
+          <RootNavigator />
+          <StatusBar style={mode === "dark" ? "light" : "dark"} />
+        </AuthProvider>
+      </LanguageProvider>
+    </PaperProvider>
+  );
+}
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PaperProvider theme={theme}>
-          <LanguageProvider>
-            <AuthProvider>
-              <RootNavigator />
-              <StatusBar style="dark" />
-            </AuthProvider>
-          </LanguageProvider>
-        </PaperProvider>
+        <ThemeProvider>
+          <AppInner />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -17,7 +17,8 @@ import {
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { APP_DISPLAY_NAME, colors } from "../theme/appTheme";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { APP_DISPLAY_NAME } from "../theme/themes";
 import {
   checkMobileAvailable,
   generateOtp,
@@ -61,6 +62,9 @@ function emptyForm(): RegistrationForm {
 
 export default function RegistrationScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeRegStyles(c), [c]);
   const [form, setForm] = useState(emptyForm);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -356,27 +360,29 @@ export default function RegistrationScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
-  header: { alignItems: "center", marginBottom: 16 },
-  logo: { width: 48, height: 52, marginBottom: 8 },
-  title: { fontWeight: "700", color: colors.text },
-  sub: { color: colors.textMuted, marginTop: 4, textAlign: "center" },
-  toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  field: { marginBottom: 4, backgroundColor: colors.surface },
-  row: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
-  flex1: { flex: 1 },
-  otpBtn: { marginTop: 8 },
-  timer: { color: colors.textMuted, marginBottom: 8 },
-  err: { color: colors.danger, marginBottom: 8, marginLeft: 4 },
-  checkRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  registerBtn: { marginTop: 16, paddingVertical: 4 },
-  back: { marginTop: 8 },
-  snackErr: { backgroundColor: colors.danger },
-});
+function makeRegStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    scroll: { padding: 20, paddingBottom: 40 },
+    header: { alignItems: "center", marginBottom: 16 },
+    logo: { width: 48, height: 52, marginBottom: 8 },
+    title: { fontWeight: "700", color: c.text },
+    sub: { color: c.textMuted, marginTop: 4, textAlign: "center" },
+    toggleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    field: { marginBottom: 4, backgroundColor: c.inputBg },
+    row: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+    flex1: { flex: 1 },
+    otpBtn: { marginTop: 8 },
+    timer: { color: c.textMuted, marginBottom: 8 },
+    err: { color: c.danger, marginBottom: 8, marginLeft: 4 },
+    checkRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+    registerBtn: { marginTop: 16, paddingVertical: 4 },
+    back: { marginTop: 8 },
+    snackErr: { backgroundColor: c.danger },
+  });
+}

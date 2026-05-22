@@ -1,51 +1,33 @@
-import { StyleSheet } from "react-native";
+export { APP_DISPLAY_NAME, lightTheme, darkTheme, type AppTheme, type ThemeMode } from "./themes";
 
-export const APP_DISPLAY_NAME = "My Success";
+import { lightTheme } from "./themes";
 
+/** @deprecated Use useAppTheme().theme.colors */
 export const colors = {
-  background: "#f0f4f8",
-  surface: "#ffffff",
-  primary: "#0984e3",
+  background: lightTheme.colors.background,
+  surface: lightTheme.colors.surface,
+  primary: lightTheme.colors.primary,
   primaryDark: "#0770c2",
-  secondary: "#6c5ce7",
-  success: "#00b894",
-  warning: "#fdcb6e",
-  danger: "#e17055",
-  text: "#2d3436",
-  textMuted: "#636e72",
-  border: "#e9ecef",
-  drawerGradientTop: "#0984e3",
-  drawerGradientBottom: "#6c5ce7",
+  secondary: lightTheme.colors.secondary,
+  success: lightTheme.colors.success,
+  warning: lightTheme.colors.warning,
+  danger: lightTheme.colors.danger,
+  text: lightTheme.colors.text,
+  textMuted: lightTheme.colors.textMuted,
+  border: lightTheme.colors.border,
+  drawerGradientTop: lightTheme.colors.drawerHeader,
+  drawerGradientBottom: lightTheme.colors.drawerHeaderAlt,
 };
 
-export const paperThemeOverrides = {
-  roundness: 12,
-};
-
-export const screenStyles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    marginBottom: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-  },
-  sectionTitle: {
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 10,
-  },
-});
+export const paperThemeOverrides = { roundness: 12 };
 
 export const stackHeaderOptions = {
-  headerStyle: { backgroundColor: colors.primary },
-  headerTintColor: "#fff",
+  headerStyle: { backgroundColor: lightTheme.colors.header },
+  headerTintColor: lightTheme.colors.headerText,
   headerTitleStyle: { fontWeight: "600" as const },
   headerShadowVisible: false,
+};
+
+export const screenStyles = {
+  screen: { flex: 1, backgroundColor: lightTheme.colors.background },
 };

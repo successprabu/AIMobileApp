@@ -1,8 +1,9 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
+import { useAppTheme } from "../hooks/useAppTheme";
 import LoginScreen from "../screens/LoginScreen";
 import RegistrationScreen from "../screens/RegistrationScreen";
 import AppDrawerNavigator from "./AppDrawerNavigator";
@@ -12,26 +13,41 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function RootNavigator() {
   const { user, isReady } = useAuth();
+  const { theme, mode } = useAppTheme();
+  const c = theme.colors;
+
+  const navTheme = {
+    ...(mode === "dark" ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(mode === "dark" ? DarkTheme.colors : DefaultTheme.colors),
+      primary: c.primary,
+      background: c.background,
+      card: c.surface,
+      text: c.text,
+      border: c.border,
+    },
+  };
 
   if (!isReady) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0984e3" />
+      <View style={[styles.centered, { backgroundColor: c.background }]}>
+        <ActivityIndicator size="large" color={c.primary} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       {user ? (
         <AppDrawerNavigator />
       ) : (
         <Stack.Navigator
           screenOptions={{
             headerShown: true,
-            headerStyle: { backgroundColor: "#0984e3" },
-            headerTintColor: "#fff",
+            headerStyle: { backgroundColor: c.header },
+            headerTintColor: c.headerText,
             headerTitleStyle: { fontWeight: "600" },
+            contentStyle: { backgroundColor: c.background },
           }}
         >
           <Stack.Screen
@@ -55,6 +71,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f9fa",
   },
 });

@@ -6,6 +6,7 @@ import {
 import type { NavigatorScreenParams } from "@react-navigation/native";
 import MainStackNavigator from "./MainStackNavigator";
 import AppDrawerContent from "./AppDrawerContent";
+import { useAppTheme } from "../hooks/useAppTheme";
 import type { MainStackParamList } from "./types";
 
 export type RootDrawerParamList = {
@@ -17,6 +18,7 @@ const Drawer = createDrawerNavigator<RootDrawerParamList>();
 export type AppDrawerNavigation = DrawerNavigationProp<RootDrawerParamList>;
 
 export default function AppDrawerNavigator() {
+  const { theme } = useAppTheme();
   return (
     <Drawer.Navigator
       drawerContent={(props) => <AppDrawerContent {...props} />}
@@ -24,7 +26,7 @@ export default function AppDrawerNavigator() {
         headerShown: false,
         drawerType: "front",
         swipeEnabled: true,
-        overlayColor: "rgba(15, 23, 42, 0.45)",
+        overlayColor: theme.colors.overlay,
         drawerStyle: {
           width: "88%",
           maxWidth: 340,

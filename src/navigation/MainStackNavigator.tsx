@@ -16,26 +16,30 @@ import SummaryReportScreen from "../screens/SummaryReportScreen";
 import HandoverScreen from "../screens/HandoverScreen";
 import ExpensesListScreen from "../screens/ExpensesListScreen";
 import OthersListScreen from "../screens/OthersListScreen";
-import { stackHeaderOptions } from "../theme/appTheme";
+import ThemeSettingsScreen from "../screens/ThemeSettingsScreen";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export default function MainStackNavigator() {
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+
   return (
     <Stack.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
-        ...stackHeaderOptions,
         headerShown: true,
         animation: "slide_from_right",
-        headerLeft: (props) => <DrawerToggleButton {...props} />,
+        headerStyle: { backgroundColor: c.header },
+        headerTintColor: c.headerText,
+        headerTitleStyle: { fontWeight: "600" },
+        headerShadowVisible: false,
+        headerLeft: (props) => <DrawerToggleButton {...props} tintColor={c.headerText} />,
+        contentStyle: { backgroundColor: c.background },
       }}
     >
-      <Stack.Screen
-        name="Dashboard"
-        component={RoleDashboardScreen}
-        options={{ headerShown: true }}
-      />
+      <Stack.Screen name="Dashboard" component={RoleDashboardScreen} />
       <Stack.Screen name="ClientList" component={ComingSoonScreen} />
       <Stack.Screen name="AddNewMahal" component={ComingSoonScreen} />
       <Stack.Screen name="MahalBooking" component={ComingSoonScreen} />
@@ -55,7 +59,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="OthersReport" component={TransactionReportScreen} />
       <Stack.Screen name="RegionalReport" component={RegionalReportScreen} />
       <Stack.Screen name="SummaryReport" component={SummaryReportScreen} />
-      <Stack.Screen name="ThemeSettings" component={ComingSoonScreen} />
+      <Stack.Screen name="ThemeSettings" component={ThemeSettingsScreen} />
       <Stack.Screen name="Help" component={ComingSoonScreen} />
     </Stack.Navigator>
   );

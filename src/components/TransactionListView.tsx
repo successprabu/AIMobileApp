@@ -17,16 +17,17 @@ import {
   Text,
   TextInput,
 } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet, authPost, authPostParams } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { useAppTheme } from "../hooks/useAppTheme";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
-import { colors } from "../theme/appTheme";
 import type {
   TransactionDeleteResponse,
   TransactionListResponse,
@@ -37,11 +38,22 @@ import type {
 
 const PAGE_SIZES = [5, 10, 25, 50] as const;
 
+const TYPE_ACCENT: Record<TransactionType, string> = {
+  R: "#0984e3",
+  E: "#e17055",
+  O: "#00cec9",
+};
+
+const TYPE_ICON: Record<TransactionType, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  R: "cash-plus",
+  E: "cash-minus",
+  O: "gift-outline",
+};
+
 export type TransactionListViewProps = {
   transType: TransactionType;
   titleKey: string;
   savedMessageKey: string;
-  /** Include user_type / userId in list API (others list on web). */
   withUserScope?: boolean;
   renderRowBody: (item: TransactionRecord) => React.ReactNode;
   EditModal: React.ComponentType<{
@@ -62,6 +74,11 @@ export default function TransactionListView({
 }: TransactionListViewProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const accent = TYPE_ACCENT[transType];
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -225,54 +242,69 @@ export default function TransactionListView({
         onChangeText={onChange}
         keyboardType={keyboardType}
         style={styles.filterInput}
+        outlineColor={c.border}
+        activeOutlineColor={accent}
       />
       <IconButton
         icon={recordingField === voiceKey ? "microphone-off" : "microphone"}
+        iconColor={accent}
         onPress={() => void handleVoice(voiceKey)}
       />
     </View>
   );
 
   const renderItem = ({ item }: { item: TransactionRecord }) => (
-    <Card style={styles.rowCard} mode="outlined">
-      <Card.Content>
-        {renderRowBody(item)}
-        <Text variant="bodySmall">
+    <View style={[styles.rowCard, { backgroundColor: c.card, borderColor: c.border }]}>
+      <View style={[styles.rowStripe, { backgroundColor: accent }]} />
+      <View style={styles.rowBody}>
+        <View style={styles.rowTop}>
+          <View style={[styles.rowIcon, { backgroundColor: `${accent}22` }]}>
+            <MaterialCommunityIcons name={TYPE_ICON[transType]} size={20} color={accent} />
+          </View>
+          <View style={styles.rowContent}>{renderRowBody(item)}</View>
+        </View>
+        <Text variant="bodySmall" style={{ color: c.textMuted }}>
           {t("phoneNo")}: {item.phoneNo || "—"} · {t("active")}:{" "}
           {item.isActive ? t("yes") : t("no")}
         </Text>
         <View style={styles.rowActions}>
-          <IconButton icon="pencil" onPress={() => setEditing(item)} />
+          <IconButton icon="pencil" iconColor={c.primary} onPress={() => setEditing(item)} />
           <IconButton
-            icon="delete"
-            iconColor="#c62828"
+            icon="delete-outline"
+            iconColor={c.danger}
             onPress={() => setDeleteId(item.id)}
           />
         </View>
-      </Card.Content>
-    </Card>
+      </View>
+    </View>
   );
 
   return (
     <View style={styles.flex}>
-      <Card style={styles.searchCard}>
+      <Card style={[styles.searchCard, { backgroundColor: c.card }]} mode="elevated" elevation={1}>
         <Card.Content>
+          <View style={styles.searchHead}>
+            <MaterialCommunityIcons name="filter-variant" size={20} color={accent} />
+            <Text variant="titleSmall" style={{ color: c.text, fontWeight: "700" }}>
+              {t("search")}
+            </Text>
+          </View>
           {filterField(t("name"), nameFilter, setNameFilter, "name")}
           {filterField(t("placeName"), placeFilter, setPlaceFilter, "placeName")}
           {filterField(t("mobile"), mobileFilter, setMobileFilter, "mobile", "phone-pad")}
 
           <View style={styles.searchActions}>
-            <Button mode="contained" icon="magnify" onPress={onSearch} compact>
+            <Button mode="contained" icon="magnify" onPress={onSearch} compact buttonColor={accent}>
               {t("search")}
             </Button>
-            <Button mode="outlined" icon="close" onPress={onClear} compact>
+            <Button mode="outlined" icon="close" onPress={onClear} compact textColor={c.text}>
               {t("clearButton")}
             </Button>
             <Menu
               visible={pageSizeMenuOpen}
               onDismiss={() => setPageSizeMenuOpen(false)}
               anchor={
-                <Button mode="outlined" onPress={() => setPageSizeMenuOpen(true)} compact>
+                <Button mode="outlined" onPress={() => setPageSizeMenuOpen(true)} compact textColor={c.text}>
                   {t("pageSize")}: {pageSize}
                 </Button>
               }
@@ -294,7 +326,7 @@ export default function TransactionListView({
       </Card>
 
       {loading && !refreshing ? (
-        <ActivityIndicator style={styles.loader} />
+        <ActivityIndicator style={styles.loader} color={accent} />
       ) : (
         <FlatList
           data={rows}
@@ -308,30 +340,38 @@ export default function TransactionListView({
                 setRefreshing(true);
                 void load();
               }}
+              tintColor={accent}
             />
           }
-          ListEmptyComponent={<Text style={styles.empty}>{t("noData")}</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <MaterialCommunityIcons name="clipboard-text-outline" size={48} color={c.textMuted} />
+              <Text style={[styles.empty, { color: c.textMuted }]}>{t("noData")}</Text>
+            </View>
+          }
           ListFooterComponent={
             <>
-              <Divider style={styles.divider} />
-              <Text style={styles.footerText}>
-                {t("totalRows")}: {totals.totalRows} {t("pagerows")} · {t("amount")}: ₹
-                {totals.totalAmount.toLocaleString()}
-              </Text>
+              <View style={[styles.totalsBar, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}>
+                <Text style={[styles.footerText, { color: c.text }]}>
+                  {t("totalRows")}: {totals.totalRows} · {t("amount")}: ₹
+                  {totals.totalAmount.toLocaleString()}
+                </Text>
+              </View>
               <View style={styles.pager}>
-                <Button disabled={page <= 1} onPress={() => setPage(1)} compact>
+                <Button disabled={page <= 1} onPress={() => setPage(1)} compact textColor={c.primary}>
                   «
                 </Button>
-                <Button disabled={page <= 1} onPress={() => setPage((p) => p - 1)} compact>
+                <Button disabled={page <= 1} onPress={() => setPage((p) => p - 1)} compact textColor={c.primary}>
                   ‹
                 </Button>
-                <Text variant="bodyMedium">
+                <Text variant="bodyMedium" style={{ color: c.text, fontWeight: "600" }}>
                   {page} / {totalPages}
                 </Text>
                 <Button
                   disabled={page >= totalPages}
                   onPress={() => setPage((p) => p + 1)}
                   compact
+                  textColor={c.primary}
                 >
                   ›
                 </Button>
@@ -339,6 +379,7 @@ export default function TransactionListView({
                   disabled={page >= totalPages}
                   onPress={() => setPage(totalPages)}
                   compact
+                  textColor={c.primary}
                 >
                   »
                 </Button>
@@ -355,18 +396,16 @@ export default function TransactionListView({
         onSave={handleEditSave}
       />
 
-      <Dialog visible={deleteId != null} onDismiss={() => setDeleteId(null)}>
-        <Dialog.Title>{t("deleteConfirmation")}</Dialog.Title>
+      <Dialog visible={deleteId != null} onDismiss={() => setDeleteId(null)} style={{ backgroundColor: c.card }}>
+        <Dialog.Title style={{ color: c.text }}>{t("deleteConfirmation")}</Dialog.Title>
         <Dialog.Content>
-          <Text>{t("deleteConfirmationMessage")}</Text>
+          <Text style={{ color: c.textMuted }}>{t("deleteConfirmationMessage")}</Text>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={() => setDeleteId(null)}>{t("cancel")}</Button>
-          <Button
-            textColor="#c62828"
-            loading={deleting}
-            onPress={() => void handleDelete()}
-          >
+          <Button onPress={() => setDeleteId(null)} textColor={c.textMuted}>
+            {t("cancel")}
+          </Button>
+          <Button textColor={c.danger} loading={deleting} onPress={() => void handleDelete()}>
             {t("delete")}
           </Button>
         </Dialog.Actions>
@@ -376,7 +415,7 @@ export default function TransactionListView({
         visible={snack.visible}
         onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
         duration={3500}
-        style={snack.isError ? styles.snackErr : undefined}
+        style={snack.isError ? { backgroundColor: c.danger } : { backgroundColor: c.primary }}
       >
         {snack.message}
       </Snackbar>
@@ -384,31 +423,63 @@ export default function TransactionListView({
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  searchCard: { margin: 12, marginBottom: 0, borderRadius: 14 },
-  filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
-  filterInput: { flex: 1, backgroundColor: "#fff" },
-  searchActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-    alignItems: "center",
-  },
-  loader: { marginTop: 24 },
-  list: { padding: 12, paddingBottom: 32 },
-  rowCard: { marginBottom: 10 },
-  rowActions: { flexDirection: "row", justifyContent: "flex-end", marginTop: 4 },
-  empty: { textAlign: "center", marginTop: 24, color: "#666" },
-  divider: { marginVertical: 12 },
-  footerText: { textAlign: "center", marginBottom: 8 },
-  pager: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 16,
-  },
-  snackErr: { backgroundColor: "#c62828" },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    searchCard: { margin: 12, marginBottom: 4, borderRadius: 16 },
+    searchHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+    filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+    filterInput: { flex: 1, backgroundColor: c.inputBg },
+    searchActions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 10,
+      alignItems: "center",
+    },
+    loader: { marginTop: 32 },
+    list: { padding: 12, paddingBottom: 32 },
+    rowCard: {
+      flexDirection: "row",
+      marginBottom: 10,
+      borderRadius: 14,
+      borderWidth: 1,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    rowStripe: { width: 4 },
+    rowBody: { flex: 1, padding: 12, paddingLeft: 10 },
+    rowTop: { flexDirection: "row", alignItems: "flex-start" },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 10,
+    },
+    rowContent: { flex: 1 },
+    rowActions: { flexDirection: "row", justifyContent: "flex-end", marginTop: 2 },
+    emptyWrap: { alignItems: "center", marginTop: 40, gap: 8 },
+    empty: { textAlign: "center" },
+    totalsBar: {
+      marginTop: 8,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      marginBottom: 8,
+    },
+    footerText: { textAlign: "center", fontWeight: "600" },
+    pager: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: 4,
+      marginBottom: 16,
+    },
+  });
+}

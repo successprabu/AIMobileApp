@@ -26,12 +26,16 @@ import type {
   DashboardSummary,
 } from "../types/dashboard";
 import { formatCount, formatInr } from "../utils/formatCurrency";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 const API_ROLES = ["SU", "AU", "NU"] as const;
 
 export default function RoleDashboardScreen() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeDashStyles(c), [c]);
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -315,41 +319,45 @@ export default function RoleDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: "#f0f4f8" },
-  pad: { padding: 16, paddingBottom: 40 },
-  hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#0984e3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  logo: { width: 48, height: 52, marginRight: 14 },
-  heroText: { flex: 1 },
-  heroLabel: { color: "#636e72" },
-  heroName: { fontWeight: "700", color: "#2d3436" },
-  heroRole: { color: "#0984e3", marginTop: 2 },
-  sectionTitle: { fontWeight: "700", marginBottom: 10, color: "#2d3436" },
-  statsSection: { marginBottom: 8 },
-  balanceCard: {
-    marginTop: 4,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-  },
-  balanceLabel: { color: "#636e72" },
-  balanceValue: { fontWeight: "800", marginTop: 4 },
-  card: { marginBottom: 16, backgroundColor: "#fff" },
-  loader: { marginVertical: 24 },
-  err: { color: "#c62828" },
-  hint: { color: "#636e72", marginBottom: 16, textAlign: "center" },
-  reportLink: { alignSelf: "flex-start", marginTop: 4 },
-  center: { flex: 1, padding: 24, justifyContent: "center" },
-  mt: { marginTop: 12 },
-});
+function makeDashStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: c.background },
+    pad: { padding: 16, paddingBottom: 40 },
+    hero: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 3,
+    },
+    logo: { width: 48, height: 52, marginRight: 14 },
+    heroText: { flex: 1 },
+    heroLabel: { color: c.textMuted },
+    heroName: { fontWeight: "700", color: c.text },
+    heroRole: { color: c.primary, marginTop: 2 },
+    sectionTitle: { fontWeight: "700", marginBottom: 10, color: c.text },
+    statsSection: { marginBottom: 8 },
+    balanceCard: {
+      marginTop: 4,
+      marginBottom: 16,
+      backgroundColor: c.card,
+    },
+    balanceLabel: { color: c.textMuted },
+    balanceValue: { fontWeight: "800", marginTop: 4, color: c.text },
+    card: { marginBottom: 16, backgroundColor: c.card },
+    loader: { marginVertical: 24 },
+    err: { color: c.danger },
+    hint: { color: c.textMuted, marginBottom: 16, textAlign: "center" },
+    reportLink: { alignSelf: "flex-start", marginTop: 4 },
+    center: { flex: 1, padding: 24, justifyContent: "center" },
+    mt: { marginTop: 12 },
+  });
+}

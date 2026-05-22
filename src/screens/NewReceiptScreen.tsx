@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -39,6 +39,7 @@ import {
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { importTemplateCsv } from "../utils/transactionImport";
+import { useAppTheme } from "../hooks/useAppTheme";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -71,6 +72,9 @@ function emptyForm(customerId: number, functionId: number, userId: string): Tran
 export default function NewReceiptScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeReceiptStyles(c), [c]);
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
   const u = user as AuthUser;
@@ -472,27 +476,29 @@ export default function NewReceiptScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#f0f4f8" },
-  scroll: { padding: 12, paddingBottom: 32 },
-  toolbar: { marginBottom: 12 },
-  switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  switchLabel: { marginLeft: 8, flex: 1 },
-  toolbarBtns: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  card: { marginBottom: 12 },
-  label: { marginTop: 8, marginBottom: 4 },
-  row2: { flexDirection: "row", gap: 8 },
-  half: { flex: 1 },
-  amountInput: { backgroundColor: "#fff" },
-  error: { color: "#c62828", marginBottom: 4 },
-  divider: { marginVertical: 16 },
-  actions: { flexDirection: "row", gap: 12, justifyContent: "center" },
-  actionBtn: { flex: 1 },
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  snackError: { backgroundColor: "#c62828" },
-});
+function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    scroll: { padding: 12, paddingBottom: 32 },
+    toolbar: { marginBottom: 12 },
+    switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+    switchLabel: { marginLeft: 8, flex: 1, color: c.text },
+    toolbarBtns: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+    card: { marginBottom: 12, backgroundColor: c.card },
+    label: { marginTop: 8, marginBottom: 4, color: c.textMuted },
+    row2: { flexDirection: "row", gap: 8 },
+    half: { flex: 1 },
+    amountInput: { backgroundColor: c.inputBg },
+    error: { color: c.danger, marginBottom: 4 },
+    divider: { marginVertical: 16 },
+    actions: { flexDirection: "row", gap: 12, justifyContent: "center" },
+    actionBtn: { flex: 1 },
+    totalRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 8,
+    },
+    snackError: { backgroundColor: c.danger },
+  });
+}

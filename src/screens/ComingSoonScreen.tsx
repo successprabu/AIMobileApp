@@ -1,8 +1,8 @@
-import React, { useLayoutEffect } from "react";
+import React, { useLayoutEffect, useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Text, Card, Button } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { colors } from "../theme/appTheme";
+import { useAppTheme } from "../hooks/useAppTheme";
 import { useTranslation } from "react-i18next";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -29,6 +29,9 @@ const TITLE_KEYS: Partial<Record<keyof MainStackParamList, string>> = {
 
 export default function ComingSoonScreen() {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const styles = useMemo(() => makeStyles(c), [c]);
   const route = useRoute();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const name = route.name as keyof MainStackParamList;
@@ -41,12 +44,12 @@ export default function ComingSoonScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.pad} style={styles.screen}>
-      <Card mode="elevated" style={styles.card}>
+      <Card mode="elevated" style={[styles.card, { backgroundColor: c.card }]}>
         <Card.Content style={styles.cardInner}>
-          <View style={styles.iconWrap}>
-            <MaterialCommunityIcons name="hammer-wrench" size={40} color={colors.primary} />
+          <View style={[styles.iconWrap, { backgroundColor: c.primaryMuted }]}>
+            <MaterialCommunityIcons name="hammer-wrench" size={40} color={c.primary} />
           </View>
-          <Text variant="titleLarge" style={styles.title}>
+          <Text variant="titleLarge" style={[styles.title, { color: c.text }]}>
             {title}
           </Text>
           <Text style={styles.body} variant="bodyMedium">
@@ -64,20 +67,21 @@ export default function ComingSoonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  pad: { padding: 24, flexGrow: 1, justifyContent: "center" },
-  card: { borderRadius: 16 },
-  cardInner: { alignItems: "center", paddingVertical: 24 },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: `${colors.primary}18`,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  title: { fontWeight: "700", textAlign: "center", marginBottom: 12 },
-  body: { marginBottom: 20, lineHeight: 22, textAlign: "center", color: colors.textMuted },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    pad: { padding: 24, flexGrow: 1, justifyContent: "center" },
+    card: { borderRadius: 16 },
+    cardInner: { alignItems: "center", paddingVertical: 24 },
+    iconWrap: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
+    title: { fontWeight: "700", textAlign: "center", marginBottom: 12 },
+    body: { marginBottom: 20, lineHeight: 22, textAlign: "center", color: c.textMuted },
+  });
+}
