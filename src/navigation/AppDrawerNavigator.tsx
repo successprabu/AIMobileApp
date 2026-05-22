@@ -3,15 +3,12 @@ import {
   createDrawerNavigator,
   type DrawerNavigationProp,
 } from "@react-navigation/drawer";
-import type { NavigatorScreenParams } from "@react-navigation/native";
-import MainStackNavigator from "./MainStackNavigator";
+import HomeShell from "./HomeShell";
 import AppDrawerContent from "./AppDrawerContent";
 import { useAppTheme } from "../hooks/useAppTheme";
-import type { MainStackParamList } from "./types";
+import type { RootDrawerParamList } from "./types";
 
-export type RootDrawerParamList = {
-  Home: NavigatorScreenParams<MainStackParamList> | undefined;
-};
+export type { RootDrawerParamList } from "./types";
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
 
@@ -36,7 +33,7 @@ export default function AppDrawerNavigator() {
     >
       <Drawer.Screen
         name="Home"
-        component={MainStackNavigator}
+        component={HomeShell}
         options={{ title: "Home" }}
       />
     </Drawer.Navigator>
