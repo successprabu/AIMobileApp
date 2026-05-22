@@ -30,10 +30,18 @@ export type FunctionRecord = {
   isActive?: boolean;
 };
 
+export type FunctionListData = {
+  totalRecords?: number;
+  totalPages?: number;
+  currentPage?: number;
+  pageSize?: number;
+  functions?: FunctionRecord[];
+};
+
 export type FunctionListResponse = {
   result?: boolean;
   message?: string;
-  data?: { functions?: FunctionRecord[] };
+  data?: FunctionListData;
 };
 
 export type FunctionSaveResponse = {

@@ -39,7 +39,7 @@ function tableHtmlFromRows(rows: Record<string, unknown>[]): string {
           .join("")}</tr>`
     )
     .join("");
-  return `<table class="data ruled"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+  return `<table class="data"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 const PDF_STYLES = `
@@ -48,28 +48,31 @@ const PDF_STYLES = `
   .cover{border:2px solid #c2185b;border-radius:8px;padding:16px;margin-bottom:16px}
   .cover h1{color:#c2185b;font-size:18px;margin:0 0 12px}
   .meta{width:100%;border-collapse:collapse}
-  .meta th,.meta td{border:1px solid #ccc;padding:8px;text-align:left}
+  .meta th,.meta td{
+    border-top:1px solid #ccc;
+    border-bottom:1px solid #ccc;
+    border-left:none;
+    border-right:none;
+    padding:8px;text-align:left
+  }
   .meta th{width:35%;background:#fce4ec}
   .sep{border:none;border-top:2px dashed #ccc;margin:20px 0}
   h2{font-size:16px;color:#c2185b;margin:16px 0 8px}
-  table.data{border-collapse:collapse;width:100%;table-layout:fixed}
+  table.data{border-collapse:collapse;width:100%}
   table.data th,table.data td{
-    border:1px solid #9e9e9e;
+    border-left:none;
+    border-right:none;
+    border-top:none;
+    border-bottom:1px solid #bdbdbd;
     padding:8px 6px;
     text-align:left;
     vertical-align:top;
     word-wrap:break-word;
   }
-  table.data th{background:#f5eef1;font-weight:700}
-  table.ruled tbody td{
-    background-image:repeating-linear-gradient(
-      to right,
-      transparent 0,
-      transparent calc(100% - 1px),
-      #bdbdbd calc(100% - 1px),
-      #bdbdbd 100%
-    );
-    background-size:24px 100%;
+  table.data thead th{
+    background:#f5eef1;
+    font-weight:700;
+    border-bottom:2px solid #9e9e9e;
   }
   table.data tbody tr:nth-child(even) td{background-color:#fafafa}
 `;
