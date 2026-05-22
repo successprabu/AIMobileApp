@@ -11,7 +11,6 @@ import {
   Card,
   Divider,
   Snackbar,
-  Switch,
   Text,
   TextInput,
 } from "react-native-paper";
@@ -21,7 +20,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authPost } from "../api/client";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { PATHS } from "../api/endpoints";
-import AutoSaveHeaderSwitch from "../components/AutoSaveHeaderSwitch";
+import NewReceiptHeaderRight from "../components/NewReceiptHeaderRight";
 import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
@@ -146,9 +145,15 @@ export default function NewReceiptScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: t("addTransaction"),
-      headerRight: () => <AutoSaveHeaderSwitch onEnabled={flashAutoSaveHint} />,
+      headerRight: () => (
+        <NewReceiptHeaderRight
+          translateEnabled={autoTranslateEnabled}
+          onTranslateChange={setAutoTranslateEnabled}
+          onAutoSaveEnabled={flashAutoSaveHint}
+        />
+      ),
     });
-  }, [navigation, t, flashAutoSaveHint]);
+  }, [navigation, t, flashAutoSaveHint, autoTranslateEnabled]);
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -264,17 +269,6 @@ export default function NewReceiptScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.switchRow}>
-          <Switch
-            value={autoTranslateEnabled}
-            onValueChange={setAutoTranslateEnabled}
-          />
-          <Text variant="bodyMedium" style={styles.switchLabel}>
-            {t("enableTranslationSuggestions")}
-          </Text>
-        </View>
-        {/* Download template / Import — disabled for now; restore from git history when needed */}
-
         {lastRecord?.transaction ? (
           <Card style={styles.card}>
             <Card.Title
@@ -515,8 +509,6 @@ function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
-    switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-    switchLabel: { marginLeft: 8, flex: 1, color: c.text },
     optionalHeading: { marginTop: 20, marginBottom: 4, fontWeight: "600" },
     card: { marginBottom: 12, backgroundColor: c.card },
     label: { marginTop: 8, marginBottom: 4, color: c.textMuted },
