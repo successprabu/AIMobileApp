@@ -8,6 +8,8 @@ import HeaderContrastSwitch from "./HeaderContrastSwitch";
 type Props = {
   translateEnabled: boolean;
   onTranslateChange: (value: boolean) => void;
+  /** When user turns translation suggestions on. */
+  onTranslateEnabled?: () => void;
   onAutoSaveEnabled?: () => void;
 };
 
@@ -15,6 +17,7 @@ type Props = {
 export default function NewReceiptHeaderRight({
   translateEnabled,
   onTranslateChange,
+  onTranslateEnabled,
   onAutoSaveEnabled,
 }: Props) {
   const { t } = useTranslation();
@@ -27,7 +30,10 @@ export default function NewReceiptHeaderRight({
         </Text>
         <HeaderContrastSwitch
           value={translateEnabled}
-          onValueChange={onTranslateChange}
+          onValueChange={(value) => {
+            onTranslateChange(value);
+            if (value) onTranslateEnabled?.();
+          }}
           accessibilityLabel={t("enableTranslationSuggestions")}
         />
       </View>

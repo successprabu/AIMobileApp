@@ -133,14 +133,22 @@ export default function NewReceiptScreen() {
     [formData, functionId, t]
   );
 
-  const flashAutoSaveHint = useCallback(() => {
+  const flashSnack = useCallback((message: string) => {
     setSnack({
       visible: true,
-      message: t("autoSaveHint"),
+      message,
       isError: false,
       duration: 6000,
     });
-  }, [t]);
+  }, []);
+
+  const flashAutoSaveHint = useCallback(() => {
+    flashSnack(t("autoSaveHint"));
+  }, [flashSnack, t]);
+
+  const flashTranslateHint = useCallback(() => {
+    flashSnack(t("translateHint"));
+  }, [flashSnack, t]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -149,11 +157,12 @@ export default function NewReceiptScreen() {
         <NewReceiptHeaderRight
           translateEnabled={autoTranslateEnabled}
           onTranslateChange={setAutoTranslateEnabled}
+          onTranslateEnabled={flashTranslateHint}
           onAutoSaveEnabled={flashAutoSaveHint}
         />
       ),
     });
-  }, [navigation, t, flashAutoSaveHint, autoTranslateEnabled]);
+  }, [navigation, t, flashAutoSaveHint, flashTranslateHint, autoTranslateEnabled]);
 
   useEffect(() => {
     setFormData((prev) => ({
