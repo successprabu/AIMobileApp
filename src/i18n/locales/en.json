@@ -333,7 +333,9 @@
   "header_translate_short": "Translate",
   "autoSave": "Auto save",
   "autoSaved": "Saved automatically",
-  "autoSaveHint": "Auto save on: fills save when village, name and old or new amount are entered. Say OK on voice to save.",
+  "autoSaveHint": "Auto save on: saves when you leave the amount field (new amount on receipts; amount on expenses; others amount on add others). Village, name and at least one amount required. Say OK on voice to save.",
+  "autoSaveHintExpenses": "Auto save on: saves when you leave the amount field after category and person are filled. Say OK on voice to save.",
+  "autoSaveHintOthers": "Auto save on: saves when you leave the others amount field after place, name and type are filled. Say OK on voice to save.",
   "translateHint": "Translate on: type in English. Up to 5 {{language}} options appear — tap one to fill. (Uses language from side menu.)",
   "mobile_optional_section": "Optional"
 }

@@ -25,7 +25,8 @@ import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
 import { useAuth } from "../context/AuthContext";
-import { useLanguage, type LangCode } from "../context/LanguageContext";
+import { useLanguage } from "../context/LanguageContext";
+import { SUGGESTION_LANG_LABEL } from "../constants/suggestionLanguages";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -74,15 +75,6 @@ function emptyForm(customerId: number, functionId: number, userId: string): Tran
     functionId,
   };
 }
-
-const SUGGESTION_LANG_LABEL: Record<LangCode, string> = {
-  en: "English",
-  ta: "Tamil",
-  ml: "Malayalam",
-  te: "Telugu",
-  kn: "Kannada",
-  hi: "Hindi",
-};
 
 export default function NewReceiptScreen() {
   const { t } = useTranslation();
@@ -271,11 +263,12 @@ export default function NewReceiptScreen() {
 
   submitRef.current = handleSubmit;
 
-  const { resetSaveFingerprint } = useFormAutoSave({
+  const { resetSaveFingerprint, triggerAutoSave } = useFormAutoSave({
     formData,
     isValid,
     saving,
     onSave: (source) => submitRef.current(source),
+    mode: "blur",
   });
   resetFingerprintRef.current = resetSaveFingerprint;
 
@@ -419,6 +412,7 @@ export default function NewReceiptScreen() {
                   onChangeText={(v) =>
                     updateField("newAmount", v === "" ? 0 : Number(v))
                   }
+                  onBlur={() => triggerAutoSave()}
                   error={!!errors.newAmount}
                   right={
                     <TextInput.Icon

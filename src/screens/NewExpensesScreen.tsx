@@ -12,7 +12,6 @@ import {
   Card,
   Divider,
   Snackbar,
-  Switch,
   Text,
   TextInput,
 } from "react-native-paper";
@@ -22,9 +21,11 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { EXPENSE_CATEGORY_KEYS } from "../constants/expenseCategories";
-import AutoSaveHeaderSwitch from "../components/AutoSaveHeaderSwitch";
+import { SUGGESTION_LANG_LABEL } from "../constants/suggestionLanguages";
+import NewReceiptHeaderRight from "../components/NewReceiptHeaderRight";
 import VoiceTextField from "../components/VoiceTextField";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
@@ -76,6 +77,7 @@ function emptyExpensesForm(
 
 export default function NewExpensesScreen() {
   const { t } = useTranslation();
+  const { suggestionTargetLanguage } = useLanguage();
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -94,7 +96,12 @@ export default function NewExpensesScreen() {
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
   const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(false);
-  const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
+  const [snack, setSnack] = useState({
+    visible: false,
+    message: "",
+    isError: false,
+    duration: 4000,
+  });
 
   const resetFingerprintRef = React.useRef<(() => void) | null>(null);
   const submitRef = React.useRef<
@@ -106,12 +113,40 @@ export default function NewExpensesScreen() {
     [formData, functionId, t]
   );
 
+  const flashSnack = useCallback((message: string) => {
+    setSnack({
+      visible: true,
+      message,
+      isError: false,
+      duration: 6000,
+    });
+  }, []);
+
+  const flashAutoSaveHint = useCallback(() => {
+    flashSnack(t("autoSaveHintExpenses"));
+  }, [flashSnack, t]);
+
+  const flashTranslateHint = useCallback(() => {
+    flashSnack(
+      t("translateHint", {
+        language: SUGGESTION_LANG_LABEL[suggestionTargetLanguage],
+      })
+    );
+  }, [flashSnack, t, suggestionTargetLanguage]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: t("addExpenses"),
-      headerRight: () => <AutoSaveHeaderSwitch />,
+      headerRight: () => (
+        <NewReceiptHeaderRight
+          translateEnabled={autoTranslateEnabled}
+          onTranslateChange={setAutoTranslateEnabled}
+          onTranslateEnabled={flashTranslateHint}
+          onAutoSaveEnabled={flashAutoSaveHint}
+        />
+      ),
     });
-  }, [navigation, t]);
+  }, [navigation, t, flashAutoSaveHint, flashTranslateHint, autoTranslateEnabled]);
 
   const handleSpeechResultBase = useCallback((field: string, transcript: string) => {
     if (field === "phoneNo") {
@@ -132,8 +167,8 @@ export default function NewExpensesScreen() {
     setFormData((prev) => ({ ...prev, [field]: transcript }));
   }, []);
 
-  const showMessage = (message: string, isError = false) => {
-    setSnack({ visible: true, message, isError });
+  const showMessage = (message: string, isError = false, duration = 4000) => {
+    setSnack({ visible: true, message, isError, duration });
   };
 
   const updateField = <K extends keyof TransactionFormData>(
@@ -219,11 +254,12 @@ export default function NewExpensesScreen() {
 
   submitRef.current = handleSubmit;
 
-  const { resetSaveFingerprint } = useFormAutoSave({
+  const { resetSaveFingerprint, triggerAutoSave } = useFormAutoSave({
     formData,
     isValid,
     saving,
     onSave: (source) => submitRef.current(source),
+    mode: "blur",
   });
   resetFingerprintRef.current = resetSaveFingerprint;
 
@@ -241,19 +277,6 @@ export default function NewExpensesScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text variant="bodySmall" style={[styles.hint, { color: c.textMuted }]}>
-          {t("autoSaveHint")}
-        </Text>
-        <View style={styles.switchRow}>
-          <Switch
-            value={autoTranslateEnabled}
-            onValueChange={setAutoTranslateEnabled}
-          />
-          <Text variant="bodyMedium" style={styles.switchLabel}>
-            {t("enableTranslationSuggestions")}
-          </Text>
-        </View>
-
         <Card style={styles.card}>
           <Card.Content>
             <Text variant="labelLarge" style={styles.label}>
@@ -303,6 +326,7 @@ export default function NewExpensesScreen() {
               onChangeText={(v) =>
                 updateField("amount", v === "" ? 0 : Number(v))
               }
+              onBlur={() => triggerAutoSave()}
               placeholder={t("enter_amount")}
               error={!!errors.amount}
               style={[inputTheme.style, styles.input]}
@@ -318,6 +342,34 @@ export default function NewExpensesScreen() {
                 {errors.amount}
               </Text>
             ) : null}
+
+            <Divider style={styles.divider} />
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                icon="content-save"
+                onPress={() => void handleSubmit("manual")}
+                loading={saving}
+                disabled={saving}
+                style={styles.actionBtn}
+              >
+                {saving ? t("processing_your_request") : t("save")}
+              </Button>
+              <Button
+                mode="outlined"
+                icon="close"
+                onPress={handleClear}
+                disabled={saving}
+                style={styles.actionBtn}
+              >
+                {t("clearButton")}
+              </Button>
+            </View>
+
+            <Text variant="titleSmall" style={[styles.optionalHeading, { color: c.textMuted }]}>
+              {t("mobile_optional_section", { defaultValue: "Optional" })}
+            </Text>
 
             <Text variant="labelLarge" style={styles.label}>
               {t("mobile")}
@@ -357,30 +409,6 @@ export default function NewExpensesScreen() {
               recordingField={recordingField}
               onToggleVoice={handleVoice}
             />
-
-            <Divider style={styles.divider} />
-
-            <View style={styles.actions}>
-              <Button
-                mode="contained"
-                icon="content-save"
-                onPress={() => void handleSubmit("manual")}
-                loading={saving}
-                disabled={saving}
-                style={styles.actionBtn}
-              >
-                {saving ? t("processing_your_request") : t("save")}
-              </Button>
-              <Button
-                mode="outlined"
-                icon="close"
-                onPress={handleClear}
-                disabled={saving}
-                style={styles.actionBtn}
-              >
-                {t("clearButton")}
-              </Button>
-            </View>
           </Card.Content>
         </Card>
       </ScrollView>
@@ -388,7 +416,7 @@ export default function NewExpensesScreen() {
       <Snackbar
         visible={snack.visible}
         onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
-        duration={4000}
+        duration={snack.duration}
         style={snack.isError ? styles.snackError : undefined}
       >
         {snack.message}
@@ -401,9 +429,7 @@ function makeExpenseStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
-    hint: { marginBottom: 8, lineHeight: 18 },
-    switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-    switchLabel: { marginLeft: 8, flex: 1, color: c.text },
+    optionalHeading: { marginTop: 20, marginBottom: 4, fontWeight: "600" },
     card: { marginBottom: 12, backgroundColor: c.card },
     label: { marginTop: 8, marginBottom: 4, color: c.textMuted },
     pickerWrap: {
