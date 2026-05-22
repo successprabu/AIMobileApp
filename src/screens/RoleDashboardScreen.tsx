@@ -7,16 +7,18 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Button, Card, Text } from "react-native-paper";
+import { Button, Card, Divider, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { authGet } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import ActivityOverview from "../components/dashboard/ActivityOverview";
-import QuickActionGrid, { type QuickActionItem } from "../components/dashboard/QuickActionGrid";
+import DashboardBalanceCard from "../components/dashboard/DashboardBalanceCard";
+import DashboardMetricGrid from "../components/dashboard/DashboardMetricGrid";
 import StatCard from "../components/dashboard/StatCard";
-import { DASHBOARD_QUICK_ACTIONS } from "../constants/dashboardQuickActions";
+import { DASHBOARD_METRIC_COLORS } from "../constants/dashboardMetrics";
 import { useAuth } from "../context/AuthContext";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
@@ -119,17 +121,6 @@ export default function RoleDashboardScreen() {
     navigation.navigate(screen);
   };
 
-  const quickActions: QuickActionItem[] = useMemo(
-    () =>
-      DASHBOARD_QUICK_ACTIONS.filter((a) => a.roles.includes(role)).map((a) => ({
-        screen: a.screen,
-        label: t(a.titleKey),
-        icon: a.icon as QuickActionItem["icon"],
-        color: a.color,
-      })),
-    [role, t]
-  );
-
   if (!["SU", "AU", "NU", "MU"].includes(role)) {
     return (
       <View style={styles.center}>
@@ -157,10 +148,13 @@ export default function RoleDashboardScreen() {
           refreshing={refreshing}
           onRefresh={() => void onRefresh()}
           enabled={useDashboardApi}
+          colors={[c.primary]}
+          tintColor={c.primary}
         />
       }
     >
       <View style={styles.hero}>
+        <View style={styles.heroAccent} />
         <Image
           source={require("../../assets/brand-logo.png")}
           style={styles.logo}
@@ -201,54 +195,47 @@ export default function RoleDashboardScreen() {
               <Text variant="titleMedium" style={styles.sectionTitle}>
                 {t("mobile_overview", { defaultValue: "Overview" })}
               </Text>
-              <StatCard
-                title={t("dashbordTotalAmount")}
-                value={formatInr(summary.totalRcdAmount)}
-                subtitle={t("totalRcdAmount")}
-                icon="cash-multiple"
-                accent={c.primary}
-                onPress={() => go("TransactionList")}
-              />
-              <StatCard
-                title={t("dashbordTotalTrans")}
-                value={formatCount(summary.totalRcdTransaction)}
-                subtitle={t("transactionList")}
-                icon="clipboard-check-outline"
-                accent="#6c5ce7"
-                onPress={() => go("TransactionList")}
-              />
-              <StatCard
-                title={t("dashbordTotalPlaces")}
-                value={formatCount(summary.totalPlaces)}
-                subtitle={t("placeName")}
-                icon="map-marker-radius"
-                accent="#00b894"
-              />
-              <StatCard
-                title={t("dashbordTotalExpenase")}
-                value={formatInr(summary.totalExpenses)}
-                subtitle={t("expensesList")}
-                icon="wallet-outline"
-                accent="#e17055"
-                onPress={() => go("ExpensesList")}
-              />
+              <Text variant="bodySmall" style={styles.sectionHint}>
+                {t("mobile_dashboard_pull_hint", {
+                  defaultValue: "Pull down to refresh your latest totals.",
+                })}
+              </Text>
 
-              <Card style={styles.balanceCard} mode="elevated">
-                <Card.Content>
-                  <Text variant="labelLarge" style={styles.balanceLabel}>
-                    {t("mobile_net_balance", { defaultValue: "Receipts minus expenses" })}
-                  </Text>
-                  <Text
-                    variant="headlineMedium"
-                    style={[
-                      styles.balanceValue,
-                      { color: netBalance >= 0 ? "#00b894" : "#d63031" },
-                    ]}
-                  >
-                    {formatInr(netBalance)}
-                  </Text>
-                </Card.Content>
-              </Card>
+              <DashboardMetricGrid>
+                <StatCard
+                  title={t("dashbordTotalAmount")}
+                  value={formatInr(summary.totalRcdAmount)}
+                  icon="cash-multiple"
+                  accent={DASHBOARD_METRIC_COLORS.totalAmount}
+                  onPress={() => go("TransactionList")}
+                />
+                <StatCard
+                  title={t("dashbordTotalTrans")}
+                  value={formatCount(summary.totalRcdTransaction)}
+                  icon="clipboard-check-outline"
+                  accent={DASHBOARD_METRIC_COLORS.totalTransactions}
+                  onPress={() => go("TransactionList")}
+                />
+                <StatCard
+                  title={t("dashbordTotalPlaces")}
+                  value={formatCount(summary.totalPlaces)}
+                  icon="map-marker-radius"
+                  accent={DASHBOARD_METRIC_COLORS.totalPlaces}
+                />
+                <StatCard
+                  title={t("dashbordTotalExpenase")}
+                  value={formatInr(summary.totalExpenses)}
+                  icon="wallet-outline"
+                  accent={DASHBOARD_METRIC_COLORS.totalExpenses}
+                  onPress={() => go("ExpensesList")}
+                />
+              </DashboardMetricGrid>
+
+              <DashboardBalanceCard
+                label={t("mobile_net_balance", { defaultValue: "Receipts minus expenses" })}
+                value={formatInr(netBalance)}
+                positive={netBalance >= 0}
+              />
             </View>
           ) : null}
 
@@ -261,41 +248,49 @@ export default function RoleDashboardScreen() {
           ) : null}
         </>
       ) : role === "SU" && !hasCustomer ? (
-        <Card style={styles.card} mode="outlined">
-          <Card.Content>
-            <Text variant="bodyMedium">
+        <Card style={styles.infoCard} mode="elevated">
+          <Card.Content style={styles.infoContent}>
+            <MaterialCommunityIcons name="shield-account" size={32} color={c.primary} />
+            <Text variant="titleMedium" style={styles.infoTitle}>
+              {t("mobile_su_dashboard_title", { defaultValue: "Super admin workspace" })}
+            </Text>
+            <Text variant="bodyMedium" style={styles.infoBody}>
               {t("mobile_su_hint", {
                 defaultValue:
-                  "Super admin: use quick actions to manage clients, functions, and users.",
+                  "Open the side menu to manage clients, functions, users, and system settings.",
               })}
             </Text>
           </Card.Content>
         </Card>
       ) : null}
 
-      <QuickActionGrid
-        title={t("mobile_quick_actions", { defaultValue: "Quick actions" })}
-        actions={quickActions}
-        onPress={go}
-      />
-
       {useDashboardApi ? (
         <>
           {!loading && detail.length > 0 ? (
-            <Card style={styles.card} mode="outlined">
+            <Card style={styles.activityCard} mode="elevated">
               <Card.Title
                 title={t("mobile_activity_by_place", {
                   defaultValue: "Activity by place",
                 })}
+                titleStyle={styles.activityTitle}
                 subtitle={t("totalRcdNosVsTotalExpenses")}
+                left={() => (
+                  <MaterialCommunityIcons
+                    name="chart-bar"
+                    size={28}
+                    color={DASHBOARD_METRIC_COLORS.totalAmount}
+                  />
+                )}
               />
-              <Card.Content>
+              <Divider />
+              <Card.Content style={styles.activityBody}>
                 <ActivityOverview rows={detail} />
                 <Button
-                  mode="text"
-                  icon="chart-bar"
+                  mode="contained-tonal"
+                  icon="file-chart-outline"
                   onPress={() => go("SummaryReport")}
                   style={styles.reportLink}
+                  contentStyle={styles.reportBtnContent}
                 >
                   {t("summaryReport")}
                 </Button>
@@ -304,12 +299,16 @@ export default function RoleDashboardScreen() {
           ) : null}
         </>
       ) : role === "MU" ? (
-        <Card style={styles.card} mode="outlined">
-          <Card.Content>
-            <Text variant="titleMedium">{t("mahalBooking")}</Text>
-            <Text variant="bodyMedium" style={styles.mt}>
+        <Card style={styles.infoCard} mode="elevated">
+          <Card.Content style={styles.infoContent}>
+            <MaterialCommunityIcons name="calendar-heart" size={32} color={c.primary} />
+            <Text variant="titleMedium" style={styles.infoTitle}>
+              {t("mahalBooking")}
+            </Text>
+            <Text variant="bodyMedium" style={styles.infoBody}>
               {t("mobile_mu_hint", {
-                defaultValue: "Use quick actions below for mahal booking and Moitech registration.",
+                defaultValue:
+                  "Use the side menu for mahal booking, booking list, and Moitech registration.",
               })}
             </Text>
           </Card.Content>
@@ -329,34 +328,53 @@ function makeDashStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       backgroundColor: c.card,
       borderRadius: 16,
       padding: 16,
-      marginBottom: 16,
+      marginBottom: 20,
       borderWidth: 1,
       borderColor: c.border,
+      overflow: "hidden",
       shadowColor: c.primary,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
+      shadowOpacity: 0.1,
       shadowRadius: 12,
-      elevation: 3,
+      elevation: 4,
     },
-    logo: { width: 48, height: 52, marginRight: 14 },
+    heroAccent: {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      backgroundColor: c.primary,
+    },
+    logo: { width: 48, height: 52, marginRight: 14, marginLeft: 4 },
     heroText: { flex: 1 },
-    heroLabel: { color: c.textMuted },
-    heroName: { fontWeight: "700", color: c.text },
-    heroRole: { color: c.primary, marginTop: 2 },
-    sectionTitle: { fontWeight: "700", marginBottom: 10, color: c.text },
-    statsSection: { marginBottom: 8 },
-    balanceCard: {
-      marginTop: 4,
+    heroLabel: { color: c.textMuted, textTransform: "uppercase", letterSpacing: 0.6 },
+    heroName: { fontWeight: "700", color: c.text, marginTop: 2 },
+    heroRole: { color: c.primary, marginTop: 4, fontWeight: "600" },
+    sectionTitle: { fontWeight: "700", color: c.text },
+    sectionHint: { color: c.textMuted, marginTop: 2, marginBottom: 14 },
+    statsSection: { marginBottom: 4 },
+    activityCard: {
       marginBottom: 16,
       backgroundColor: c.card,
+      borderRadius: 16,
     },
-    balanceLabel: { color: c.textMuted },
-    balanceValue: { fontWeight: "800", marginTop: 4, color: c.text },
+    activityTitle: { fontWeight: "700" },
+    activityBody: { paddingTop: 12 },
+    infoCard: {
+      marginBottom: 16,
+      backgroundColor: c.card,
+      borderRadius: 16,
+    },
+    infoContent: { alignItems: "center", paddingVertical: 8 },
+    infoTitle: { fontWeight: "700", marginTop: 12, textAlign: "center", color: c.text },
+    infoBody: { marginTop: 8, textAlign: "center", color: c.textMuted, lineHeight: 22 },
     card: { marginBottom: 16, backgroundColor: c.card },
     loader: { marginVertical: 24 },
     err: { color: c.danger },
     hint: { color: c.textMuted, marginBottom: 16, textAlign: "center" },
-    reportLink: { alignSelf: "flex-start", marginTop: 4 },
+    reportLink: { marginTop: 16, alignSelf: "stretch" },
+    reportBtnContent: { paddingVertical: 4 },
     center: { flex: 1, padding: 24, justifyContent: "center" },
     mt: { marginTop: 12 },
   });

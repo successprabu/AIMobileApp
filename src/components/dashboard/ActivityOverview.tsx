@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "../../hooks/useAppTheme";
-import { PRIMARY_PINK } from "../../theme/themes";
+import { DASHBOARD_CHART_COLORS } from "../../constants/dashboardMetrics";
 import type { DashboardDetailRow } from "../../types/dashboard";
 import { formatCount, formatInr } from "../../utils/formatCurrency";
 
@@ -41,11 +41,11 @@ export default function ActivityOverview({ rows, maxItems = 6 }: Props) {
     <View>
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.dot, { backgroundColor: PRIMARY_PINK }]} />
+          <View style={[styles.dot, { backgroundColor: DASHBOARD_CHART_COLORS.receipt }]} />
           <Text variant="labelSmall" style={{ color: c.text }}>{t("receipt")}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.dot, { backgroundColor: c.danger }]} />
+          <View style={[styles.dot, { backgroundColor: DASHBOARD_CHART_COLORS.expense }]} />
           <Text variant="labelSmall" style={{ color: c.text }}>{t("expenses")}</Text>
         </View>
       </View>
@@ -63,7 +63,10 @@ export default function ActivityOverview({ rows, maxItems = 6 }: Props) {
             <View
               style={[
                 styles.barReceipt,
-                { width: `${((row.transactionCount ?? 0) / maxCount) * 100}%`, backgroundColor: c.primary },
+                {
+                  width: `${((row.transactionCount ?? 0) / maxCount) * 100}%`,
+                  backgroundColor: DASHBOARD_CHART_COLORS.receipt,
+                },
               ]}
             />
           </View>
@@ -71,7 +74,10 @@ export default function ActivityOverview({ rows, maxItems = 6 }: Props) {
             <View
               style={[
                 styles.barExpense,
-                { width: `${((row.expenseCount ?? 0) / maxCount) * 100}%`, backgroundColor: c.danger },
+                {
+                  width: `${((row.expenseCount ?? 0) / maxCount) * 100}%`,
+                  backgroundColor: DASHBOARD_CHART_COLORS.expense,
+                },
               ]}
             />
           </View>

@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAppTheme } from "../../hooks/useAppTheme";
 
 type Props = {
   title: string;
@@ -13,32 +12,24 @@ type Props = {
   onPress?: () => void;
 };
 
-export default function StatCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  accent,
-  onPress,
-}: Props) {
-  const { theme } = useAppTheme();
-  const c = theme.colors;
-  const styles = useMemo(() => makeStyles(c), [c]);
+/** Compact colored metric tile (web dashboard style), sized for 2-column grid. */
+export default function StatCard({ title, value, subtitle, icon, accent, onPress }: Props) {
+  const styles = useMemo(() => makeStyles(), []);
 
   const content = (
-    <View style={[styles.card, { borderLeftColor: accent, backgroundColor: c.card }]}>
-      <View style={[styles.iconWrap, { backgroundColor: `${accent}22` }]}>
-        <MaterialCommunityIcons name={icon} size={26} color={accent} />
+    <View style={[styles.card, { backgroundColor: accent }]}>
+      <View style={styles.iconWrap}>
+        <MaterialCommunityIcons name={icon} size={28} color="#ffffff" />
       </View>
       <View style={styles.body}>
-        <Text variant="labelMedium" style={[styles.title, { color: c.textMuted }]} numberOfLines={2}>
+        <Text variant="labelMedium" style={styles.title} numberOfLines={2}>
           {title}
         </Text>
-        <Text variant="headlineSmall" style={[styles.value, { color: accent }]}>
+        <Text variant="titleLarge" style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
           {value}
         </Text>
         {subtitle ? (
-          <Text variant="bodySmall" style={[styles.sub, { color: c.textMuted }]}>
+          <Text variant="bodySmall" style={styles.sub} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -56,35 +47,45 @@ export default function StatCard({
   return content;
 }
 
-function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+function makeStyles() {
   return StyleSheet.create({
     card: {
-      flexDirection: "row",
-      alignItems: "center",
       borderRadius: 14,
       padding: 14,
-      marginBottom: 10,
-      borderLeftWidth: 4,
-      borderWidth: 1,
-      borderColor: c.border,
+      minHeight: 118,
+      flexDirection: "row",
+      alignItems: "center",
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.14,
       shadowRadius: 8,
-      elevation: 2,
+      elevation: 4,
     },
     iconWrap: {
-      width: 48,
-      height: 48,
+      width: 44,
+      height: 44,
       borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
-      marginRight: 12,
+      marginRight: 10,
+      backgroundColor: "rgba(255,255,255,0.22)",
     },
-    body: { flex: 1 },
-    title: { marginBottom: 4 },
-    value: { fontWeight: "700" },
-    sub: { marginTop: 2 },
-    pressed: { opacity: 0.88 },
+    body: { flex: 1, minWidth: 0 },
+    title: {
+      color: "rgba(255,255,255,0.92)",
+      marginBottom: 4,
+      fontWeight: "600",
+    },
+    value: {
+      color: "#ffffff",
+      fontWeight: "800",
+      fontSize: 20,
+      lineHeight: 26,
+    },
+    sub: {
+      color: "rgba(255,255,255,0.78)",
+      marginTop: 2,
+    },
+    pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   });
 }
