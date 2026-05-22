@@ -16,6 +16,7 @@ import SummaryReportScreen from "../screens/SummaryReportScreen";
 import HandoverScreen from "../screens/HandoverScreen";
 import ExpensesListScreen from "../screens/ExpensesListScreen";
 import OthersListScreen from "../screens/OthersListScreen";
+import { stackHeaderOptions } from "../theme/appTheme";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -24,6 +25,7 @@ export default function MainStackNavigator() {
     <Stack.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
+        ...stackHeaderOptions,
         headerShown: true,
         animation: "slide_from_right",
         headerLeft: (props) => <DrawerToggleButton {...props} />,

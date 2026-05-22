@@ -1,25 +1,26 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { Button, Text, TextInput } from "react-native-paper";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LOGIN_API, LOGIN_USER_ACCOUNT_CHECK_API } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import type { AuthUser } from "../types/auth";
+import type { AuthStackParamList } from "./RegistrationScreen";
+import { APP_DISPLAY_NAME, colors } from "../theme/appTheme";
 
 type UserTypeOption = { userType: string; userTypeDescription: string };
 
@@ -31,6 +32,7 @@ type AccountCheckRow = {
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { signIn } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState("AU");
@@ -40,8 +42,6 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const webOrigin = process.env.EXPO_PUBLIC_WEB_APP_URL?.replace(/\/$/, "");
 
   const validateLoginInput = (u: string, p: string): string | null => {
     if (!/^\d+$/.test(u.trim())) {
@@ -149,20 +149,6 @@ export default function LoginScreen() {
     }
   };
 
-  const openWeb = (path: string) => {
-    if (!webOrigin) {
-      Alert.alert(
-        t("mobile_web_title", { defaultValue: "Website" }),
-        t("mobile_web_env_hint", {
-          defaultValue:
-            "Set EXPO_PUBLIC_WEB_APP_URL in .env to open sign-up and password recovery in the browser.",
-        })
-      );
-      return;
-    }
-    Linking.openURL(`${webOrigin}${path}`);
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -172,15 +158,17 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
+        <View style={styles.headerCard}>
           <Image
             source={require("../../assets/brand-logo.png")}
             style={styles.logo}
             resizeMode="contain"
-            accessibilityLabel={t("my_accounts")}
+            accessibilityLabel={APP_DISPLAY_NAME}
           />
-          <Text style={styles.title}>{t("my_accounts")}</Text>
-          <Text style={styles.subtitle}>
+          <Text variant="headlineMedium" style={styles.title}>
+            {APP_DISPLAY_NAME}
+          </Text>
+          <Text variant="bodyMedium" style={styles.subtitle}>
             {t("mobile_login_subtitle", {
               defaultValue: "Sign in with your mobile number",
             })}
@@ -193,47 +181,42 @@ export default function LoginScreen() {
           </View>
         ) : null}
 
-        <Text style={styles.label}>{t("mobile_number")}</Text>
         <TextInput
-          style={styles.input}
+          label={t("mobile_number")}
+          mode="outlined"
           value={username}
           onChangeText={setUsername}
           onEndEditing={handleUsernameBlur}
           placeholder={t("enter_mobile_number")}
           keyboardType="phone-pad"
           autoCapitalize="none"
-          editable={!loading}
+          disabled={loading}
+          style={styles.field}
         />
-        {checkingUser ? (
-          <ActivityIndicator style={styles.inlineSpinner} />
-        ) : null}
+        {checkingUser ? <ActivityIndicator style={styles.inlineSpinner} /> : null}
 
-        <Text style={styles.label}>{t("password")}</Text>
-        <View style={styles.passwordRow}>
-          <TextInput
-            style={[styles.input, styles.passwordInput]}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("enter_password")}
-            secureTextEntry={!showPassword}
-            editable={!loading}
-          />
-          <Pressable
-            onPress={() => setShowPassword((s) => !s)}
-            style={styles.togglePwd}
-            hitSlop={8}
-          >
-            <Text style={styles.togglePwdText}>
-              {showPassword
-                ? t("mobile_hide", { defaultValue: "Hide" })
-                : t("mobile_show", { defaultValue: "Show" })}
-            </Text>
-          </Pressable>
-        </View>
+        <TextInput
+          label={t("password")}
+          mode="outlined"
+          value={password}
+          onChangeText={setPassword}
+          placeholder={t("enter_password")}
+          secureTextEntry={!showPassword}
+          disabled={loading}
+          right={
+            <TextInput.Icon
+              icon={showPassword ? "eye-off" : "eye"}
+              onPress={() => setShowPassword((s) => !s)}
+            />
+          }
+          style={styles.field}
+        />
 
         {userTypes.length > 1 ? (
           <>
-            <Text style={styles.label}>{t("userType")}</Text>
+            <Text variant="labelLarge" style={styles.label}>
+              {t("userType")}
+            </Text>
             <View style={styles.pickerWrap}>
               <Picker
                 selectedValue={userType}
@@ -257,106 +240,79 @@ export default function LoginScreen() {
           </>
         ) : null}
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={userLogin}
+        <Button
+          mode="contained"
+          onPress={() => void userLogin()}
+          loading={loading}
           disabled={loading}
+          style={styles.button}
+          contentStyle={styles.buttonContent}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{t("sign_in")}</Text>
-          )}
-        </Pressable>
+          {t("sign_in")}
+        </Button>
 
         <View style={styles.links}>
-          <Pressable onPress={() => openWeb("/forgot-password")}>
-            <Text style={styles.link}>{t("forgot_password")}</Text>
-          </Pressable>
-          <Pressable onPress={() => openWeb("/purchase")}>
-            <Text style={styles.link}>{t("sign_up")}</Text>
-          </Pressable>
+          <Button mode="text" onPress={() => navigation.navigate("SignUp")} compact>
+            {t("sign_up")}
+          </Button>
+          <Button mode="text" onPress={() => {}} compact disabled>
+            {t("forgot_password")}
+          </Button>
         </View>
+        <Text variant="bodySmall" style={styles.forgotHint}>
+          {t("mobile_forgot_hint", {
+            defaultValue: "Forgot password: contact support or use the web portal.",
+          })}
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#f8f9fa" },
-  scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 32,
-  },
-  header: { marginBottom: 28, alignItems: "center" },
-  logo: { width: 44, height: 48, marginBottom: 12 },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#2d3436",
-    textAlign: "center",
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 16,
-    color: "#636e72",
-    textAlign: "center",
-  },
-  label: {
-    marginTop: 16,
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#636e72",
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#e0e0e0",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-  passwordRow: { position: "relative" },
-  passwordInput: { paddingRight: 64 },
-  togglePwd: {
-    position: "absolute",
-    right: 12,
-    top: 14,
-  },
-  togglePwdText: { color: "#0984e3", fontWeight: "600" },
-  pickerWrap: {
-    borderWidth: 2,
-    borderColor: "#e0e0e0",
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: "#fff",
-  },
-  button: {
-    marginTop: 28,
-    backgroundColor: "#0984e3",
-    paddingVertical: 16,
-    borderRadius: 12,
+  flex: { flex: 1, backgroundColor: colors.background },
+  scroll: { paddingHorizontal: 20, paddingTop: 48, paddingBottom: 32 },
+  headerCard: {
     alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: "#fff", fontSize: 17, fontWeight: "600" },
+  logo: { width: 52, height: 56, marginBottom: 12 },
+  title: { fontWeight: "800", color: colors.text, textAlign: "center" },
+  subtitle: { marginTop: 8, color: colors.textMuted, textAlign: "center" },
+  label: { marginTop: 8, color: colors.textMuted },
+  field: { marginBottom: 8, backgroundColor: colors.surface },
+  pickerWrap: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+    marginBottom: 8,
+  },
+  button: { marginTop: 16, borderRadius: 12 },
+  buttonContent: { paddingVertical: 6 },
   links: {
-    marginTop: 24,
+    marginTop: 20,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  link: { color: "#0984e3", fontSize: 15, fontWeight: "500" },
+  forgotHint: { textAlign: "center", color: colors.textMuted, marginTop: 4 },
   errorBox: {
     backgroundColor: "rgba(255, 71, 87, 0.1)",
     borderColor: "rgba(255, 71, 87, 0.25)",
     borderWidth: 1,
     padding: 12,
     borderRadius: 10,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   errorText: { color: "#ff4757" },
-  inlineSpinner: { marginTop: 8 },
+  inlineSpinner: { marginBottom: 8 },
 });

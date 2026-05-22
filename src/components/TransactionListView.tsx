@@ -26,6 +26,7 @@ import { useAuth } from "../context/AuthContext";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
+import { colors } from "../theme/appTheme";
 import type {
   TransactionDeleteResponse,
   TransactionListResponse,
@@ -384,8 +385,8 @@ export default function TransactionListView({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#f0f4f8" },
-  searchCard: { margin: 12, marginBottom: 0 },
+  flex: { flex: 1, backgroundColor: colors.background },
+  searchCard: { margin: 12, marginBottom: 0, borderRadius: 14 },
   filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   filterInput: { flex: 1, backgroundColor: "#fff" },
   searchActions: {

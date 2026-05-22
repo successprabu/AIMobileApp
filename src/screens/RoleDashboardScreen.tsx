@@ -175,12 +175,6 @@ export default function RoleDashboardScreen() {
         </View>
       </View>
 
-      <QuickActionGrid
-        title={t("mobile_quick_actions", { defaultValue: "Quick actions" })}
-        actions={quickActions}
-        onPress={go}
-      />
-
       {useDashboardApi ? (
         <>
           {loading && !refreshing ? (
@@ -261,7 +255,28 @@ export default function RoleDashboardScreen() {
               })}
             </Text>
           ) : null}
+        </>
+      ) : role === "SU" && !hasCustomer ? (
+        <Card style={styles.card} mode="outlined">
+          <Card.Content>
+            <Text variant="bodyMedium">
+              {t("mobile_su_hint", {
+                defaultValue:
+                  "Super admin: use quick actions to manage clients, functions, and users.",
+              })}
+            </Text>
+          </Card.Content>
+        </Card>
+      ) : null}
 
+      <QuickActionGrid
+        title={t("mobile_quick_actions", { defaultValue: "Quick actions" })}
+        actions={quickActions}
+        onPress={go}
+      />
+
+      {useDashboardApi ? (
+        <>
           {!loading && detail.length > 0 ? (
             <Card style={styles.card} mode="outlined">
               <Card.Title
@@ -290,18 +305,7 @@ export default function RoleDashboardScreen() {
             <Text variant="titleMedium">{t("mahalBooking")}</Text>
             <Text variant="bodyMedium" style={styles.mt}>
               {t("mobile_mu_hint", {
-                defaultValue: "Use quick actions above for mahal booking and Moitech registration.",
-              })}
-            </Text>
-          </Card.Content>
-        </Card>
-      ) : role === "SU" && !hasCustomer ? (
-        <Card style={styles.card} mode="outlined">
-          <Card.Content>
-            <Text variant="bodyMedium">
-              {t("mobile_su_hint", {
-                defaultValue:
-                  "Super admin: use quick actions to manage clients, functions, and users.",
+                defaultValue: "Use quick actions below for mahal booking and Moitech registration.",
               })}
             </Text>
           </Card.Content>
@@ -334,15 +338,6 @@ const styles = StyleSheet.create({
   heroRole: { color: "#0984e3", marginTop: 2 },
   sectionTitle: { fontWeight: "700", marginBottom: 10, color: "#2d3436" },
   statsSection: { marginBottom: 8 },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -4,
-  },
-  statHalf: {
-    width: "50%",
-    paddingHorizontal: 4,
-  },
   balanceCard: {
     marginTop: 4,
     marginBottom: 16,

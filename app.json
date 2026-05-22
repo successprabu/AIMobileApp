@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "My Accounts",
+    "name": "My Success",
     "slug": "account-ui-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,6 +17,7 @@
       "bundleIdentifier": "com.successprabu.aimobileapp"
     },
     "android": {
+      "label": "My Success",
       "package": "com.successprabu.aimobileapp",
       "versionCode": 1,
       "permissions": [
