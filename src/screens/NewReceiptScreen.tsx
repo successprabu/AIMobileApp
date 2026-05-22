@@ -25,6 +25,7 @@ import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage, type LangCode } from "../context/LanguageContext";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -74,8 +75,18 @@ function emptyForm(customerId: number, functionId: number, userId: string): Tran
   };
 }
 
+const SUGGESTION_LANG_LABEL: Record<LangCode, string> = {
+  en: "English",
+  ta: "Tamil",
+  ml: "Malayalam",
+  te: "Telugu",
+  kn: "Kannada",
+  hi: "Hindi",
+};
+
 export default function NewReceiptScreen() {
   const { t } = useTranslation();
+  const { suggestionTargetLanguage } = useLanguage();
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -147,8 +158,12 @@ export default function NewReceiptScreen() {
   }, [flashSnack, t]);
 
   const flashTranslateHint = useCallback(() => {
-    flashSnack(t("translateHint"));
-  }, [flashSnack, t]);
+    flashSnack(
+      t("translateHint", {
+        language: SUGGESTION_LANG_LABEL[suggestionTargetLanguage],
+      })
+    );
+  }, [flashSnack, t, suggestionTargetLanguage]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

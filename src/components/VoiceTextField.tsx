@@ -6,8 +6,8 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import {
-  fetchTransliterationSuggestions,
-  isSuggestionLanguage,
+  canUseSuggestions,
+  fetchInputSuggestions,
 } from "../utils/inputSuggestions";
 import SuggestionsList from "./SuggestionsList";
 import type { SuggestionField } from "../types/transaction";
@@ -36,7 +36,7 @@ export default function VoiceTextField({
   ...inputProps
 }: Props) {
   const { t } = useTranslation();
-  const { language } = useLanguage();
+  const { suggestionTargetLanguage } = useLanguage();
   const { theme } = useAppTheme();
   const c = theme.colors;
   const themedInput = useThemedInputProps();
@@ -57,7 +57,7 @@ export default function VoiceTextField({
     enableSuggestions &&
     suggestionsEnabled &&
     suggestionFields.includes(fieldName) &&
-    isSuggestionLanguage(language);
+    canUseSuggestions(suggestionTargetLanguage);
 
   const loadSuggestions = async (text: string) => {
     if (!canSuggest || !text.trim()) {
@@ -65,7 +65,7 @@ export default function VoiceTextField({
       setSelectedIndex(-1);
       return;
     }
-    const list = await fetchTransliterationSuggestions(text, language);
+    const list = await fetchInputSuggestions(text, suggestionTargetLanguage);
     setSuggestions(list);
     setSelectedIndex(-1);
   };

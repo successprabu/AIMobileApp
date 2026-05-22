@@ -334,6 +334,6 @@
   "autoSave": "Auto save",
   "autoSaved": "Saved automatically",
   "autoSaveHint": "Auto save on: fills save when village, name and old or new amount are entered. Say OK on voice to save.",
-  "translateHint": "Translate on: type in your language (not English). After each word, up to 5 choices appear — tap one to fill the field.",
+  "translateHint": "Translate on: type in English. Up to 5 {{language}} options appear — tap one to fill. (Uses language from side menu.)",
   "mobile_optional_section": "Optional"
 }
