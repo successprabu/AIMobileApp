@@ -98,7 +98,12 @@ export default function NewReceiptScreen() {
   const [lastRecord, setLastRecord] = useState<LastRecordResponse["data"] | null>(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [showTotals, setShowTotals] = useState(false);
-  const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
+  const [snack, setSnack] = useState({
+    visible: false,
+    message: "",
+    isError: false,
+    duration: 4000,
+  });
 
   const handleSpeechResultBase = useCallback((field: string, transcript: string) => {
     if (field === "phoneNo") {
@@ -129,12 +134,21 @@ export default function NewReceiptScreen() {
     [formData, functionId, t]
   );
 
+  const flashAutoSaveHint = useCallback(() => {
+    setSnack({
+      visible: true,
+      message: t("autoSaveHint"),
+      isError: false,
+      duration: 6000,
+    });
+  }, [t]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: t("addTransaction"),
-      headerRight: () => <AutoSaveHeaderSwitch />,
+      headerRight: () => <AutoSaveHeaderSwitch onEnabled={flashAutoSaveHint} />,
     });
-  }, [navigation, t]);
+  }, [navigation, t, flashAutoSaveHint]);
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -143,8 +157,8 @@ export default function NewReceiptScreen() {
     }));
   }, [formData.oldAmount, formData.newAmount]);
 
-  const showMessage = (message: string, isError = false) => {
-    setSnack({ visible: true, message, isError });
+  const showMessage = (message: string, isError = false, duration = 4000) => {
+    setSnack({ visible: true, message, isError, duration });
   };
 
   const updateField = <K extends keyof TransactionFormData>(
@@ -250,9 +264,6 @@ export default function NewReceiptScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <Text variant="bodySmall" style={[styles.hint, { color: c.textMuted }]}>
-          {t("autoSaveHint")}
-        </Text>
         <View style={styles.switchRow}>
           <Switch
             value={autoTranslateEnabled}
@@ -491,7 +502,7 @@ export default function NewReceiptScreen() {
       <Snackbar
         visible={snack.visible}
         onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
-        duration={4000}
+        duration={snack.duration}
         style={snack.isError ? styles.snackError : undefined}
       >
         {snack.message}
@@ -504,7 +515,6 @@ function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
-    hint: { marginBottom: 8, lineHeight: 18 },
     switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
     switchLabel: { marginLeft: 8, flex: 1, color: c.text },
     optionalHeading: { marginTop: 20, marginBottom: 4, fontWeight: "600" },

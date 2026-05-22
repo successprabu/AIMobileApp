@@ -332,6 +332,6 @@
   "footer_short_function": "Function",
   "autoSave": "Auto save",
   "autoSaved": "Saved automatically",
-  "autoSaveHint": "Turn on to save when all required fields are filled. Say OK on voice input to save anytime.",
+  "autoSaveHint": "Auto save on: fills save when village, name and old or new amount are entered. Say OK on voice to save.",
   "mobile_optional_section": "Optional"
 }

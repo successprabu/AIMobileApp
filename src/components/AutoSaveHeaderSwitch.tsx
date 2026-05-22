@@ -4,8 +4,13 @@ import { Switch, Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { useAutoSave } from "../context/AutoSaveContext";
 
+type Props = {
+  /** Called when the user turns auto-save on (not on initial load). */
+  onEnabled?: () => void;
+};
+
 /** Header top-right toggle for form auto-save. */
-export default function AutoSaveHeaderSwitch() {
+export default function AutoSaveHeaderSwitch({ onEnabled }: Props) {
   const { t } = useTranslation();
   const { autoSaveEnabled, setAutoSaveEnabled, loaded } = useAutoSave();
 
@@ -18,7 +23,10 @@ export default function AutoSaveHeaderSwitch() {
       </Text>
       <Switch
         value={autoSaveEnabled}
-        onValueChange={setAutoSaveEnabled}
+        onValueChange={(value) => {
+          setAutoSaveEnabled(value);
+          if (value) onEnabled?.();
+        }}
         accessibilityLabel={t("autoSave")}
       />
     </View>
