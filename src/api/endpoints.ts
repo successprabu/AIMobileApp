@@ -31,4 +31,5 @@ export const PATHS = {
   SAVE_TRANSACTION: "Transaction/UpdateTransaction",
   LIST_TRANSACTION: "Transaction/GetTransaction?",
   DELETE_TRANSACTION: "Transaction/DeleteTransaction?",
+  SAVE_HANDOVER: "Transaction/UpdateHandover",
 } as const;
