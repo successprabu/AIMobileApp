@@ -178,7 +178,7 @@ export default function LoginScreen() {
         <View style={styles.decorRow}>
           {DECOR_ICONS.map((icon) => (
             <View key={icon} style={styles.decorChip}>
-              <MaterialCommunityIcons name={icon} size={18} color={c.marriageAccent} />
+              <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
             </View>
           ))}
         </View>
@@ -201,7 +201,7 @@ export default function LoginScreen() {
             })}
           </Text>
           <View style={styles.taglineRow}>
-            <MaterialCommunityIcons name="calendar-heart" size={16} color={c.marriageAccent} />
+            <MaterialCommunityIcons name="calendar-heart" size={16} color={c.primary} />
             <Text style={styles.taglineText}>
               {t("mobile_login_subtitle", {
                 defaultValue: "Sign in with your mobile number",
@@ -290,7 +290,7 @@ export default function LoginScreen() {
             disabled={loading}
             style={styles.button}
             contentStyle={styles.buttonContent}
-            buttonColor={c.marriageAccent}
+            buttonColor={c.primary}
           >
             {t("sign_in")}
           </Button>
@@ -350,7 +350,7 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       marginBottom: 16,
       borderWidth: 1,
       borderColor: c.border,
-      shadowColor: c.marriageAccent,
+      shadowColor: c.primary,
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.12,
       shadowRadius: 14,
@@ -365,7 +365,7 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       justifyContent: "center",
       marginBottom: 12,
       borderWidth: 2,
-      borderColor: c.marriageAccent,
+      borderColor: c.primary,
     },
     logo: { width: 48, height: 52 },
     title: { fontWeight: "800", color: c.text, textAlign: "center" },
@@ -386,7 +386,7 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       borderRadius: 20,
       backgroundColor: c.marriageSoft,
     },
-    taglineText: { color: c.marriageAccent, fontSize: 13, fontWeight: "600" },
+    taglineText: { color: c.primary, fontSize: 13, fontWeight: "600" },
     formCard: {
       backgroundColor: c.card,
       borderRadius: 16,

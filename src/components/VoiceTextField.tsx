@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, TextInput, type TextInputProps } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../context/LanguageContext";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import {
   fetchTransliterationSuggestions,
   isSuggestionLanguage,
@@ -30,10 +32,16 @@ export default function VoiceTextField({
   errorText,
   recordingField,
   onToggleVoice,
+  style,
   ...inputProps
 }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const themedInput = useThemedInputProps();
+  const styles = useMemo(() => makeStyles(c), [c]);
+
   const [suggestions, setSuggestions] = React.useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,11 +98,12 @@ export default function VoiceTextField({
     <View style={styles.wrap}>
       <TextInput
         {...inputProps}
+        {...themedInput}
         mode="outlined"
         value={value}
         onChangeText={handleChange}
         error={!!errorText}
-        style={[styles.input, inputProps.style]}
+        style={[themedInput.style, style]}
         right={
           <TextInput.Icon
             icon={isRecording ? "microphone-off" : "microphone"}
@@ -120,8 +129,9 @@ export default function VoiceTextField({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { marginBottom: 4 },
-  input: { backgroundColor: "#fff" },
-  error: { color: "#c62828", marginTop: 2, marginLeft: 4 },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    wrap: { marginBottom: 4 },
+    error: { color: c.danger, marginTop: 2, marginLeft: 4 },
+  });
+}

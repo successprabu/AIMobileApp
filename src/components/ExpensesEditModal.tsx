@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Checkbox, Portal, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import VoiceTextField from "./VoiceTextField";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import type { TransactionRecord } from "../types/transaction";
 import { hasExpensesErrors, validateExpenses } from "../utils/expensesValidation";
@@ -21,6 +23,10 @@ export default function ExpensesEditModal({
   onSave,
 }: Props) {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const inputTheme = useThemedInputProps();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [draft, setDraft] = useState<TransactionRecord | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
@@ -58,6 +64,8 @@ export default function ExpensesEditModal({
     }
   };
 
+  const amountProps = { ...inputTheme, style: [inputTheme.style, styles.field] };
+
   return (
     <Portal>
       <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
@@ -75,7 +83,6 @@ export default function ExpensesEditModal({
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
               errorText={errors.villageName}
-              style={styles.field}
             />
             <VoiceTextField
               label={t("expensesDescription")}
@@ -86,7 +93,6 @@ export default function ExpensesEditModal({
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
               errorText={errors.name}
-              style={styles.field}
             />
             <VoiceTextField
               label={t("phoneNo")}
@@ -100,9 +106,9 @@ export default function ExpensesEditModal({
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
               errorText={errors.phoneNo}
-              style={styles.field}
             />
             <TextInput
+              {...amountProps}
               label={t("amount")}
               mode="outlined"
               keyboardType="numeric"
@@ -111,7 +117,6 @@ export default function ExpensesEditModal({
                 setDraft({ ...draft, amount: v === "" ? 0 : Number(v) })
               }
               error={!!errors.amount}
-              style={styles.field}
             />
             {errors.amount ? <Text style={styles.err}>{errors.amount}</Text> : null}
             <View style={styles.checkRow}>
@@ -119,16 +124,19 @@ export default function ExpensesEditModal({
                 status={draft.isActive ? "checked" : "unchecked"}
                 onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}
               />
-              <Text onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}>
+              <Text
+                style={{ color: c.text }}
+                onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}
+              >
                 {t("active")}
               </Text>
             </View>
           </ScrollView>
           <View style={styles.footer}>
-            <Button onPress={onDismiss} disabled={saving}>
+            <Button onPress={onDismiss} disabled={saving} textColor={c.textMuted}>
               {t("cancel")}
             </Button>
-            <Button mode="contained" onPress={() => void handleSave()} loading={saving}>
+            <Button mode="contained" onPress={() => void handleSave()} loading={saving} buttonColor={c.primary}>
               {t("save")}
             </Button>
           </View>
@@ -138,23 +146,25 @@ export default function ExpensesEditModal({
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    flex: 1,
-    marginTop: 48,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 16,
-  },
-  title: { marginBottom: 12 },
-  field: { marginBottom: 8, backgroundColor: "#fff" },
-  err: { color: "#c62828", marginBottom: 8, marginLeft: 4 },
-  checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    gap: 12,
-  },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    sheet: {
+      flex: 1,
+      marginTop: 48,
+      backgroundColor: c.card,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 16,
+    },
+    title: { marginBottom: 12, color: c.text },
+    field: { marginBottom: 8 },
+    err: { color: c.danger, marginBottom: 8, marginLeft: 4 },
+    checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 12,
+      gap: 12,
+    },
+  });
+}

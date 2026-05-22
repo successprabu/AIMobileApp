@@ -45,11 +45,11 @@ export default function ThemeSettingsScreen() {
             </View>
             <View style={styles.flex}>
               <Text variant="titleMedium" style={{ color: c.text }}>
-                {t("mobile_theme_dark", { defaultValue: "Dark blue theme" })}
+                {t("mobile_theme_dark", { defaultValue: "Dark theme" })}
               </Text>
               <Text variant="bodySmall" style={{ color: c.textMuted }}>
                 {t("mobile_theme_dark_desc", {
-                  defaultValue: "Deep blue tones — easier on eyes at night",
+                  defaultValue: "Black background with pink accents — easier on eyes at night",
                 })}
               </Text>
             </View>

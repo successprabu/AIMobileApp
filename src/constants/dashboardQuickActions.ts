@@ -1,4 +1,5 @@
 import type { MainStackParamList } from "../navigation/types";
+import { PRIMARY_PINK, PRIMARY_PINK_DARK } from "../theme/themes";
 
 export type QuickAction = {
   screen: keyof MainStackParamList;
@@ -13,7 +14,7 @@ export const DASHBOARD_QUICK_ACTIONS: QuickAction[] = [
     screen: "Transaction",
     titleKey: "addTransaction",
     icon: "cash-plus",
-    color: "#0984e3",
+    color: PRIMARY_PINK,
     roles: ["SU", "AU", "NU"],
   },
   {
@@ -90,7 +91,7 @@ export const DASHBOARD_QUICK_ACTIONS: QuickAction[] = [
     screen: "ClientList",
     titleKey: "Clients",
     icon: "account-group",
-    color: "#0984e3",
+    color: PRIMARY_PINK,
     roles: ["SU"],
   },
   {
@@ -104,7 +105,7 @@ export const DASHBOARD_QUICK_ACTIONS: QuickAction[] = [
     screen: "MahalBookingList",
     titleKey: "mahalBookingList",
     icon: "calendar-check",
-    color: "#0984e3",
+    color: PRIMARY_PINK,
     roles: ["MU"],
   },
   {

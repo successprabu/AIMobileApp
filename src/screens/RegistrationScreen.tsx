@@ -18,6 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import { APP_DISPLAY_NAME } from "../theme/themes";
 import {
   checkMobileAvailable,
@@ -64,6 +65,7 @@ export default function RegistrationScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const inputTheme = useThemedInputProps();
   const styles = useMemo(() => makeRegStyles(c), [c]);
   const [form, setForm] = useState(emptyForm);
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -200,17 +202,19 @@ export default function RegistrationScreen({ navigation }: Props) {
         </View>
 
         <TextInput
+          {...inputTheme}
           label={t("name")}
           mode="outlined"
           value={form.name}
           onChangeText={(v) => setField("name", v)}
           error={!!errors.name}
-          style={styles.field}
+          style={[inputTheme.style, styles.field]}
         />
         {errors.name ? <Text style={styles.err}>{errors.name}</Text> : null}
 
         <View style={styles.row}>
           <TextInput
+            {...inputTheme}
             label={t("primary_phone")}
             mode="outlined"
             keyboardType="phone-pad"
@@ -218,10 +222,11 @@ export default function RegistrationScreen({ navigation }: Props) {
             onChangeText={(v) => setField("primary_phone", v.replace(/\D/g, "").slice(0, 10))}
             disabled={otpVerified}
             error={!!errors.primary_phone}
-            style={[styles.field, styles.flex1]}
+            style={[inputTheme.style, styles.field, styles.flex1]}
           />
           <Button
             mode="contained"
+            buttonColor={c.primary}
             onPress={() => void handleSendOtp()}
             loading={sendingOtp}
             disabled={(otpSent && !resendEnabled) || otpVerified}
@@ -234,6 +239,7 @@ export default function RegistrationScreen({ navigation }: Props) {
 
         <View style={styles.row}>
           <TextInput
+            {...inputTheme}
             label={t("otp")}
             mode="outlined"
             keyboardType="number-pad"
@@ -241,7 +247,7 @@ export default function RegistrationScreen({ navigation }: Props) {
             onChangeText={(v) => setField("otp", v.replace(/\D/g, "").slice(0, 6))}
             disabled={otpVerified}
             error={!!errors.otp}
-            style={[styles.field, styles.flex1]}
+            style={[inputTheme.style, styles.field, styles.flex1]}
           />
           <Button
             mode="contained-tonal"
@@ -259,66 +265,73 @@ export default function RegistrationScreen({ navigation }: Props) {
         ) : null}
 
         <TextInput
+          {...inputTheme}
           label={t("password")}
           mode="outlined"
           secureTextEntry
           value={form.password}
           onChangeText={(v) => setField("password", v)}
           error={!!errors.password}
-          style={styles.field}
+          style={[inputTheme.style, styles.field]}
         />
         <TextInput
+          {...inputTheme}
           label={t("confirm_password")}
           mode="outlined"
           secureTextEntry
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           error={!!errors.confirmPassword}
-          style={styles.field}
+          style={[inputTheme.style, styles.field]}
         />
         {errors.confirmPassword ? (
           <Text style={styles.err}>{errors.confirmPassword}</Text>
         ) : null}
 
         <TextInput
+          {...inputTheme}
           label={t("pincode")}
           mode="outlined"
           keyboardType="number-pad"
           value={String(form.pincode)}
           onChangeText={(v) => setField("pincode", v.replace(/\D/g, "").slice(0, 6))}
           error={!!errors.pincode}
-          style={styles.field}
+          style={[inputTheme.style, styles.field]}
         />
 
         {showOptional ? (
           <>
             <TextInput
+              {...inputTheme}
               label={t("country")}
               mode="outlined"
               value={form.country}
               onChangeText={(v) => setField("country", v)}
-              style={styles.field}
+              style={[inputTheme.style, styles.field]}
             />
             <TextInput
+              {...inputTheme}
               label={t("state")}
               mode="outlined"
               value={form.state}
               onChangeText={(v) => setField("state", v)}
-              style={styles.field}
+              style={[inputTheme.style, styles.field]}
             />
             <TextInput
+              {...inputTheme}
               label={t("district")}
               mode="outlined"
               value={form.district}
               onChangeText={(v) => setField("district", v)}
-              style={styles.field}
+              style={[inputTheme.style, styles.field]}
             />
             <TextInput
+              {...inputTheme}
               label={t("address_line1")}
               mode="outlined"
               value={form.address_line1}
               onChangeText={(v) => setField("address_line1", v)}
-              style={styles.field}
+              style={[inputTheme.style, styles.field]}
             />
             <View style={styles.checkRow}>
               <Checkbox
@@ -334,6 +347,7 @@ export default function RegistrationScreen({ navigation }: Props) {
 
         <Button
           mode="contained"
+          buttonColor={c.primary}
           icon="account-plus"
           onPress={() => void handleRegister()}
           loading={submitting}
@@ -343,7 +357,7 @@ export default function RegistrationScreen({ navigation }: Props) {
           {t("register")}
         </Button>
 
-        <Button mode="text" onPress={() => navigation.navigate("Login")} style={styles.back}>
+        <Button mode="text" textColor={c.primary} onPress={() => navigation.navigate("Login")} style={styles.back}>
           {t("sign_in")}
         </Button>
       </ScrollView>

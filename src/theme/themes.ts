@@ -1,5 +1,10 @@
 export type ThemeMode = "light" | "dark";
 
+/** Primary brand pink (maroon-burgundy) — buttons, headers, links, accents. */
+export const PRIMARY_PINK = "#c2185b";
+export const PRIMARY_PINK_DARK = "#ad1457";
+export const PRIMARY_PINK_LIGHT = "#f06292";
+
 export type AppTheme = {
   mode: ThemeMode;
   colors: {
@@ -35,65 +40,65 @@ export type AppTheme = {
 export const lightTheme: AppTheme = {
   mode: "light",
   colors: {
-    background: "#f0f4f8",
+    background: "#f5f5f7",
     surface: "#ffffff",
     surfaceElevated: "#ffffff",
     card: "#ffffff",
-    primary: "#0984e3",
-    primaryMuted: "rgba(9, 132, 227, 0.12)",
-    secondary: "#6c5ce7",
+    primary: PRIMARY_PINK,
+    primaryMuted: "rgba(194, 24, 91, 0.12)",
+    secondary: PRIMARY_PINK_DARK,
     success: "#00b894",
     danger: "#e17055",
     warning: "#fdcb6e",
     text: "#2d3436",
     textMuted: "#636e72",
     textInverse: "#ffffff",
-    border: "#e2e8f0",
-    header: "#0984e3",
+    border: "#e8e0e3",
+    header: PRIMARY_PINK,
     headerText: "#ffffff",
-    drawerBg: "#eef2f7",
-    drawerHeader: "#0c5ba8",
-    drawerHeaderAlt: "#6c5ce7",
+    drawerBg: "#faf8f9",
+    drawerHeader: PRIMARY_PINK,
+    drawerHeaderAlt: PRIMARY_PINK_DARK,
     drawerFooter: "#ffffff",
-    overlay: "rgba(15, 23, 42, 0.45)",
+    overlay: "rgba(0, 0, 0, 0.45)",
     inputBg: "#ffffff",
-    chipBg: "#f1f5f9",
-    chipSelected: "#0984e3",
-    marriageAccent: "#c2185b",
+    chipBg: "#f5eef1",
+    chipSelected: PRIMARY_PINK,
+    marriageAccent: PRIMARY_PINK,
     marriageSoft: "#fce4ec",
   },
 };
 
-/** Dark blue palette (not pure black). */
+/** Dark theme — black backgrounds, pink primary. */
 export const darkTheme: AppTheme = {
   mode: "dark",
   colors: {
-    background: "#0f2744",
-    surface: "#1a365d",
-    surfaceElevated: "#234876",
-    card: "#1e3f6f",
-    primary: "#5dade2",
-    primaryMuted: "rgba(93, 173, 226, 0.18)",
-    secondary: "#a29bfe",
+    background: "#000000",
+    surface: "#121212",
+    surfaceElevated: "#1a1a1a",
+    card: "#1e1e1e",
+    primary: PRIMARY_PINK_LIGHT,
+    primaryMuted: "rgba(240, 98, 146, 0.22)",
+    secondary: PRIMARY_PINK,
     success: "#55efc4",
     danger: "#ff7675",
     warning: "#ffeaa7",
-    text: "#e8f4fc",
-    textMuted: "#94b8d4",
-    textInverse: "#0f2744",
-    border: "#2a5082",
-    header: "#0c3d6e",
-    headerText: "#e8f4fc",
-    drawerBg: "#0f2744",
-    drawerHeader: "#0a3260",
-    drawerHeaderAlt: "#1a4a7a",
-    drawerFooter: "#1a365d",
-    overlay: "rgba(5, 15, 30, 0.65)",
-    inputBg: "#234876",
-    chipBg: "#234876",
-    chipSelected: "#5dade2",
-    marriageAccent: "#f48fb1",
-    marriageSoft: "rgba(194, 24, 91, 0.25)",
+    text: "#f5f5f5",
+    textMuted: "#a0a0a0",
+    textInverse: "#000000",
+    border: "#333333",
+    header: PRIMARY_PINK,
+    headerText: "#ffffff",
+    drawerBg: "#000000",
+    drawerHeader: PRIMARY_PINK_DARK,
+    drawerHeaderAlt: "#880e4f",
+    drawerFooter: "#121212",
+    overlay: "rgba(0, 0, 0, 0.75)",
+    inputBg: "#2a2a2a",
+    chipBg: "#2a2a2a",
+    chipSelected: PRIMARY_PINK_LIGHT,
+    marriageAccent: PRIMARY_PINK_LIGHT,
+    marriageSoft: "rgba(194, 24, 91, 0.35)",
   },
 };
 

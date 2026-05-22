@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { Button, Checkbox, Portal, Text, TextInput } from "react-native-paper";
@@ -8,6 +8,8 @@ import VoiceTextField from "./VoiceTextField";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import type { TransactionRecord } from "../types/transaction";
 import { hasOthersErrors, validateOthers } from "../utils/othersValidation";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 
 type Props = {
   visible: boolean;
@@ -23,6 +25,10 @@ export default function OthersEditModal({
   onSave,
 }: Props) {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const inputTheme = useThemedInputProps();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [draft, setDraft] = useState<TransactionRecord | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
@@ -158,6 +164,7 @@ export default function OthersEditModal({
               <Text style={styles.err}>{errors.othersType}</Text>
             ) : null}
             <TextInput
+              {...inputTheme}
               label={t("amount")}
               mode="outlined"
               keyboardType="numeric"
@@ -166,7 +173,7 @@ export default function OthersEditModal({
                 setDraft({ ...draft, amount: v === "" ? 0 : Number(v) })
               }
               error={!!errors.amount}
-              style={styles.field}
+              style={[inputTheme.style, styles.field]}
             />
             {errors.amount ? <Text style={styles.err}>{errors.amount}</Text> : null}
             <View style={styles.checkRow}>
@@ -180,10 +187,10 @@ export default function OthersEditModal({
             </View>
           </ScrollView>
           <View style={styles.footer}>
-            <Button onPress={onDismiss} disabled={saving}>
+            <Button onPress={onDismiss} disabled={saving} textColor={c.textMuted}>
               {t("cancel")}
             </Button>
-            <Button mode="contained" onPress={() => void handleSave()} loading={saving}>
+            <Button mode="contained" onPress={() => void handleSave()} loading={saving} buttonColor={c.primary}>
               {t("save")}
             </Button>
           </View>
@@ -193,31 +200,33 @@ export default function OthersEditModal({
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    flex: 1,
-    marginTop: 48,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 16,
-  },
-  title: { marginBottom: 12 },
-  field: { marginBottom: 8, backgroundColor: "#fff" },
-  pickerLabel: { marginTop: 4, marginBottom: 4 },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    marginBottom: 8,
-    backgroundColor: "#fff",
-  },
-  err: { color: "#c62828", marginBottom: 8, marginLeft: 4 },
-  checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    gap: 12,
-  },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    sheet: {
+      flex: 1,
+      marginTop: 48,
+      backgroundColor: c.card,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 16,
+    },
+    title: { marginBottom: 12, color: c.text },
+    field: { marginBottom: 8 },
+    pickerLabel: { marginTop: 4, marginBottom: 4, color: c.textMuted },
+    pickerWrap: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 8,
+      marginBottom: 8,
+      backgroundColor: c.inputBg,
+    },
+    err: { color: c.danger, marginBottom: 8, marginLeft: 4 },
+    checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 12,
+      gap: 12,
+    },
+  });
+}

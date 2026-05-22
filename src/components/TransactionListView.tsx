@@ -35,11 +35,12 @@ import type {
   TransactionSaveResponse,
   TransactionType,
 } from "../types/transaction";
+import { PRIMARY_PINK } from "../theme/themes";
 
 const PAGE_SIZES = [5, 10, 25, 50] as const;
 
 const TYPE_ACCENT: Record<TransactionType, string> = {
-  R: "#0984e3",
+  R: PRIMARY_PINK,
   E: "#e17055",
   O: "#00cec9",
 };
@@ -76,7 +77,7 @@ export default function TransactionListView({
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
-  const accent = TYPE_ACCENT[transType];
+  const accent = transType === "R" ? c.primary : TYPE_ACCENT[transType];
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();

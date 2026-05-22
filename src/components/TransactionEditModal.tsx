@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Checkbox, Portal, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import type { TransactionRecord } from "../types/transaction";
 import {
   hasValidationErrors,
@@ -22,6 +24,10 @@ export default function TransactionEditModal({
   onSave,
 }: Props) {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const inputTheme = useThemedInputProps();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [draft, setDraft] = useState<TransactionRecord | null>(null);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [saving, setSaving] = useState(false);
@@ -58,6 +64,8 @@ export default function TransactionEditModal({
     }
   };
 
+  const fieldProps = { ...inputTheme, style: [inputTheme.style, styles.field] };
+
   return (
     <Portal>
       <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
@@ -67,28 +75,29 @@ export default function TransactionEditModal({
           </Text>
           <ScrollView keyboardShouldPersistTaps="handled">
             <TextInput
+              {...fieldProps}
               label={t("name")}
               mode="outlined"
               value={draft.name}
               onChangeText={(v) => setDraft({ ...draft, name: v })}
               error={!!errors.name}
-              style={styles.field}
             />
             {errors.name ? <Text style={styles.err}>{errors.name}</Text> : null}
 
             <TextInput
+              {...fieldProps}
               label={t("placeName")}
               mode="outlined"
               value={draft.villageName}
               onChangeText={(v) => setDraft({ ...draft, villageName: v })}
               error={!!errors.villageName}
-              style={styles.field}
             />
             {errors.villageName ? (
               <Text style={styles.err}>{errors.villageName}</Text>
             ) : null}
 
             <TextInput
+              {...fieldProps}
               label={t("phoneNo")}
               mode="outlined"
               keyboardType="phone-pad"
@@ -97,35 +106,34 @@ export default function TransactionEditModal({
                 setDraft({ ...draft, phoneNo: v.replace(/\D/g, "") })
               }
               error={!!errors.phoneNo}
-              style={styles.field}
             />
 
             <TextInput
+              {...fieldProps}
               label={t("oldAmount")}
               mode="outlined"
               keyboardType="numeric"
               value={String(draft.oldAmount || "")}
               onChangeText={(v) => updateAmount("oldAmount", v)}
               error={!!errors.oldAmount}
-              style={styles.field}
             />
 
             <TextInput
+              {...fieldProps}
               label={t("newAmount")}
               mode="outlined"
               keyboardType="numeric"
               value={String(draft.newAmount || "")}
               onChangeText={(v) => updateAmount("newAmount", v)}
               error={!!errors.newAmount}
-              style={styles.field}
             />
 
             <TextInput
+              {...fieldProps}
               label={t("amount")}
               mode="outlined"
               value={String(draft.amount)}
               disabled
-              style={styles.field}
             />
 
             <View style={styles.checkRow}>
@@ -133,17 +141,20 @@ export default function TransactionEditModal({
                 status={draft.isActive ? "checked" : "unchecked"}
                 onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}
               />
-              <Text onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}>
+              <Text
+                style={{ color: c.text }}
+                onPress={() => setDraft({ ...draft, isActive: !draft.isActive })}
+              >
                 {t("active")}
               </Text>
             </View>
           </ScrollView>
 
           <View style={styles.footer}>
-            <Button onPress={onDismiss} disabled={saving}>
+            <Button onPress={onDismiss} disabled={saving} textColor={c.textMuted}>
               {t("cancel")}
             </Button>
-            <Button mode="contained" onPress={() => void handleSave()} loading={saving}>
+            <Button mode="contained" onPress={() => void handleSave()} loading={saving} buttonColor={c.primary}>
               {t("save")}
             </Button>
           </View>
@@ -153,23 +164,25 @@ export default function TransactionEditModal({
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    flex: 1,
-    marginTop: 48,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 16,
-  },
-  title: { marginBottom: 12 },
-  field: { marginBottom: 8, backgroundColor: "#fff" },
-  err: { color: "#c62828", marginBottom: 8, marginLeft: 4 },
-  checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    gap: 12,
-  },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    sheet: {
+      flex: 1,
+      marginTop: 48,
+      backgroundColor: c.card,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 16,
+    },
+    title: { marginBottom: 12, color: c.text },
+    field: { marginBottom: 8 },
+    err: { color: c.danger, marginBottom: 8, marginLeft: 4 },
+    checkRow: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 12,
+      gap: 12,
+    },
+  });
+}

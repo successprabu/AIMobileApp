@@ -70,7 +70,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   if (!hydrated) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#0984e3" />
+        <ActivityIndicator size="large" color="#c2185b" />
       </View>
     );
   }

@@ -182,7 +182,7 @@ export default function RoleDashboardScreen() {
       {useDashboardApi ? (
         <>
           {loading && !refreshing ? (
-            <ActivityIndicator style={styles.loader} color="#0984e3" />
+            <ActivityIndicator style={styles.loader} color={c.primary} />
           ) : null}
 
           {error ? (
@@ -206,7 +206,7 @@ export default function RoleDashboardScreen() {
                 value={formatInr(summary.totalRcdAmount)}
                 subtitle={t("totalRcdAmount")}
                 icon="cash-multiple"
-                accent="#0984e3"
+                accent={c.primary}
                 onPress={() => go("TransactionList")}
               />
               <StatCard

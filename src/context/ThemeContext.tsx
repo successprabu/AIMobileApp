@@ -42,6 +42,9 @@ function buildPaperTheme(app: AppTheme): MD3Theme {
       onSurface: app.colors.text,
       onBackground: app.colors.text,
       outline: app.colors.border,
+      surfaceVariant: app.colors.inputBg,
+      onSurfaceVariant: app.colors.textMuted,
+      onPrimary: app.colors.textInverse,
       elevation: {
         ...base.colors.elevation,
         level0: app.colors.background,

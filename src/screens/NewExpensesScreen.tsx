@@ -36,6 +36,7 @@ import {
   validateExpenses,
 } from "../utils/expensesValidation";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -74,6 +75,7 @@ export default function NewExpensesScreen() {
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const inputTheme = useThemedInputProps();
   const styles = useMemo(() => makeExpenseStyles(c), [c]);
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
@@ -253,6 +255,7 @@ export default function NewExpensesScreen() {
               {t("amount")} *
             </Text>
             <TextInput
+              {...inputTheme}
               mode="outlined"
               keyboardType="numeric"
               value={formData.amount ? String(formData.amount) : ""}
@@ -261,7 +264,7 @@ export default function NewExpensesScreen() {
               }
               placeholder={t("enter_amount")}
               error={!!errors.amount}
-              style={styles.input}
+              style={[inputTheme.style, styles.input]}
               right={
                 <TextInput.Icon
                   icon={recordingField === "amount" ? "microphone-off" : "microphone"}
@@ -279,13 +282,14 @@ export default function NewExpensesScreen() {
               {t("mobile")}
             </Text>
             <TextInput
+              {...inputTheme}
               mode="outlined"
               keyboardType="phone-pad"
               value={formData.phoneNo}
               onChangeText={(v) => updateField("phoneNo", v.replace(/\D/g, ""))}
               placeholder={t("enter_mobile")}
               error={!!errors.phoneNo}
-              style={styles.input}
+              style={[inputTheme.style, styles.input]}
               right={
                 <TextInput.Icon
                   icon={recordingField === "phoneNo" ? "microphone-off" : "microphone"}
@@ -368,7 +372,7 @@ function makeExpenseStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
       backgroundColor: c.inputBg,
     },
     picker: { height: Platform.OS === "ios" ? 180 : 48 },
-    input: { marginBottom: 4, backgroundColor: c.inputBg },
+    input: { marginBottom: 4 },
     error: { color: c.danger, marginBottom: 8, marginLeft: 4 },
     divider: { marginVertical: 16 },
     actions: { flexDirection: "row", gap: 12, justifyContent: "center" },

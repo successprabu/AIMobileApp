@@ -40,6 +40,7 @@ import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { importTemplateCsv } from "../utils/transactionImport";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -74,6 +75,7 @@ export default function NewReceiptScreen() {
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const inputTheme = useThemedInputProps();
   const styles = useMemo(() => makeReceiptStyles(c), [c]);
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
@@ -333,6 +335,7 @@ export default function NewReceiptScreen() {
                   {t("oldAmount")} *
                 </Text>
                 <TextInput
+                  {...inputTheme}
                   mode="outlined"
                   keyboardType="numeric"
                   value={String(formData.oldAmount || "")}
@@ -346,7 +349,7 @@ export default function NewReceiptScreen() {
                       onPress={() => handleVoice("oldAmount")}
                     />
                   }
-                  style={styles.amountInput}
+                  style={[inputTheme.style, styles.amountInput]}
                 />
                 {errors.oldAmount ? (
                   <Text variant="bodySmall" style={styles.error}>
@@ -359,6 +362,7 @@ export default function NewReceiptScreen() {
                   {t("newAmount")} *
                 </Text>
                 <TextInput
+                  {...inputTheme}
                   mode="outlined"
                   keyboardType="numeric"
                   value={String(formData.newAmount || "")}
@@ -372,7 +376,7 @@ export default function NewReceiptScreen() {
                       onPress={() => handleVoice("newAmount")}
                     />
                   }
-                  style={styles.amountInput}
+                  style={[inputTheme.style, styles.amountInput]}
                 />
                 {errors.newAmount ? (
                   <Text variant="bodySmall" style={styles.error}>
@@ -386,16 +390,18 @@ export default function NewReceiptScreen() {
               {t("total")} *
             </Text>
             <TextInput
+              {...inputTheme}
               mode="outlined"
               value={String(formData.amount)}
               disabled
-              style={styles.amountInput}
+              style={[inputTheme.style, styles.amountInput]}
             />
 
             <Text variant="labelLarge" style={styles.label}>
               {t("mobile")}
             </Text>
             <TextInput
+              {...inputTheme}
               mode="outlined"
               keyboardType="phone-pad"
               value={formData.phoneNo}
@@ -408,7 +414,7 @@ export default function NewReceiptScreen() {
                   onPress={() => handleVoice("phoneNo")}
                 />
               }
-              style={styles.amountInput}
+              style={[inputTheme.style, styles.amountInput]}
             />
             {errors.phoneNo ? (
               <Text variant="bodySmall" style={styles.error}>
@@ -488,7 +494,7 @@ function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
     label: { marginTop: 8, marginBottom: 4, color: c.textMuted },
     row2: { flexDirection: "row", gap: 8 },
     half: { flex: 1 },
-    amountInput: { backgroundColor: c.inputBg },
+    amountInput: { marginBottom: 4 },
     error: { color: c.danger, marginBottom: 4 },
     divider: { marginVertical: 16 },
     actions: { flexDirection: "row", gap: 12, justifyContent: "center" },

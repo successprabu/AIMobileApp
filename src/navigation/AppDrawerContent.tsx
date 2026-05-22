@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage, type LangCode } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { APP_DISPLAY_NAME } from "../theme/themes";
+import { APP_DISPLAY_NAME, PRIMARY_PINK, PRIMARY_PINK_DARK, PRIMARY_PINK_LIGHT } from "../theme/themes";
 import type { MainStackParamList } from "./types";
 
 type Leaf = {
@@ -26,9 +26,9 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
   {
     key: "home",
     titleKey: "home",
-    accent: "#0984e3",
+    accent: PRIMARY_PINK,
     items: [
-      { screen: "Dashboard", titleKey: "dashboard", icon: "view-dashboard-variant", color: "#0984e3", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "Dashboard", titleKey: "dashboard", icon: "view-dashboard-variant", color: PRIMARY_PINK, roles: ["SU", "AU", "NU", "MU"] },
       { screen: "ClientList", titleKey: "Clients", icon: "account-multiple", color: "#6c5ce7", roles: ["SU"] },
       { screen: "AddNewMahal", titleKey: "addMahal", icon: "office-building", color: "#5f27cd", roles: ["SU", "MU"] },
       { screen: "MahalBooking", titleKey: "mahalBooking", icon: "calendar-month", color: "#e84393", roles: ["SU", "MU"] },
@@ -51,7 +51,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     accent: "#00b894",
     items: [
       { screen: "Transaction", titleKey: "addTransaction", icon: "cash-plus", color: "#00b894", roles: ["SU", "AU", "NU"] },
-      { screen: "TransactionList", titleKey: "transactionList", icon: "clipboard-text-outline", color: "#0984e3", roles: ["SU", "AU", "NU"] },
+      { screen: "TransactionList", titleKey: "transactionList", icon: "clipboard-text-outline", color: PRIMARY_PINK_DARK, roles: ["SU", "AU", "NU"] },
       { screen: "AddExpenses", titleKey: "addExpenses", icon: "cash-minus", color: "#e17055", roles: ["SU", "AU", "NU"] },
       { screen: "ExpensesList", titleKey: "expensesList", icon: "format-list-bulleted", color: "#d63031", roles: ["SU", "AU", "NU"] },
       { screen: "Others", titleKey: "addOthers", icon: "gift-outline", color: "#00cec9", roles: ["SU", "AU", "NU"] },
@@ -64,7 +64,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "Reports",
     accent: "#6c5ce7",
     items: [
-      { screen: "IncomeReport", titleKey: "receiptReport", icon: "chart-line", color: "#0984e3", roles: ["SU", "AU"] },
+      { screen: "IncomeReport", titleKey: "receiptReport", icon: "chart-line", color: PRIMARY_PINK, roles: ["SU", "AU"] },
       { screen: "ExpensesReport", titleKey: "expenseReport", icon: "chart-bar", color: "#e17055", roles: ["SU", "AU"] },
       { screen: "OthersReport", titleKey: "othersReport", icon: "chart-timeline-variant", color: "#00b894", roles: ["SU", "AU"] },
       { screen: "RegionalReport", titleKey: "locationAmountReport", icon: "map-marker-radius", color: "#6c5ce7", roles: ["SU", "AU"] },
@@ -76,7 +76,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "mobile_more",
     accent: "#74b9ff",
     items: [
-      { screen: "ThemeSettings", titleKey: "Theme Settings", icon: "palette-outline", color: "#9b59b6", roles: ["SU", "AU", "NU"] },
+      { screen: "ThemeSettings", titleKey: "Theme Settings", icon: "palette-outline", color: PRIMARY_PINK_LIGHT, roles: ["SU", "AU", "NU"] },
       { screen: "Help", titleKey: "help", icon: "lifebuoy", color: "#3498db", roles: ["SU", "AU", "NU", "MU"] },
     ],
   },
@@ -253,7 +253,7 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
             color={c.primary}
           />
           <Text style={[styles.themeLabel, { color: c.text }]}>
-            {t("mobile_dark_theme", { defaultValue: "Dark blue theme" })}
+            {t("mobile_dark_theme", { defaultValue: "Dark theme" })}
           </Text>
           <Switch value={mode === "dark"} onValueChange={() => void toggleMode()} />
         </View>
