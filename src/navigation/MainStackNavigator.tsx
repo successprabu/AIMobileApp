@@ -14,6 +14,8 @@ import TransactionReportScreen from "../screens/TransactionReportScreen";
 import RegionalReportScreen from "../screens/RegionalReportScreen";
 import SummaryReportScreen from "../screens/SummaryReportScreen";
 import HandoverScreen from "../screens/HandoverScreen";
+import ExpensesListScreen from "../screens/ExpensesListScreen";
+import OthersListScreen from "../screens/OthersListScreen";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -42,9 +44,9 @@ export default function MainStackNavigator() {
       <Stack.Screen name="Transaction" component={NewReceiptScreen} />
       <Stack.Screen name="TransactionList" component={TransactionListScreen} />
       <Stack.Screen name="AddExpenses" component={NewExpensesScreen} />
-      <Stack.Screen name="ExpensesList" component={ComingSoonScreen} />
+      <Stack.Screen name="ExpensesList" component={ExpensesListScreen} />
       <Stack.Screen name="Others" component={AddOthersScreen} />
-      <Stack.Screen name="OthersList" component={ComingSoonScreen} />
+      <Stack.Screen name="OthersList" component={OthersListScreen} />
       <Stack.Screen name="Handover" component={HandoverScreen} />
       <Stack.Screen name="IncomeReport" component={TransactionReportScreen} />
       <Stack.Screen name="ExpensesReport" component={TransactionReportScreen} />
