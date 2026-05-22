@@ -20,8 +20,10 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet, authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import HandoverEditModal from "../components/HandoverEditModal";
+import ReportFunctionHeader from "../components/reports/ReportFunctionHeader";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useReportFunctionMeta } from "../hooks/useReportFunctionMeta";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -43,6 +45,7 @@ export default function HandoverScreen() {
   const { user } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const { meta, loading: metaLoading } = useReportFunctionMeta();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -145,6 +148,8 @@ export default function HandoverScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.primary} />
         }
       >
+        <ReportFunctionHeader meta={meta} loading={metaLoading} reportTitle={t("handOver")} />
+
         <Card mode="outlined" style={[styles.card, { backgroundColor: c.card }]}>
           <Card.Title title={t("handOver")} />
           <Card.Content>

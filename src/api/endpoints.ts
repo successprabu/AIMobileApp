@@ -23,6 +23,8 @@ export const PATHS = {
   REPORT_REGIONAL: "Report/GetRegionalSummaryReport?",
   REPORT_OVERALL: "Report/GetOverallSummaryReport?",
   REPORT_OTHERS_SUMMARY: "Report/GetOthersSummaryReport?",
+  /** Web typo preserved: GetGenearalDataForReport */
+  REPORT_GENERAL_DATA: "Report/GetGenearalDataForReport?",
   MASTER_SAVE_FUNCTION: "Master/UpdateCustomerFunction",
   MASTER_LIST_FUNCTION: "Master/GetFunction",
   AUTH_ADD_CUSTOMER: "Auth/AddCustomer",

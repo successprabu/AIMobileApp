@@ -12,14 +12,14 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet } from "../api/client";
 import { PATHS } from "../api/endpoints";
+import ReportFunctionHeader from "../components/reports/ReportFunctionHeader";
 import { useAuth } from "../context/AuthContext";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useReportFunctionMeta } from "../hooks/useReportFunctionMeta";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import type { AuthUser } from "../types/auth";
 import type { MainStackParamList } from "../navigation/types";
-import {
-  rowsToHtmlTable,
-  shareExcel,
-  sharePdfFromHtml,
-} from "../export/reportExport";
+import { shareExcel, sharePdfReport } from "../export/reportExport";
 
 type ReportConfig = {
   transType: "R" | "E" | "O";
@@ -62,6 +62,10 @@ type PageResponse = {
 export default function TransactionReportScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const inputTheme = useThemedInputProps();
+  const { meta, loading: metaLoading } = useReportFunctionMeta();
   const route = useRoute();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const name = route.name as keyof typeof CONFIG;
@@ -158,7 +162,8 @@ export default function TransactionReportScreen() {
       await shareExcel(
         all as Record<string, unknown>[],
         `${cfg.fileBase}.xlsx`,
-        cfg.fileBase
+        cfg.fileBase,
+        meta
       );
     } finally {
       setExporting(false);
@@ -169,26 +174,37 @@ export default function TransactionReportScreen() {
     setExporting(true);
     try {
       const all = await fetchAllRows();
-      const html = rowsToHtmlTable(all as Record<string, unknown>[], title);
-      await sharePdfFromHtml(html, `${cfg.fileBase}.pdf`);
+      await sharePdfReport(
+        [{ title, rows: all as Record<string, unknown>[] }],
+        `${cfg.fileBase}.pdf`,
+        meta
+      );
     } finally {
       setExporting(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.pad}>
-      <Card style={styles.card} mode="outlined">
+    <ScrollView
+      style={{ flex: 1, backgroundColor: c.background }}
+      contentContainerStyle={styles.pad}
+    >
+      <ReportFunctionHeader meta={meta} loading={metaLoading} reportTitle={title} />
+
+      <Card style={[styles.card, { backgroundColor: c.card }]} mode="outlined">
         <Card.Content>
           <TextInput
+            {...inputTheme}
             label={t("name")}
             value={nameFilter}
             onChangeText={setNameFilter}
             mode="outlined"
             dense
+            style={inputTheme.style}
           />
           <TextInput
-            style={styles.gap}
+            {...inputTheme}
+            style={[styles.gap, inputTheme.style]}
             label={t("village")}
             value={placeFilter}
             onChangeText={setPlaceFilter}
@@ -196,7 +212,8 @@ export default function TransactionReportScreen() {
             dense
           />
           <TextInput
-            style={styles.gap}
+            {...inputTheme}
+            style={[styles.gap, inputTheme.style]}
             label={t("mobile")}
             value={mobileFilter}
             onChangeText={setMobileFilter}
