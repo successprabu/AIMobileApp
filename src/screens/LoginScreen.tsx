@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   Image,
   ScrollView,
   StyleSheet,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
@@ -17,9 +18,11 @@ import { jwtDecode } from "jwt-decode";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LOGIN_API, LOGIN_USER_ACCOUNT_CHECK_API } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useKeyboardAwareScroll } from "../hooks/useKeyboardAwareScroll";
 import type { AuthUser } from "../types/auth";
 import type { AuthStackParamList } from "./RegistrationScreen";
 import { APP_DISPLAY_NAME } from "../theme/themes";
@@ -45,7 +48,15 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(c), [c]);
+  const {
+    scrollRef,
+    scrollPaddingBottom,
+    setFieldAnchorRef,
+    onFieldFocus,
+    onScrollOffset,
+  } = useKeyboardAwareScroll({ bottomInset: insets.bottom });
 
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [username, setUsername] = useState("");
@@ -164,152 +175,184 @@ export default function LoginScreen() {
     }
   };
 
+  const keyboardVerticalOffset = Platform.OS === "ios" ? insets.top : 0;
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={keyboardVerticalOffset}
     >
-      <View style={styles.topBand} />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.decorRow}>
-          {DECOR_ICONS.map((icon) => (
-            <View key={icon} style={styles.decorChip}>
-              <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.flex}>
+          <View style={styles.topBand} />
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingBottom: scrollPaddingBottom },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+            onScroll={(e) => onScrollOffset(e.nativeEvent.contentOffset.y)}
+            scrollEventThrottle={16}
+          >
+            <View style={styles.decorRow}>
+              {DECOR_ICONS.map((icon) => (
+                <View key={icon} style={styles.decorChip}>
+                  <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        <View style={styles.headerCard}>
-          <View style={styles.logoRing}>
-            <Image
-              source={require("../../assets/brand-logo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-              accessibilityLabel={APP_DISPLAY_NAME}
-            />
-          </View>
-          <Text variant="headlineMedium" style={styles.title}>
-            {APP_DISPLAY_NAME}
-          </Text>
-          <Text variant="bodyMedium" style={styles.subtitle}>
-            {t("mobile_login_marriage_tagline", {
-              defaultValue: "Marriage & event accounts — receipts, expenses & gifts",
-            })}
-          </Text>
-          <View style={styles.taglineRow}>
-            <MaterialCommunityIcons name="calendar-heart" size={16} color={c.primary} />
-            <Text style={styles.taglineText}>
-              {t("mobile_login_subtitle", {
-                defaultValue: "Sign in with your mobile number",
+            <View style={styles.headerCard}>
+              <View style={styles.logoRing}>
+                <Image
+                  source={require("../../assets/brand-logo.png")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                  accessibilityLabel={APP_DISPLAY_NAME}
+                />
+              </View>
+              <Text variant="headlineMedium" style={styles.title}>
+                {APP_DISPLAY_NAME}
+              </Text>
+              <Text variant="bodyMedium" style={styles.subtitle}>
+                {t("mobile_login_marriage_tagline", {
+                  defaultValue: "Marriage & event accounts — receipts, expenses & gifts",
+                })}
+              </Text>
+              <View style={styles.taglineRow}>
+                <MaterialCommunityIcons name="calendar-heart" size={16} color={c.primary} />
+                <Text style={styles.taglineText}>
+                  {t("mobile_login_subtitle", {
+                    defaultValue: "Sign in with your mobile number",
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            {loginError ? (
+              <View style={styles.errorBox}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={18} color={c.danger} />
+                <Text style={styles.errorText}>{loginError}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.formCard}>
+              <View ref={setFieldAnchorRef("username")}>
+                <TextInput
+                  label={t("mobile_number")}
+                  mode="outlined"
+                  value={username}
+                  onChangeText={setUsername}
+                  onEndEditing={handleUsernameBlur}
+                  onFocus={() => onFieldFocus("username")}
+                  placeholder={t("enter_mobile_number")}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  disabled={loading}
+                  style={styles.field}
+                  outlineColor={c.border}
+                  activeOutlineColor={c.primary}
+                  left={<TextInput.Icon icon="cellphone" />}
+                  returnKeyType="next"
+                />
+              </View>
+              {checkingUser ? (
+                <ActivityIndicator style={styles.inlineSpinner} color={c.primary} />
+              ) : null}
+
+              <View ref={setFieldAnchorRef("password")}>
+                <TextInput
+                  label={t("password")}
+                  mode="outlined"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => onFieldFocus("password")}
+                  placeholder={t("enter_password")}
+                  secureTextEntry={!showPassword}
+                  disabled={loading}
+                  style={styles.field}
+                  outlineColor={c.border}
+                  activeOutlineColor={c.primary}
+                  left={<TextInput.Icon icon="lock-outline" />}
+                  right={
+                    <TextInput.Icon
+                      icon={showPassword ? "eye-off" : "eye"}
+                      onPress={() => setShowPassword((s) => !s)}
+                      forceTextInputFocus={false}
+                    />
+                  }
+                  returnKeyType="done"
+                  onSubmitEditing={() => void userLogin()}
+                />
+              </View>
+
+              {userTypes.length > 1 ? (
+                <>
+                  <Text variant="labelLarge" style={styles.label}>
+                    {t("userType")}
+                  </Text>
+                  <View style={styles.pickerWrap}>
+                    <Picker
+                      selectedValue={userType}
+                      onValueChange={(value) => {
+                        const opt = userTypes.find((o) => o.userType === value);
+                        if (opt) {
+                          setUserType(opt.userType);
+                          setUserTypeDescription(opt.userTypeDescription);
+                        }
+                      }}
+                    >
+                      {userTypes.map((type) => (
+                        <Picker.Item
+                          key={type.userType}
+                          label={type.userTypeDescription}
+                          value={type.userType}
+                        />
+                      ))}
+                    </Picker>
+                  </View>
+                </>
+              ) : null}
+
+              <Button
+                mode="contained"
+                onPress={() => void userLogin()}
+                loading={loading}
+                disabled={loading}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                buttonColor={c.primary}
+              >
+                {t("sign_in")}
+              </Button>
+            </View>
+
+            <View style={styles.links}>
+              <Button
+                mode="text"
+                textColor={c.primary}
+                onPress={() => navigation.navigate("SignUp")}
+                compact
+              >
+                {t("sign_up")}
+              </Button>
+              <Button mode="text" textColor={c.textMuted} onPress={() => {}} compact disabled>
+                {t("forgot_password")}
+              </Button>
+            </View>
+            <Text variant="bodySmall" style={styles.forgotHint}>
+              {t("mobile_forgot_hint", {
+                defaultValue: "Forgot password: contact support or use the web portal.",
               })}
             </Text>
-          </View>
+          </ScrollView>
         </View>
-
-        {loginError ? (
-          <View style={styles.errorBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={18} color={c.danger} />
-            <Text style={styles.errorText}>{loginError}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.formCard}>
-          <TextInput
-            label={t("mobile_number")}
-            mode="outlined"
-            value={username}
-            onChangeText={setUsername}
-            onEndEditing={handleUsernameBlur}
-            placeholder={t("enter_mobile_number")}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-            disabled={loading}
-            style={styles.field}
-            outlineColor={c.border}
-            activeOutlineColor={c.primary}
-            left={<TextInput.Icon icon="cellphone" />}
-          />
-          {checkingUser ? <ActivityIndicator style={styles.inlineSpinner} color={c.primary} /> : null}
-
-          <TextInput
-            label={t("password")}
-            mode="outlined"
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("enter_password")}
-            secureTextEntry={!showPassword}
-            disabled={loading}
-            style={styles.field}
-            outlineColor={c.border}
-            activeOutlineColor={c.primary}
-            left={<TextInput.Icon icon="lock-outline" />}
-            right={
-              <TextInput.Icon
-                icon={showPassword ? "eye-off" : "eye"}
-                onPress={() => setShowPassword((s) => !s)}
-              />
-            }
-          />
-
-          {userTypes.length > 1 ? (
-            <>
-              <Text variant="labelLarge" style={styles.label}>
-                {t("userType")}
-              </Text>
-              <View style={styles.pickerWrap}>
-                <Picker
-                  selectedValue={userType}
-                  onValueChange={(value) => {
-                    const opt = userTypes.find((o) => o.userType === value);
-                    if (opt) {
-                      setUserType(opt.userType);
-                      setUserTypeDescription(opt.userTypeDescription);
-                    }
-                  }}
-                >
-                  {userTypes.map((type) => (
-                    <Picker.Item
-                      key={type.userType}
-                      label={type.userTypeDescription}
-                      value={type.userType}
-                    />
-                  ))}
-                </Picker>
-              </View>
-            </>
-          ) : null}
-
-          <Button
-            mode="contained"
-            onPress={() => void userLogin()}
-            loading={loading}
-            disabled={loading}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            buttonColor={c.primary}
-          >
-            {t("sign_in")}
-          </Button>
-        </View>
-
-        <View style={styles.links}>
-          <Button mode="text" textColor={c.primary} onPress={() => navigation.navigate("SignUp")} compact>
-            {t("sign_up")}
-          </Button>
-          <Button mode="text" textColor={c.textMuted} onPress={() => {}} compact disabled>
-            {t("forgot_password")}
-          </Button>
-        </View>
-        <Text variant="bodySmall" style={styles.forgotHint}>
-          {t("mobile_forgot_hint", {
-            defaultValue: "Forgot password: contact support or use the web portal.",
-          })}
-        </Text>
-      </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -327,7 +370,7 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
     },
-    scroll: { paddingHorizontal: 20, paddingTop: 36, paddingBottom: 32 },
+    scroll: { paddingHorizontal: 20, paddingTop: 36, flexGrow: 1 },
     decorRow: {
       flexDirection: "row",
       flexWrap: "wrap",
