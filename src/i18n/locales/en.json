@@ -320,7 +320,14 @@
   "performanceMetrics": "Performance Metrics",
   "keyPerformanceIndicators": "Key Performance Indicators (KPIs)",
   "recentActivity": "Recent Activity",
-  "viewAll": "View All"
-
-
+  "viewAll": "View All",
+  "footer_short_home": "Home",
+  "footer_short_receipt": "Receipt",
+  "footer_short_list": "List",
+  "footer_short_expense": "Expense",
+  "footer_short_others": "Others",
+  "footer_short_summary": "Summary",
+  "footer_short_regional": "Regional",
+  "footer_short_users": "Users",
+  "footer_short_function": "Function"
 }

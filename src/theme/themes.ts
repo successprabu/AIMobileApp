@@ -69,9 +69,9 @@ export const lightTheme: AppTheme = {
     chipSelected: PRIMARY_PINK,
     marriageAccent: PRIMARY_PINK,
     marriageSoft: "#fce4ec",
-    footerBg: "#fff5f9",
-    footerBorder: "#f8bbd0",
-    footerLinkBg: "#fce4ec",
+    footerBg: PRIMARY_PINK,
+    footerBorder: PRIMARY_PINK_DARK,
+    footerLinkBg: "rgba(255,255,255,0.18)",
   },
 };
 
@@ -105,9 +105,9 @@ export const darkTheme: AppTheme = {
     chipSelected: PRIMARY_PINK_LIGHT,
     marriageAccent: PRIMARY_PINK_LIGHT,
     marriageSoft: "rgba(194, 24, 91, 0.35)",
-    footerBg: "#141018",
-    footerBorder: "#4a3048",
-    footerLinkBg: "#2a1f28",
+    footerBg: PRIMARY_PINK_DARK,
+    footerBorder: "#880e4f",
+    footerLinkBg: "rgba(255,255,255,0.15)",
   },
 };
 

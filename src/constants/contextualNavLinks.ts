@@ -1,44 +1,20 @@
 import type { MainStackParamList } from "../navigation/types";
-import { PRIMARY_PINK, PRIMARY_PINK_DARK } from "../theme/themes";
 
 export type ContextualNavLink = {
   screen: keyof MainStackParamList;
   titleKey: string;
+  /** Short footer label (i18n key). */
+  shortKey: string;
   icon: string;
-  /** Accent for icon-only footer chip (matches drawer menu colors). */
-  color: string;
-};
-
-/** Icon tint per destination screen (shared by footer links). */
-export const FOOTER_SCREEN_COLORS: Partial<Record<keyof MainStackParamList, string>> = {
-  Dashboard: PRIMARY_PINK,
-  Transaction: "#00b894",
-  TransactionList: PRIMARY_PINK_DARK,
-  AddExpenses: "#e17055",
-  ExpensesList: "#d63031",
-  Others: "#00cec9",
-  OthersList: "#81ecec",
-  Handover: "#f39c12",
-  IncomeReport: PRIMARY_PINK,
-  ExpensesReport: "#e17055",
-  OthersReport: "#00b894",
-  RegionalReport: "#6c5ce7",
-  SummaryReport: "#a29bfe",
-  FunctionMaster: "#576574",
-  UserMaster: "#2d3436",
 };
 
 function link(
   screen: keyof MainStackParamList,
   titleKey: string,
+  shortKey: string,
   icon: string
 ): ContextualNavLink {
-  return {
-    screen,
-    titleKey,
-    icon,
-    color: FOOTER_SCREEN_COLORS[screen] ?? PRIMARY_PINK,
-  };
+  return { screen, titleKey, shortKey, icon };
 }
 
 /** Footer shortcuts per screen (mirrors web header sub-links). */
@@ -46,75 +22,65 @@ export const CONTEXTUAL_FOOTER_LINKS: Partial<
   Record<keyof MainStackParamList, ContextualNavLink[]>
 > = {
   Dashboard: [
-    link("Transaction", "addTransaction", "cash-plus"),
-    link("TransactionList", "transactionList", "clipboard-text-outline"),
+    link("Transaction", "addTransaction", "footer_short_receipt", "cash-plus"),
+    link("TransactionList", "transactionList", "footer_short_list", "clipboard-text-outline"),
   ],
   Transaction: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("TransactionList", "transactionList", "clipboard-text-outline"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("TransactionList", "transactionList", "footer_short_list", "clipboard-text-outline"),
   ],
   TransactionList: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("Transaction", "addTransaction", "cash-plus"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("Transaction", "addTransaction", "footer_short_receipt", "cash-plus"),
   ],
   AddExpenses: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("ExpensesList", "expensesList", "format-list-bulleted"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("ExpensesList", "expensesList", "footer_short_list", "format-list-bulleted"),
   ],
   ExpensesList: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("AddExpenses", "addExpenses", "cash-minus"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("AddExpenses", "addExpenses", "footer_short_expense", "cash-minus"),
   ],
   Others: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("OthersList", "othersList", "playlist-plus"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("OthersList", "othersList", "footer_short_list", "playlist-plus"),
   ],
   OthersList: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("Others", "addOthers", "gift-outline"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("Others", "addOthers", "footer_short_others", "gift-outline"),
   ],
   Handover: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("TransactionList", "transactionList", "clipboard-text-outline"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("TransactionList", "transactionList", "footer_short_list", "clipboard-text-outline"),
   ],
   IncomeReport: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("TransactionList", "transactionList", "clipboard-text-outline"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("TransactionList", "transactionList", "footer_short_list", "clipboard-text-outline"),
   ],
   ExpensesReport: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("ExpensesList", "expensesList", "format-list-bulleted"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("ExpensesList", "expensesList", "footer_short_list", "format-list-bulleted"),
   ],
   OthersReport: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("OthersList", "othersList", "playlist-plus"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("OthersList", "othersList", "footer_short_list", "playlist-plus"),
   ],
   RegionalReport: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("SummaryReport", "summaryReport", "chart-pie"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("SummaryReport", "summaryReport", "footer_short_summary", "chart-pie"),
   ],
   SummaryReport: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("RegionalReport", "locationAmountReport", "map-marker-radius"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("RegionalReport", "locationAmountReport", "footer_short_regional", "map-marker-radius"),
   ],
   FunctionMaster: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("UserMaster", "userMaster", "account-cog"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("UserMaster", "userMaster", "footer_short_users", "account-cog"),
   ],
   UserMaster: [
-    link("Dashboard", "dashboard", "view-dashboard-variant"),
-    link("FunctionMaster", "functionMaster", "tune-variant"),
+    link("Dashboard", "dashboard", "footer_short_home", "view-dashboard-variant"),
+    link("FunctionMaster", "functionMaster", "footer_short_function", "tune-variant"),
   ],
 };
 
-/** Icon-only bar (labels via accessibility). */
-export const FOOTER_BAR_HEIGHT = 64;
-
-export const FOOTER_RAINBOW_STRIP = [
-  PRIMARY_PINK,
-  "#00b894",
-  "#6c5ce7",
-  "#fdcb6e",
-  "#e17055",
-  "#00cec9",
-] as const;
+export const FOOTER_BAR_HEIGHT = 56;

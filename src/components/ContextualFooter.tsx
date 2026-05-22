@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
@@ -8,32 +9,26 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CONTEXTUAL_FOOTER_LINKS,
   FOOTER_BAR_HEIGHT,
-  FOOTER_RAINBOW_STRIP,
   type ContextualNavLink,
 } from "../constants/contextualNavLinks";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useActiveMainScreen } from "../hooks/useActiveMainScreen";
 import type { MainStackParamList, RootDrawerParamList } from "../navigation/types";
+import { PRIMARY_PINK, PRIMARY_PINK_DARK } from "../theme/themes";
 
-function tintBg(hex: string, alpha: number) {
-  const a = Math.round(alpha * 255)
-    .toString(16)
-    .padStart(2, "0");
-  if (hex.length === 7) return `${hex}${a}`;
-  return hex;
-}
+const FOOTER_PINK = PRIMARY_PINK;
+const FOOTER_TEXT = "#ffffff";
+const FOOTER_TEXT_MUTED = "rgba(255,255,255,0.75)";
+const FOOTER_ACTIVE_BG = "rgba(255,255,255,0.22)";
 
 export default function ContextualFooter() {
   const { t } = useTranslation();
-  const { theme } = useAppTheme();
-  const c = theme.colors;
-  const isDark = theme.mode === "dark";
   const insets = useSafeAreaInsets();
   const activeScreen = useActiveMainScreen();
   const navigation = useNavigation<DrawerNavigationProp<RootDrawerParamList>>();
 
   const links = CONTEXTUAL_FOOTER_LINKS[activeScreen];
-  const styles = useMemo(() => makeStyles(isDark), [isDark]);
+  const styles = useMemo(() => makeStyles(), []);
 
   if (!links?.length) return null;
 
@@ -42,164 +37,150 @@ export default function ContextualFooter() {
   };
 
   const bottomPad = Math.max(insets.bottom, 6);
+  const left = links[0];
+  const right = links[1];
 
   return (
     <View
       style={[
         styles.bar,
-        isDark ? styles.barShadowDark : styles.barShadowLight,
+        styles.barShadow,
         {
-          backgroundColor: c.footerBg,
-          borderTopColor: c.footerBorder,
+          backgroundColor: FOOTER_PINK,
           paddingBottom: bottomPad,
           minHeight: FOOTER_BAR_HEIGHT + bottomPad,
         },
       ]}
     >
-      <View style={styles.rainbowRow}>
-        {FOOTER_RAINBOW_STRIP.map((color) => (
-          <View key={color} style={[styles.rainbowSegment, { backgroundColor: color }]} />
-        ))}
-      </View>
-
-      <View style={styles.iconRow}>
-        {links.map((link) => (
-          <FooterIcon
-            key={link.screen}
-            link={link}
-            label={t(link.titleKey)}
-            active={activeScreen === link.screen}
-            onPress={() => go(link.screen)}
+      <View style={styles.row}>
+        {left ? (
+          <FooterItem
+            link={left}
+            shortLabel={t(left.shortKey)}
+            fullLabel={t(left.titleKey)}
+            active={activeScreen === left.screen}
+            onPress={() => go(left.screen)}
+            align="left"
             styles={styles}
           />
-        ))}
+        ) : (
+          <View />
+        )}
+        {right ? (
+          <FooterItem
+            link={right}
+            shortLabel={t(right.shortKey)}
+            fullLabel={t(right.titleKey)}
+            active={activeScreen === right.screen}
+            onPress={() => go(right.screen)}
+            align="right"
+            styles={styles}
+          />
+        ) : (
+          <View />
+        )}
       </View>
     </View>
   );
 }
 
-function FooterIcon({
+function FooterItem({
   link,
-  label,
+  shortLabel,
+  fullLabel,
   active,
   onPress,
+  align,
   styles,
 }: {
   link: ContextualNavLink;
-  label: string;
+  shortLabel: string;
+  fullLabel: string;
   active: boolean;
   onPress: () => void;
+  align: "left" | "right";
   styles: ReturnType<typeof makeStyles>;
 }) {
   const iconName = link.icon as keyof typeof MaterialCommunityIcons.glyphMap;
-  const accent = link.color;
-  const chipBg = active ? accent : tintBg(accent, 0.22);
-  const iconColor = active ? "#ffffff" : accent;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={fullLabel}
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [
-        styles.chip,
-        {
-          backgroundColor: chipBg,
-          borderColor: active ? accent : tintBg(accent, 0.45),
-        },
-        pressed && styles.chipPressed,
+        styles.item,
+        align === "left" ? styles.itemLeft : styles.itemRight,
+        active && styles.itemActive,
+        pressed && styles.itemPressed,
       ]}
     >
-      <MaterialCommunityIcons name={iconName} size={26} color={iconColor} />
-      {active ? <View style={[styles.activeDot, { backgroundColor: "#ffffff" }]} /> : null}
+      <MaterialCommunityIcons
+        name={iconName}
+        size={22}
+        color={active ? FOOTER_TEXT : FOOTER_TEXT_MUTED}
+      />
+      <Text
+        variant="labelMedium"
+        numberOfLines={1}
+        style={[styles.shortLabel, { color: active ? FOOTER_TEXT : FOOTER_TEXT_MUTED }]}
+      >
+        {shortLabel}
+      </Text>
     </Pressable>
   );
 }
 
-function makeStyles(isDark: boolean) {
+function makeStyles() {
   return StyleSheet.create({
     bar: {
-      borderTopWidth: StyleSheet.hairlineWidth,
-      paddingTop: 0,
-      paddingHorizontal: 20,
-      position: "relative",
+      borderTopWidth: 0,
+      paddingTop: 8,
+      paddingHorizontal: 12,
     },
-    rainbowRow: {
+    barShadow: {
+      ...Platform.select({
+        ios: {
+          shadowColor: PRIMARY_PINK_DARK,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+        },
+        android: { elevation: 12 },
+        default: {},
+      }),
+    },
+    row: {
       flexDirection: "row",
-      height: 4,
+      alignItems: "center",
+      justifyContent: "space-between",
       width: "100%",
-      marginBottom: 10,
-      borderRadius: 2,
-      overflow: "hidden",
     },
-    rainbowSegment: {
-      flex: 1,
-      height: 4,
-    },
-    iconRow: {
+    item: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      gap: 28,
-      paddingVertical: 4,
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: 10,
+      maxWidth: "48%",
     },
-    chip: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 2,
-      ...Platform.select({
-        ios: {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.35 : 0.12,
-          shadowRadius: 4,
-        },
-        android: { elevation: activeElevation(isDark) },
-        default: {},
-      }),
+    itemLeft: {
+      justifyContent: "flex-start",
     },
-    chipPressed: {
-      transform: [{ scale: 0.94 }],
-      opacity: 0.92,
+    itemRight: {
+      justifyContent: "flex-end",
     },
-    activeDot: {
-      position: "absolute",
-      bottom: 6,
-      width: 5,
-      height: 5,
-      borderRadius: 3,
+    itemActive: {
+      backgroundColor: FOOTER_ACTIVE_BG,
     },
-    barShadowLight: {
-      ...Platform.select({
-        ios: {
-          shadowColor: "#c2185b",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 10,
-        },
-        android: { elevation: 14 },
-        default: {},
-      }),
+    itemPressed: {
+      opacity: 0.9,
     },
-    barShadowDark: {
-      ...Platform.select({
-        ios: {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.5,
-          shadowRadius: 12,
-        },
-        android: { elevation: 18 },
-        default: {},
-      }),
+    shortLabel: {
+      fontWeight: "700",
+      fontSize: 12,
     },
   });
-}
-
-function activeElevation(isDark: boolean) {
-  return isDark ? 8 : 5;
 }
