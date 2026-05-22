@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -13,19 +13,19 @@ import {
 } from "../constants/contextualNavLinks";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useActiveMainScreen } from "../hooks/useActiveMainScreen";
-import type { MainStackParamList } from "../navigation/types";
-import type { RootDrawerParamList } from "../navigation/types";
+import type { MainStackParamList, RootDrawerParamList } from "../navigation/types";
 
 export default function ContextualFooter() {
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const isDark = theme.mode === "dark";
   const insets = useSafeAreaInsets();
   const activeScreen = useActiveMainScreen();
   const navigation = useNavigation<DrawerNavigationProp<RootDrawerParamList>>();
 
   const links = CONTEXTUAL_FOOTER_LINKS[activeScreen];
-  const styles = useMemo(() => makeStyles(c), [c]);
+  const styles = useMemo(() => makeStyles(c, isDark), [c, isDark]);
 
   if (!links?.length) return null;
 
@@ -37,14 +37,16 @@ export default function ContextualFooter() {
     <View
       style={[
         styles.bar,
+        isDark ? styles.barShadowDark : styles.barShadowLight,
         {
-          backgroundColor: c.surface,
-          borderTopColor: c.border,
+          backgroundColor: c.footerBg,
+          borderTopColor: c.footerBorder,
           paddingBottom: Math.max(insets.bottom, 8),
           minHeight: FOOTER_BAR_HEIGHT + Math.max(insets.bottom, 8),
         },
       ]}
     >
+      <View style={[styles.accentLine, { backgroundColor: c.primary }]} />
       {links.map((link) => (
         <FooterLink
           key={link.screen}
@@ -56,6 +58,8 @@ export default function ContextualFooter() {
           primary={c.primary}
           text={c.text}
           textMuted={c.textMuted}
+          linkBg={c.footerLinkBg}
+          activeBg={c.primaryMuted}
         />
       ))}
     </View>
@@ -71,6 +75,8 @@ function FooterLink({
   primary,
   text,
   textMuted,
+  linkBg,
+  activeBg,
 }: {
   link: ContextualNavLink;
   label: string;
@@ -80,6 +86,8 @@ function FooterLink({
   primary: string;
   text: string;
   textMuted: string;
+  linkBg: string;
+  activeBg: string;
 }) {
   const iconName = link.icon as keyof typeof MaterialCommunityIcons.glyphMap;
   return (
@@ -87,8 +95,8 @@ function FooterLink({
       onPress={onPress}
       style={({ pressed }) => [
         styles.link,
-        active && { backgroundColor: `${primary}18` },
-        pressed && { opacity: 0.85 },
+        { backgroundColor: active ? activeBg : linkBg },
+        pressed && { opacity: 0.88 },
       ]}
     >
       <MaterialCommunityIcons
@@ -107,15 +115,52 @@ function FooterLink({
   );
 }
 
-function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+function makeStyles(
+  c: ReturnType<typeof useAppTheme>["theme"]["colors"],
+  isDark: boolean
+) {
   return StyleSheet.create({
     bar: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-evenly",
-      borderTopWidth: 1,
-      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      paddingTop: 10,
       paddingHorizontal: 8,
+      position: "relative",
+    },
+    accentLine: {
+      position: "absolute",
+      top: 0,
+      left: 12,
+      right: 12,
+      height: 2,
+      borderRadius: 1,
+      opacity: isDark ? 0.85 : 0.55,
+    },
+    barShadowLight: {
+      ...Platform.select({
+        ios: {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+        },
+        android: { elevation: 12 },
+        default: {},
+      }),
+    },
+    barShadowDark: {
+      ...Platform.select({
+        ios: {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.45,
+          shadowRadius: 10,
+        },
+        android: { elevation: 16 },
+        default: {},
+      }),
     },
     link: {
       flex: 1,
@@ -123,10 +168,12 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      paddingVertical: 8,
+      paddingVertical: 9,
       paddingHorizontal: 10,
       borderRadius: 10,
       marginHorizontal: 4,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: isDark ? c.border : "transparent",
     },
     linkText: { fontWeight: "600", fontSize: 12 },
   });
