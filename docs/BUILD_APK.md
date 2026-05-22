@@ -85,7 +85,10 @@ EAS picks up env vars if you add them in `eas.json` `env` section or Expo dashbo
 | `Not logged in` | Run `eas login` |
 | No `projectId` | Run `eas init` |
 | Build fails on credentials | Run `eas credentials` or let EAS manage Android keystore (default) |
+| `Reanimated requires new architecture` | `app.json` must have `"newArchEnabled": true` (required for Reanimated 4.x APK builds) |
+| `NODE_ENV` warning during build | Set in `eas.json` `env` for your profile (already set for `preview` / `production`) |
 | Voice not working | Normal in APK if mic permission granted; was disabled in Expo Go only |
+| Expo Go crashes with drawer/animations | Use the **APK** or a **development build**; Expo Go is limited for this stack |
 | Install blocked | Enable “Install unknown apps” for your file manager |
 
 ---
