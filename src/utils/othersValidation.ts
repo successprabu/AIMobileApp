@@ -39,3 +39,10 @@ export function validateOthers(
 export function hasOthersErrors(errors: OthersErrors): boolean {
   return Object.keys(errors).length > 0;
 }
+
+export function isOthersValid(
+  data: TransactionFormData,
+  t: (key: string) => string
+): boolean {
+  return !hasOthersErrors(validateOthers(data, t));
+}

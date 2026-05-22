@@ -22,8 +22,11 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authPost } from "../api/client";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { PATHS } from "../api/endpoints";
+import AutoSaveHeaderSwitch from "../components/AutoSaveHeaderSwitch";
 import TransactionImportModal from "../components/TransactionImportModal";
 import VoiceTextField from "../components/VoiceTextField";
+import { useFormAutoSave } from "../hooks/useFormAutoSave";
+import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
 import { useAuth } from "../context/AuthContext";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
@@ -34,6 +37,7 @@ import type {
 } from "../types/transaction";
 import {
   hasValidationErrors,
+  isTransactionValid,
   validateTransaction,
 } from "../utils/transactionValidation";
 import * as Sharing from "expo-sharing";
@@ -96,7 +100,7 @@ export default function NewReceiptScreen() {
   const [showImport, setShowImport] = useState(false);
   const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
 
-  const handleSpeechResult = useCallback((field: string, transcript: string) => {
+  const handleSpeechResultBase = useCallback((field: string, transcript: string) => {
     if (field === "phoneNo") {
       setFormData((prev) => ({
         ...prev,
@@ -115,10 +119,21 @@ export default function NewReceiptScreen() {
     setFormData((prev) => ({ ...prev, [field]: transcript }));
   }, []);
 
-  const { recordingField, toggleRecording } = useVoiceInput(handleSpeechResult);
+  const resetFingerprintRef = React.useRef<(() => void) | null>(null);
+  const submitRef = React.useRef<
+    (source: "manual" | "auto" | "voice") => Promise<boolean>
+  >(async () => false);
+
+  const isValid = useMemo(
+    () => Boolean(functionId) && isTransactionValid(formData, t),
+    [formData, functionId, t]
+  );
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: t("addTransaction") });
+    navigation.setOptions({
+      title: t("addTransaction"),
+      headerRight: () => <AutoSaveHeaderSwitch />,
+    });
   }, [navigation, t]);
 
   useEffect(() => {
@@ -169,46 +184,71 @@ export default function NewReceiptScreen() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (saving) return;
+  const handleSubmit = useCallback(
+    async (source: "manual" | "auto" | "voice" = "manual"): Promise<boolean> => {
+      if (saving) return false;
 
-    if (!functionId) {
-      showMessage(t("pleaseCreateFunction"), true);
-      return;
-    }
-
-    const validationErrors = validateTransaction(formData, t);
-    if (hasValidationErrors(validationErrors)) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await authPost<TransactionSaveResponse>(
-        PATHS.SAVE_TRANSACTION,
-        formData as unknown as Record<string, unknown>
-      );
-
-      if (res.result) {
-        if (res.data) setLastRecord(res.data);
-        setFormData(emptyForm(customerId, functionId, userId));
-        setErrors({});
-        showMessage(t("transactionSaved"));
-      } else {
-        showMessage(res.message ?? t("an_error_occurred"), true);
+      if (!functionId) {
+        if (source !== "auto") showMessage(t("pleaseCreateFunction"), true);
+        return false;
       }
-    } catch (e: unknown) {
-      const msg =
-        e && typeof e === "object" && "response" in e
-          ? (e as { response?: { data?: { message?: string } } }).response?.data
-              ?.message
-          : undefined;
-      showMessage(msg ?? t("an_error_occurred"), true);
-    } finally {
-      setSaving(false);
-    }
-  };
+
+      const validationErrors = validateTransaction(formData, t);
+      if (hasValidationErrors(validationErrors)) {
+        if (source !== "auto") setErrors(validationErrors);
+        return false;
+      }
+
+      setSaving(true);
+      try {
+        const res = await authPost<TransactionSaveResponse>(
+          PATHS.SAVE_TRANSACTION,
+          formData as unknown as Record<string, unknown>
+        );
+
+        if (res.result) {
+          if (res.data) setLastRecord(res.data);
+          setFormData(emptyForm(customerId, functionId, userId));
+          setErrors({});
+          resetFingerprintRef.current?.();
+          showMessage(
+            source === "auto" ? t("autoSaved") : t("transactionSaved")
+          );
+          return true;
+        }
+        if (source !== "auto") {
+          showMessage(res.message ?? t("an_error_occurred"), true);
+        }
+        return false;
+      } catch (e: unknown) {
+        const msg =
+          e && typeof e === "object" && "response" in e
+            ? (e as { response?: { data?: { message?: string } } }).response?.data
+                ?.message
+            : undefined;
+        if (source !== "auto") showMessage(msg ?? t("an_error_occurred"), true);
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [saving, functionId, formData, t, customerId, userId]
+  );
+
+  submitRef.current = handleSubmit;
+
+  const { resetSaveFingerprint } = useFormAutoSave({
+    formData,
+    isValid,
+    saving,
+    onSave: (source) => submitRef.current(source),
+  });
+  resetFingerprintRef.current = resetSaveFingerprint;
+
+  const handleSpeechResult = useVoiceSaveSpeech(handleSpeechResultBase, () => {
+    void submitRef.current("voice");
+  });
+  const { recordingField, toggleRecording } = useVoiceInput(handleSpeechResult);
 
   const onImportComplete = useCallback((count: number) => {
     showMessage(t("importSuccess", { count }));
@@ -223,6 +263,9 @@ export default function NewReceiptScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
+        <Text variant="bodySmall" style={[styles.hint, { color: c.textMuted }]}>
+          {t("autoSaveHint")}
+        </Text>
         <View style={styles.toolbar}>
           <View style={styles.switchRow}>
             <Switch
@@ -442,7 +485,7 @@ export default function NewReceiptScreen() {
               <Button
                 mode="contained"
                 icon="content-save"
-                onPress={handleSubmit}
+                onPress={() => void handleSubmit("manual")}
                 loading={saving}
                 disabled={saving}
                 style={styles.actionBtn}
@@ -486,6 +529,7 @@ function makeReceiptStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"])
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
+    hint: { marginBottom: 8, lineHeight: 18 },
     toolbar: { marginBottom: 12 },
     switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
     switchLabel: { marginLeft: 8, flex: 1, color: c.text },

@@ -22,9 +22,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { OTHERS_TYPE_KEYS } from "../constants/othersTypes";
+import AutoSaveHeaderSwitch from "../components/AutoSaveHeaderSwitch";
 import VoiceTextField from "../components/VoiceTextField";
 import { useAuth } from "../context/AuthContext";
+import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceInput } from "../hooks/useVoiceInput";
+import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -32,7 +35,11 @@ import type {
   TransactionFormData,
   TransactionSaveResponse,
 } from "../types/transaction";
-import { hasOthersErrors, validateOthers } from "../utils/othersValidation";
+import {
+  hasOthersErrors,
+  isOthersValid,
+  validateOthers,
+} from "../utils/othersValidation";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
 
@@ -95,11 +102,24 @@ export default function AddOthersScreen() {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
 
+  const resetFingerprintRef = React.useRef<(() => void) | null>(null);
+  const submitRef = React.useRef<
+    (source: "manual" | "auto" | "voice") => Promise<boolean>
+  >(async () => false);
+
+  const isValid = useMemo(
+    () => Boolean(functionId) && isOthersValid(formData, t),
+    [formData, functionId, t]
+  );
+
   useLayoutEffect(() => {
-    navigation.setOptions({ title: t("addOthers") });
+    navigation.setOptions({
+      title: t("addOthers"),
+      headerRight: () => <AutoSaveHeaderSwitch />,
+    });
   }, [navigation, t]);
 
-  const handleSpeechResult = useCallback((field: string, transcript: string) => {
+  const handleSpeechResultBase = useCallback((field: string, transcript: string) => {
     if (field === "phoneNo") {
       setFormData((prev) => ({
         ...prev,
@@ -125,8 +145,6 @@ export default function AddOthersScreen() {
       setFormData((prev) => ({ ...prev, [field]: transcript }));
     }
   }, []);
-
-  const { recordingField, toggleRecording } = useVoiceInput(handleSpeechResult);
 
   const showMessage = (message: string, isError = false) => {
     setSnack({ visible: true, message, isError });
@@ -157,55 +175,78 @@ export default function AddOthersScreen() {
     setErrors({});
   };
 
-  const handleSubmit = async () => {
-    if (saving) return;
+  const handleSubmit = useCallback(
+    async (source: "manual" | "auto" | "voice" = "manual"): Promise<boolean> => {
+      if (saving) return false;
 
-    if (!functionId) {
-      showMessage(t("pleaseCreateFunction"), true);
-      return;
-    }
-
-    const validationErrors = validateOthers(formData, t);
-    if (hasOthersErrors(validationErrors)) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload: TransactionFormData = {
-        ...formData,
-        type: "O",
-        others: Number(formData.others ?? 0),
-        amount: Number(formData.amount ?? 0),
-        oldAmount: 0,
-        newAmount: 0,
-      };
-
-      const res = await authPost<TransactionSaveResponse>(
-        PATHS.SAVE_TRANSACTION,
-        payload as unknown as Record<string, unknown>
-      );
-
-      if (res.result) {
-        if (res.data) setLastRecord(res.data);
-        setFormData(emptyOthersForm(customerId, functionId, userId));
-        setErrors({});
-        showMessage(t("othersSaved"));
-      } else {
-        showMessage(res.message ?? t("an_error_occurred"), true);
+      if (!functionId) {
+        if (source !== "auto") showMessage(t("pleaseCreateFunction"), true);
+        return false;
       }
-    } catch (e: unknown) {
-      const msg =
-        e && typeof e === "object" && "response" in e
-          ? (e as { response?: { data?: { message?: string } } }).response?.data
-              ?.message
-          : undefined;
-      showMessage(msg ?? t("an_error_occurred"), true);
-    } finally {
-      setSaving(false);
-    }
-  };
+
+      const validationErrors = validateOthers(formData, t);
+      if (hasOthersErrors(validationErrors)) {
+        if (source !== "auto") setErrors(validationErrors);
+        return false;
+      }
+
+      setSaving(true);
+      try {
+        const payload: TransactionFormData = {
+          ...formData,
+          type: "O",
+          others: Number(formData.others ?? 0),
+          amount: Number(formData.amount ?? 0),
+          oldAmount: 0,
+          newAmount: 0,
+        };
+
+        const res = await authPost<TransactionSaveResponse>(
+          PATHS.SAVE_TRANSACTION,
+          payload as unknown as Record<string, unknown>
+        );
+
+        if (res.result) {
+          if (res.data) setLastRecord(res.data);
+          setFormData(emptyOthersForm(customerId, functionId, userId));
+          setErrors({});
+          resetFingerprintRef.current?.();
+          showMessage(source === "auto" ? t("autoSaved") : t("othersSaved"));
+          return true;
+        }
+        if (source !== "auto") {
+          showMessage(res.message ?? t("an_error_occurred"), true);
+        }
+        return false;
+      } catch (e: unknown) {
+        const msg =
+          e && typeof e === "object" && "response" in e
+            ? (e as { response?: { data?: { message?: string } } }).response?.data
+                ?.message
+            : undefined;
+        if (source !== "auto") showMessage(msg ?? t("an_error_occurred"), true);
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [saving, functionId, formData, t, customerId, userId]
+  );
+
+  submitRef.current = handleSubmit;
+
+  const { resetSaveFingerprint } = useFormAutoSave({
+    formData,
+    isValid,
+    saving,
+    onSave: (source) => submitRef.current(source),
+  });
+  resetFingerprintRef.current = resetSaveFingerprint;
+
+  const handleSpeechResult = useVoiceSaveSpeech(handleSpeechResultBase, () => {
+    void submitRef.current("voice");
+  });
+  const { recordingField, toggleRecording } = useVoiceInput(handleSpeechResult);
 
   return (
     <KeyboardAvoidingView
@@ -216,6 +257,9 @@ export default function AddOthersScreen() {
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
+        <Text variant="bodySmall" style={[styles.hint, { color: c.textMuted }]}>
+          {t("autoSaveHint")}
+        </Text>
         <View style={styles.switchRow}>
           <Switch
             value={autoTranslateEnabled}
@@ -433,7 +477,7 @@ export default function AddOthersScreen() {
               <Button
                 mode="contained"
                 icon="content-save"
-                onPress={() => void handleSubmit()}
+                onPress={() => void handleSubmit("manual")}
                 loading={saving}
                 disabled={saving}
                 style={styles.actionBtn}
@@ -470,6 +514,7 @@ function makeOthersStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) 
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     scroll: { padding: 12, paddingBottom: 32 },
+    hint: { marginBottom: 8, lineHeight: 18 },
     switchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
     switchLabel: { marginLeft: 8, flex: 1, color: c.text },
     card: { marginBottom: 12, backgroundColor: c.card },

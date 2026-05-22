@@ -329,5 +329,8 @@
   "footer_short_summary": "Summary",
   "footer_short_regional": "Regional",
   "footer_short_users": "Users",
-  "footer_short_function": "Function"
+  "footer_short_function": "Function",
+  "autoSave": "Auto save",
+  "autoSaved": "Saved automatically",
+  "autoSaveHint": "Turn on to save when all required fields are filled. Say OK on voice input to save anytime."
 }

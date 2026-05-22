@@ -32,3 +32,10 @@ export function validateTransaction(
 export function hasValidationErrors(errors: TransactionErrors): boolean {
   return Object.keys(errors).length > 0;
 }
+
+export function isTransactionValid(
+  data: TransactionFormData,
+  t: (key: string) => string
+): boolean {
+  return !hasValidationErrors(validateTransaction(data, t));
+}

@@ -33,3 +33,10 @@ export function validateExpenses(
 export function hasExpensesErrors(errors: ExpensesErrors): boolean {
   return Object.keys(errors).length > 0;
 }
+
+export function isExpensesValid(
+  data: TransactionFormData,
+  t: (key: string) => string
+): boolean {
+  return !hasExpensesErrors(validateExpenses(data, t));
+}
