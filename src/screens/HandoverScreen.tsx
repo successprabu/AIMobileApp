@@ -21,6 +21,7 @@ import { authGet, authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import HandoverEditModal from "../components/HandoverEditModal";
 import { useAuth } from "../context/AuthContext";
+import { useAppTheme } from "../hooks/useAppTheme";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -40,6 +41,8 @@ import {
 export default function HandoverScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -127,8 +130,8 @@ export default function HandoverScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.centered, { backgroundColor: c.background }]}>
+        <ActivityIndicator size="large" color={c.primary} />
       </View>
     );
   }
@@ -136,12 +139,13 @@ export default function HandoverScreen() {
   return (
     <>
       <ScrollView
+        style={{ backgroundColor: c.background }}
         contentContainerStyle={styles.pad}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} tintColor={c.primary} />
         }
       >
-        <Card mode="outlined" style={styles.card}>
+        <Card mode="outlined" style={[styles.card, { backgroundColor: c.card }]}>
           <Card.Title title={t("handOver")} />
           <Card.Content>
             <DataTable>
@@ -195,7 +199,7 @@ export default function HandoverScreen() {
 
         <Divider style={styles.divider} />
 
-        <Card mode="outlined" style={styles.card}>
+        <Card mode="outlined" style={[styles.card, { backgroundColor: c.card }]}>
           <Card.Title title={t("othersSummary")} />
           <Card.Content>
             <DataTable>
@@ -242,7 +246,7 @@ export default function HandoverScreen() {
         visible={snack.visible}
         onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
         duration={4000}
-        style={snack.isError ? styles.snackErr : undefined}
+        style={snack.isError ? { backgroundColor: c.danger } : { backgroundColor: c.primary }}
       >
         {snack.message}
       </Snackbar>

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Portal, Text, TextInput } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import VoiceTextField from "./VoiceTextField";
+import { useAppTheme } from "../hooks/useAppTheme";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import type { HandoverForm, HandoverListRow, HandoverSavePayload } from "../types/handover";
 
@@ -55,6 +57,10 @@ export default function HandoverEditModal({
   onSave,
 }: Props) {
   const { t } = useTranslation();
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+  const inputTheme = useThemedInputProps();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [form, setForm] = useState<HandoverForm>(() =>
     buildInitialForm(row, customerId, functionId, userId)
   );
@@ -110,6 +116,8 @@ export default function HandoverEditModal({
 
   if (!row) return null;
 
+  const fieldProps = { ...inputTheme, style: [inputTheme.style, styles.field] };
+
   return (
     <Portal>
       <Modal visible={visible} animationType="slide" onRequestClose={onDismiss}>
@@ -119,18 +127,18 @@ export default function HandoverEditModal({
           </Text>
           <ScrollView keyboardShouldPersistTaps="handled">
             <TextInput
+              {...fieldProps}
               label={t("handoverBy")}
               mode="outlined"
               value={form.handoverBy}
               disabled
-              style={styles.field}
             />
             <TextInput
+              {...fieldProps}
               label={t("total")}
               mode="outlined"
               value={String(form.totalRcdAmount)}
               disabled
-              style={styles.field}
             />
             <VoiceTextField
               label={t("handoverAmount")}
@@ -143,7 +151,6 @@ export default function HandoverEditModal({
               fieldName="handoverAmount"
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
-              style={styles.field}
             />
             <VoiceTextField
               label={t("receivedBy")}
@@ -153,7 +160,6 @@ export default function HandoverEditModal({
               fieldName="receivedBy"
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
-              style={styles.field}
             />
             <VoiceTextField
               label={t("receivedByMobile")}
@@ -164,14 +170,13 @@ export default function HandoverEditModal({
               fieldName="receivedByMoible"
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
-              style={styles.field}
             />
             <TextInput
+              {...fieldProps}
               label={t("differnceAmount")}
               mode="outlined"
               value={String(form.differnceAmount)}
               disabled
-              style={styles.field}
             />
             <VoiceTextField
               label={t("remarks")}
@@ -183,14 +188,18 @@ export default function HandoverEditModal({
               fieldName="remarks"
               recordingField={recordingField}
               onToggleVoice={toggleRecording}
-              style={styles.field}
             />
           </ScrollView>
           <View style={styles.actions}>
-            <Button mode="outlined" onPress={onDismiss} disabled={saving}>
+            <Button mode="outlined" onPress={onDismiss} disabled={saving} textColor={c.textMuted}>
               {t("cancel")}
             </Button>
-            <Button mode="contained" onPress={() => void handleSave()} loading={saving}>
+            <Button
+              mode="contained"
+              onPress={() => void handleSave()}
+              loading={saving}
+              buttonColor={c.primary}
+            >
               {t("save")}
             </Button>
           </View>
@@ -200,22 +209,24 @@ export default function HandoverEditModal({
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    flex: 1,
-    marginTop: 48,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 16,
-  },
-  title: { marginBottom: 12 },
-  field: { marginBottom: 8 },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 8,
-    paddingBottom: 24,
-  },
-});
+function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
+  return StyleSheet.create({
+    sheet: {
+      flex: 1,
+      marginTop: 48,
+      backgroundColor: c.card,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 16,
+    },
+    title: { marginBottom: 12, color: c.text },
+    field: { marginBottom: 8 },
+    actions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 8,
+      marginTop: 8,
+      paddingBottom: 24,
+    },
+  });
+}

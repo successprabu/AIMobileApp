@@ -11,14 +11,14 @@ import RootNavigator from "./src/navigation/RootNavigator";
 function AppInner() {
   const { paperTheme, mode } = useThemeContext();
   return (
-    <PaperProvider theme={paperTheme}>
-      <LanguageProvider>
-        <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <PaperProvider theme={paperTheme}>
           <RootNavigator />
           <StatusBar style={mode === "dark" ? "light" : "dark"} />
-        </AuthProvider>
-      </LanguageProvider>
-    </PaperProvider>
+        </PaperProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 
