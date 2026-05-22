@@ -28,6 +28,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet, authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { resolveFunctionIdAfterSave } from "../utils/functionSession";
 import type { AuthUser } from "../types/auth";
 import type {
   FunctionFormData,
@@ -90,12 +91,13 @@ function validateForm(
 
 export default function FunctionMasterScreen() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const scrollRef = useRef<ScrollView>(null);
 
   const u = user as AuthUser;
   const customerId = (u.customerID as number) ?? 0;
+  const sessionFunctionId = (u.functionId as number) ?? 0;
 
   const [formData, setFormData] = useState<FunctionFormData>(() =>
     emptyForm(customerId)
@@ -218,6 +220,7 @@ export default function FunctionMasterScreen() {
   };
 
   const handleEdit = (fn: FunctionRecord) => {
+    void updateUser({ functionId: fn.id });
     const iso = toDateInputValue(fn.functionDate ?? "");
     setFormData({
       id: fn.id,
@@ -266,7 +269,18 @@ export default function FunctionMasterScreen() {
         payload as unknown as Record<string, unknown>
       );
       if (json.result) {
-        showMessage(t("saveSuccessMessage"));
+        const newFunctionId = await resolveFunctionIdAfterSave(customerId, json, payload);
+        if (newFunctionId) {
+          await updateUser({ functionId: newFunctionId });
+          showMessage(
+            t("mobile_function_saved_active", {
+              defaultValue:
+                "Function saved. It is now your active function for receipts and expenses.",
+            })
+          );
+        } else {
+          showMessage(t("saveSuccessMessage"));
+        }
         const cleared = emptyForm(customerId);
         setFormData(cleared);
         setDateText(formatDisplayDate(cleared.functionDate));
@@ -465,10 +479,19 @@ export default function FunctionMasterScreen() {
                 </Text>
               ) : null
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }) => {
+              const isActive = sessionFunctionId > 0 && item.id === sessionFunctionId;
+              return (
               <Pressable style={styles.listRow} onPress={() => handleEdit(item)}>
                 <View style={styles.listMain}>
-                  <Text variant="titleSmall">{item.functionName}</Text>
+                  <View style={styles.listTitleRow}>
+                    <Text variant="titleSmall">{item.functionName}</Text>
+                    {isActive ? (
+                      <Text variant="labelSmall" style={styles.activeBadge}>
+                        {t("mobile_active_function", { defaultValue: "Active" })}
+                      </Text>
+                    ) : null}
+                  </View>
                   <Text variant="bodySmall" style={styles.muted}>
                     {formatDisplayDate(item.functionDate)} · {item.mahalName}
                   </Text>
@@ -478,7 +501,8 @@ export default function FunctionMasterScreen() {
                 </View>
                 <MaterialCommunityIcons name="pencil" size={22} color="#0984e3" />
               </Pressable>
-            )}
+            );
+            }}
             ItemSeparatorComponent={() => <Divider />}
           />
         </Card>
@@ -520,6 +544,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   listMain: { flex: 1, marginRight: 8 },
+  listTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  activeBadge: {
+    color: "#0984e3",
+    fontWeight: "700",
+    backgroundColor: "#0984e318",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
   muted: { opacity: 0.7, marginTop: 2 },
   emptyList: { padding: 16, textAlign: "center" },
   listSpinner: { marginRight: 16 },

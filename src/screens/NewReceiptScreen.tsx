@@ -25,6 +25,10 @@ import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
 import { useAuth } from "../context/AuthContext";
+import {
+  useSessionFunctionId,
+  useSyncFormFunctionId,
+} from "../hooks/useSessionFunctionId";
 import { useLanguage } from "../context/LanguageContext";
 import { SUGGESTION_LANG_LABEL } from "../constants/suggestionLanguages";
 import type { MainStackParamList } from "../navigation/types";
@@ -88,12 +92,13 @@ export default function NewReceiptScreen() {
 
   const u = user as AuthUser;
   const customerId = (u.customerID as number) ?? 0;
-  const functionId = (u.functionId as number) ?? 0;
+  const functionId = useSessionFunctionId();
   const userId = String(u.id ?? "SYSTEM");
 
   const [formData, setFormData] = useState<TransactionFormData>(() =>
     emptyForm(customerId, functionId, userId)
   );
+  useSyncFormFunctionId(setFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof TransactionFormData, string>>>({});
   const [saving, setSaving] = useState(false);
   const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(false);

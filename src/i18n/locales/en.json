@@ -337,5 +337,7 @@
   "autoSaveHintExpenses": "Auto save on: saves when you leave the amount field after category and person are filled. Say OK on voice to save.",
   "autoSaveHintOthers": "Auto save on: saves when you leave the others amount field after place, name and type are filled. Say OK on voice to save.",
   "translateHint": "Translate on: type in English. Up to 5 {{language}} options appear — tap one to fill. (Uses language from side menu.)",
-  "mobile_optional_section": "Optional"
+  "mobile_optional_section": "Optional",
+  "mobile_function_saved_active": "Function saved. It is now your active function for receipts and expenses.",
+  "mobile_active_function": "Active"
 }

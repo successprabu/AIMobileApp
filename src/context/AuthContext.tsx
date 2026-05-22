@@ -19,6 +19,8 @@ type AuthContextValue = {
   isReady: boolean;
   signIn: (userData: AuthUser) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Merge fields into the stored session (e.g. functionId after creating a function). */
+  updateUser: (patch: Partial<AuthUser>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -64,9 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(async (patch: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      void setStoredUserJson(JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isReady, signIn, signOut }),
-    [user, isReady, signIn, signOut]
+    () => ({ user, isReady, signIn, signOut, updateUser }),
+    [user, isReady, signIn, signOut, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

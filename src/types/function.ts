@@ -47,4 +47,5 @@ export type FunctionListResponse = {
 export type FunctionSaveResponse = {
   result?: boolean;
   message?: string;
+  data?: number | FunctionRecord | { id?: number; functionId?: number };
 };
