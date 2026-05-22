@@ -12,10 +12,11 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet } from "../api/client";
 import { PATHS } from "../api/endpoints";
-import ReportFunctionHeader from "../components/reports/ReportFunctionHeader";
+import ReportExportButtons from "../components/reports/ReportExportButtons";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useReportFunctionMeta } from "../hooks/useReportFunctionMeta";
+import { prepareExportRows } from "../utils/reportExportRows";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import type { MainStackParamList } from "../navigation/types";
 import type { AuthUser } from "../types/auth";
@@ -33,7 +34,7 @@ export default function RegionalReportScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const inputTheme = useThemedInputProps();
-  const { meta, loading: metaLoading } = useReportFunctionMeta();
+  const { meta } = useReportFunctionMeta();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -50,7 +51,8 @@ export default function RegionalReportScreen() {
   const [pageTotal, setPageTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [excelBusy, setExcelBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -119,32 +121,32 @@ export default function RegionalReportScreen() {
     return regionalRowsWithSerial(parsed.rows, 1, parsed.rows.length || 1);
   };
 
+  const buildExportRows = async () => {
+    const all = await fetchAllRows();
+    return prepareExportRows(all as Record<string, unknown>[], "regional");
+  };
+
   const onExportExcel = async () => {
-    setExporting(true);
+    setExcelBusy(true);
     try {
-      const all = await fetchAllRows();
-      await shareExcel(
-        all as Record<string, unknown>[],
-        "RegionalSummary.xlsx",
-        "Regional",
-        meta
-      );
+      const exportRows = await buildExportRows();
+      await shareExcel(exportRows, "RegionalSummary.xlsx", "Regional", meta);
     } finally {
-      setExporting(false);
+      setExcelBusy(false);
     }
   };
 
   const onExportPdf = async () => {
-    setExporting(true);
+    setPdfBusy(true);
     try {
-      const all = await fetchAllRows();
+      const exportRows = await buildExportRows();
       await sharePdfReport(
-        [{ title, rows: all as Record<string, unknown>[] }],
+        [{ title, rows: exportRows }],
         "RegionalSummary.pdf",
         meta
       );
     } finally {
-      setExporting(false);
+      setPdfBusy(false);
     }
   };
 
@@ -163,8 +165,6 @@ export default function RegionalReportScreen() {
         />
       }
     >
-      <ReportFunctionHeader meta={meta} loading={metaLoading} reportTitle={title} />
-
       <Card mode="outlined" style={{ backgroundColor: c.card, marginBottom: 12 }}>
         <Card.Content>
           <TextInput
@@ -201,24 +201,12 @@ export default function RegionalReportScreen() {
         </Card.Content>
       </Card>
 
-      <View style={styles.actions}>
-        <Button
-          mode="contained-tonal"
-          icon="file-pdf-box"
-          onPress={() => void onExportPdf()}
-          disabled={exporting}
-        >
-          {t("downloadPdf")}
-        </Button>
-        <Button
-          mode="contained-tonal"
-          icon="microsoft-excel"
-          onPress={() => void onExportExcel()}
-          disabled={exporting}
-        >
-          {t("exportExcel")}
-        </Button>
-      </View>
+      <ReportExportButtons
+        onExportPdf={onExportPdf}
+        onExportExcel={onExportExcel}
+        pdfBusy={pdfBusy}
+        excelBusy={excelBusy}
+      />
 
       {error ? <Text style={{ color: c.danger, marginBottom: 8 }}>{error}</Text> : null}
       {loading ? <ActivityIndicator style={styles.loader} color={c.primary} /> : null}

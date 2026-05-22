@@ -12,7 +12,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet } from "../api/client";
 import { PATHS } from "../api/endpoints";
-import ReportFunctionHeader from "../components/reports/ReportFunctionHeader";
+import ReportExportButtons from "../components/reports/ReportExportButtons";
 import { useAuth } from "../context/AuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useReportFunctionMeta } from "../hooks/useReportFunctionMeta";
@@ -20,12 +20,17 @@ import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import type { AuthUser } from "../types/auth";
 import type { MainStackParamList } from "../navigation/types";
 import { shareExcel, sharePdfReport } from "../export/reportExport";
+import {
+  prepareExportRows,
+  type ReportExportProfile,
+} from "../utils/reportExportRows";
 
 type ReportConfig = {
   transType: "R" | "E" | "O";
   reportType: string;
   titleKey: string;
   fileBase: string;
+  exportProfile: ReportExportProfile;
 };
 
 const CONFIG: Record<
@@ -37,18 +42,21 @@ const CONFIG: Record<
     reportType: "INCOME",
     titleKey: "receiptReport",
     fileBase: "IncomeReport",
+    exportProfile: "income",
   },
   ExpensesReport: {
     transType: "E",
     reportType: "EXPENSES",
     titleKey: "expenseReport",
     fileBase: "ExpenseReport",
+    exportProfile: "expense",
   },
   OthersReport: {
     transType: "O",
     reportType: "OTHERS",
     titleKey: "othersReport",
     fileBase: "OthersReport",
+    exportProfile: "others",
   },
 };
 
@@ -65,7 +73,7 @@ export default function TransactionReportScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const inputTheme = useThemedInputProps();
-  const { meta, loading: metaLoading } = useReportFunctionMeta();
+  const { meta } = useReportFunctionMeta();
   const route = useRoute();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const name = route.name as keyof typeof CONFIG;
@@ -81,7 +89,8 @@ export default function TransactionReportScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [excelBusy, setExcelBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -142,7 +151,15 @@ export default function TransactionReportScreen() {
     void load();
   }, [load, tick]);
 
-  const keys = rows[0] ? Object.keys(rows[0]) : [];
+  const displayRows = useMemo(() => {
+    const withSerial = rows.map((row, index) => ({
+      ...row,
+      sNo: (page - 1) * pageSize + index + 1,
+    }));
+    return prepareExportRows(withSerial, cfg.exportProfile);
+  }, [rows, page, pageSize, cfg.exportProfile]);
+
+  const keys = displayRows[0] ? Object.keys(displayRows[0]) : [];
 
   const fetchAllRows = async (): Promise<Row[]> => {
     const json = await authGet<PageResponse>(PATHS.REPORT_ALL, {
@@ -155,32 +172,38 @@ export default function TransactionReportScreen() {
     return [];
   };
 
+  const buildExportRows = async () => {
+    const all = await fetchAllRows();
+    const withSerial = all.map((row, index) => ({ ...row, sNo: index + 1 }));
+    return prepareExportRows(withSerial, cfg.exportProfile);
+  };
+
   const onExportExcel = async () => {
-    setExporting(true);
+    setExcelBusy(true);
     try {
-      const all = await fetchAllRows();
+      const exportRows = await buildExportRows();
       await shareExcel(
-        all as Record<string, unknown>[],
+        exportRows,
         `${cfg.fileBase}.xlsx`,
         cfg.fileBase,
         meta
       );
     } finally {
-      setExporting(false);
+      setExcelBusy(false);
     }
   };
 
   const onExportPdf = async () => {
-    setExporting(true);
+    setPdfBusy(true);
     try {
-      const all = await fetchAllRows();
+      const exportRows = await buildExportRows();
       await sharePdfReport(
-        [{ title, rows: all as Record<string, unknown>[] }],
+        [{ title, rows: exportRows }],
         `${cfg.fileBase}.pdf`,
         meta
       );
     } finally {
-      setExporting(false);
+      setPdfBusy(false);
     }
   };
 
@@ -189,8 +212,6 @@ export default function TransactionReportScreen() {
       style={{ flex: 1, backgroundColor: c.background }}
       contentContainerStyle={styles.pad}
     >
-      <ReportFunctionHeader meta={meta} loading={metaLoading} reportTitle={title} />
-
       <Card style={[styles.card, { backgroundColor: c.card }]} mode="outlined">
         <Card.Content>
           <TextInput
@@ -229,7 +250,7 @@ export default function TransactionReportScreen() {
                 setTick((x) => x + 1);
               }}
             >
-              {t("save")}
+              {t("search")}
             </Button>
             <Button
               mode="outlined"
@@ -241,30 +262,18 @@ export default function TransactionReportScreen() {
                 setTick((x) => x + 1);
               }}
             >
-              {t("cancel")}
+              {t("clearButton")}
             </Button>
           </View>
         </Card.Content>
       </Card>
 
-      <View style={styles.actions}>
-        <Button
-          mode="contained-tonal"
-          icon="file-pdf-box"
-          onPress={() => void onExportPdf()}
-          disabled={exporting}
-        >
-          {t("downloadPdf")}
-        </Button>
-        <Button
-          mode="contained-tonal"
-          icon="microsoft-excel"
-          onPress={() => void onExportExcel()}
-          disabled={exporting}
-        >
-          {t("exportExcel")}
-        </Button>
-      </View>
+      <ReportExportButtons
+        onExportPdf={onExportPdf}
+        onExportExcel={onExportExcel}
+        pdfBusy={pdfBusy}
+        excelBusy={excelBusy}
+      />
 
       {error ? <Text style={styles.err}>{error}</Text> : null}
       {loading ? <ActivityIndicator style={styles.loader} /> : null}
@@ -280,7 +289,7 @@ export default function TransactionReportScreen() {
               ))}
             </View>
             <FlatList
-              data={rows}
+              data={displayRows}
               keyExtractor={(_, i) => String(i)}
               scrollEnabled={false}
               renderItem={({ item, index }) => (
@@ -335,12 +344,6 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 12,
     flexWrap: "wrap",
-  },
-  actions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginVertical: 12,
   },
   err: { color: "#c62828", marginBottom: 8 },
   loader: { marginVertical: 16 },

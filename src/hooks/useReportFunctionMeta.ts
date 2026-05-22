@@ -3,18 +3,11 @@ import { authGet } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
 import type { AuthUser } from "../types/auth";
-import type { ReportFunctionMeta, ReportGeneralDataResponse } from "../types/report";
+import type { FunctionListResponse } from "../types/function";
+import type { ReportFunctionMeta } from "../types/report";
+import { formatDisplayDate } from "../utils/date";
 
-function formatDisplayDate(iso?: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}-${month}-${year}`;
-}
-
+/** Function details for report downloads — Master/GetFunction (session customer + function id). */
 export function useReportFunctionMeta() {
   const { user } = useAuth();
   const u = user as AuthUser;
@@ -24,23 +17,29 @@ export function useReportFunctionMeta() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const json = await authGet<ReportGeneralDataResponse>(PATHS.REPORT_GENERAL_DATA, {
-        customer_id: u.customerID ?? 0,
-        function_id: u.functionId ?? 0,
-        user_type: String(u.userType ?? ""),
-        userId: u.id ?? 0,
+      const functionId = u.functionId ?? 0;
+      const customerId = u.customerID ?? 0;
+      if (!functionId || !customerId) {
+        setMeta(null);
+        return;
+      }
+
+      const json = await authGet<FunctionListResponse>(PATHS.MASTER_LIST_FUNCTION, {
+        customer_id: customerId,
+        id: functionId,
+        current_page: 1,
+        page_size: 10,
       });
-      if (json.result && json.data?.functions) {
-        const f = json.data.functions;
+
+      if (json.result && json.data?.functions?.length) {
+        const fn =
+          json.data.functions.find((f) => f.id === functionId) ??
+          json.data.functions[0];
         setMeta({
-          functionName: f.functionName ?? "—",
-          functionDate: formatDisplayDate(f.functionDate),
-          mahalName: f.mahalName ?? "—",
-          funPersionNames: f.funPersionNames ?? "—",
-          reportDate: json.data.header?.reportDate,
-          generatedBy: json.data.header?.generatedBy,
-          poweredBy: json.data.footer?.poweredBy,
-          supportPhone: json.data.footer?.supportPhone,
+          functionName: fn.functionName ?? "—",
+          functionDate: formatDisplayDate(fn.functionDate ?? ""),
+          mahalName: fn.mahalName ?? "—",
+          funPersionNames: fn.funPersionNames ?? "—",
         });
       } else {
         setMeta(null);
@@ -50,7 +49,7 @@ export function useReportFunctionMeta() {
     } finally {
       setLoading(false);
     }
-  }, [u.customerID, u.functionId, u.id, u.userType]);
+  }, [u.customerID, u.functionId]);
 
   useEffect(() => {
     void load();
