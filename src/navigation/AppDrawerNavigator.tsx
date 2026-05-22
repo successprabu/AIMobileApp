@@ -22,9 +22,14 @@ export default function AppDrawerNavigator() {
       drawerContent={(props) => <AppDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerType: "slide",
+        drawerType: "front",
         swipeEnabled: true,
-        drawerStyle: { width: "82%" },
+        overlayColor: "rgba(15, 23, 42, 0.45)",
+        drawerStyle: {
+          width: "88%",
+          maxWidth: 340,
+          backgroundColor: "transparent",
+        },
       }}
     >
       <Drawer.Screen
