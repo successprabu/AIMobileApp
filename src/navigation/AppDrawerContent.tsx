@@ -91,13 +91,16 @@ const LANG_LABEL: Record<LangCode, string> = {
   hi: "हि",
 };
 
-const DEFAULT_EXPANDED: Record<string, boolean> = {
-  home: true,
-  masters: false,
-  transactions: true,
-  reports: false,
-  more: false,
-};
+/** Only one section open at a time — default Home expanded. */
+function singleExpanded(openKey: string | null): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  for (const s of SECTIONS) {
+    out[s.key] = s.key === openKey;
+  }
+  return out;
+}
+
+const INITIAL_EXPANDED_KEY = "home";
 
 function getActiveScreen(state: DrawerContentComponentProps["state"]): string | undefined {
   const home = state.routes[state.index];
@@ -121,7 +124,9 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   const { theme, mode, toggleMode } = useAppTheme();
   const c = theme.colors;
 
-  const [expanded, setExpanded] = useState(DEFAULT_EXPANDED);
+  const [expanded, setExpanded] = useState(() =>
+    singleExpanded(INITIAL_EXPANDED_KEY)
+  );
   const activeScreen = useMemo(() => getActiveScreen(state), [state]);
   const role = user?.userType ?? "";
   const displayName = (user?.name as string) ?? (user?.userName as string) ?? "";
@@ -134,7 +139,10 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   };
 
   const toggleSection = (key: string) => {
-    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+    setExpanded((prev) => {
+      const isOpen = prev[key] ?? false;
+      return singleExpanded(isOpen ? null : key);
+    });
   };
 
   const confirmLogout = () => {
