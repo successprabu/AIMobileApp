@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, View, StyleSheet } from "react-native";
+import { Alert, Image, View, StyleSheet } from "react-native";
 import {
   DrawerContentScrollView,
   type DrawerContentComponentProps,
@@ -213,7 +213,12 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
       contentContainerStyle={{ paddingTop: insets.top + 8 }}
     >
       <View style={styles.brand}>
-        <MaterialCommunityIcons name="wallet" size={28} color="#0984e3" />
+        <Image
+          source={require("../../assets/brand-logo.png")}
+          style={styles.brandLogo}
+          resizeMode="contain"
+          accessibilityLabel={t("my_accounts")}
+        />
         <Text variant="titleMedium" style={styles.brandText}>
           {t("my_accounts")}
         </Text>
@@ -314,7 +319,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  brandText: { marginLeft: 8, fontWeight: "700" },
+  brandLogo: { width: 36, height: 40 },
+  brandText: { marginLeft: 8, fontWeight: "700", flexShrink: 1 },
   userBox: { paddingHorizontal: 16, marginBottom: 8 },
   muted: { opacity: 0.7 },
   div: { marginVertical: 8 },

@@ -6,6 +6,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -172,6 +173,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <Image
+            source={require("../../assets/brand-logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel={t("my_accounts")}
+          />
           <Text style={styles.title}>{t("my_accounts")}</Text>
           <Text style={styles.subtitle}>
             {t("mobile_login_subtitle", {
@@ -282,16 +289,19 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 32,
   },
-  header: { marginBottom: 28 },
+  header: { marginBottom: 28, alignItems: "center" },
+  logo: { width: 44, height: 48, marginBottom: 12 },
   title: {
     fontSize: 28,
     fontWeight: "700",
     color: "#2d3436",
+    textAlign: "center",
   },
   subtitle: {
     marginTop: 8,
     fontSize: 16,
     color: "#636e72",
+    textAlign: "center",
   },
   label: {
     marginTop: 16,
