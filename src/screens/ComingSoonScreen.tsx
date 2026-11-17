@@ -10,9 +10,6 @@ import type { MainStackParamList } from "../navigation/types";
 
 const TITLE_KEYS: Partial<Record<keyof MainStackParamList, string>> = {
   ClientList: "Clients",
-  AddNewMahal: "addMahal",
-  MahalBooking: "mahalBooking",
-  MahalBookingList: "mahalBookingList",
   AddMoitechCustomer: "addMoiTechCustomer",
   FunctionMaster: "functionMaster",
   UserMaster: "userMaster",

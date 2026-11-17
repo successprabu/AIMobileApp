@@ -29,10 +29,18 @@ import type {
 } from "../types/dashboard";
 import { formatCount, formatInr } from "../utils/formatCurrency";
 import { useAppTheme } from "../hooks/useAppTheme";
+import MahalDashboardScreen from "./mahal/MahalDashboardScreen";
 
 const API_ROLES = ["SU", "AU", "NU"] as const;
 
+/** Mahal admins get the mahal dashboard; Moitech roles keep the receipts dashboard. */
 export default function RoleDashboardScreen() {
+  const { user } = useAuth();
+  if ((user as AuthUser | null)?.userType === "MU") return <MahalDashboardScreen />;
+  return <MoitechDashboardScreen />;
+}
+
+function MoitechDashboardScreen() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { theme } = useAppTheme();

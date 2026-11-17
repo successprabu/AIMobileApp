@@ -17,6 +17,12 @@ import HandoverScreen from "../screens/HandoverScreen";
 import ExpensesListScreen from "../screens/ExpensesListScreen";
 import OthersListScreen from "../screens/OthersListScreen";
 import ThemeSettingsScreen from "../screens/ThemeSettingsScreen";
+import MahalBookingsScreen from "../screens/mahal/MahalBookingsScreen";
+import BookingFormScreen from "../screens/mahal/BookingFormScreen";
+import MyMahalsScreen from "../screens/mahal/MyMahalsScreen";
+import MahalFormScreen from "../screens/mahal/MahalFormScreen";
+import { Pressable } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../hooks/useAppTheme";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -41,9 +47,31 @@ export default function MainStackNavigator() {
     >
       <Stack.Screen name="Dashboard" component={RoleDashboardScreen} />
       <Stack.Screen name="ClientList" component={ComingSoonScreen} />
-      <Stack.Screen name="AddNewMahal" component={ComingSoonScreen} />
-      <Stack.Screen name="MahalBooking" component={ComingSoonScreen} />
-      <Stack.Screen name="MahalBookingList" component={ComingSoonScreen} />
+      <Stack.Screen name="MyMahals" component={MyMahalsScreen} />
+      <Stack.Screen name="MahalBookings" component={MahalBookingsScreen} />
+      {/* Forms open on top of a list, so they get a back arrow instead of the menu button. */}
+      <Stack.Screen
+        name="MahalForm"
+        component={MahalFormScreen}
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} style={{ paddingRight: 16, paddingVertical: 4 }}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={c.headerText} />
+            </Pressable>
+          ),
+        })}
+      />
+      <Stack.Screen
+        name="BookingForm"
+        component={BookingFormScreen}
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} style={{ paddingRight: 16, paddingVertical: 4 }}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={c.headerText} />
+            </Pressable>
+          ),
+        })}
+      />
       <Stack.Screen name="AddMoitechCustomer" component={ComingSoonScreen} />
       <Stack.Screen name="FunctionMaster" component={FunctionMasterScreen} />
       <Stack.Screen name="UserMaster" component={UserMasterScreen} />

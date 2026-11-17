@@ -30,9 +30,8 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     items: [
       { screen: "Dashboard", titleKey: "dashboard", icon: "view-dashboard-variant", color: PRIMARY_PINK, roles: ["SU", "AU", "NU", "MU"] },
       { screen: "ClientList", titleKey: "Clients", icon: "account-multiple", color: "#6c5ce7", roles: ["SU"] },
-      { screen: "AddNewMahal", titleKey: "addMahal", icon: "office-building", color: "#5f27cd", roles: ["SU", "MU"] },
-      { screen: "MahalBooking", titleKey: "mahalBooking", icon: "calendar-month", color: "#e84393", roles: ["SU", "MU"] },
-      { screen: "MahalBookingList", titleKey: "mahalBookingList", icon: "calendar-check", color: "#fd79a8", roles: ["SU", "MU"] },
+      { screen: "MahalBookings", titleKey: "mahalBookings", icon: "calendar-check", color: "#e84393", roles: ["SU", "MU"] },
+      { screen: "MyMahals", titleKey: "myMahals", icon: "office-building", color: "#5f27cd", roles: ["SU", "MU"] },
       { screen: "AddMoitechCustomer", titleKey: "addMoiTechCustomer", icon: "account-heart", color: "#00b894", roles: ["SU", "MU"] },
     ],
   },

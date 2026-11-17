@@ -8,9 +8,10 @@ export type RootDrawerParamList = {
 export type MainStackParamList = {
   Dashboard: undefined;
   ClientList: undefined;
-  AddNewMahal: undefined;
-  MahalBooking: undefined;
-  MahalBookingList: undefined;
+  MyMahals: undefined;
+  MahalForm: { mahalId?: number } | undefined;
+  MahalBookings: { tab?: string } | undefined;
+  BookingForm: { bookingId?: number; mahalId?: number } | undefined;
   AddMoitechCustomer: undefined;
   FunctionMaster: undefined;
   UserMaster: undefined;

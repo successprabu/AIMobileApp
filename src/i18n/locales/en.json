@@ -301,7 +301,7 @@
   "enterLandmark": "Please Enter Landmark",
   "onlineBooking": "Online Booking",
   "saveSuccessMessage": "Data saved successfully!",
-  "watchDemo":"Try Demo",
+  "watchDemo": "Try Demo",
   "login_security_note": "For security reasons, please log in again to continue.",
   "welcome_back": "Welcome Back",
   "addMahalBooking": "Add Mahal Booking",
@@ -339,5 +339,7 @@
   "translateHint": "Translate on: type in English. Up to 5 {{language}} options appear — tap one to fill. (Uses language from side menu.)",
   "mobile_optional_section": "Optional",
   "mobile_function_saved_active": "Function saved. It is now your active function for receipts and expenses.",
-  "mobile_active_function": "Active"
+  "mobile_active_function": "Active",
+  "mahalBookings": "Bookings",
+  "myMahals": "My Mahals"
 }

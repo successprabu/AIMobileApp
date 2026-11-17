@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import type { DrawerNavigationProp } from "@react-navigation/drawer";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,7 +28,9 @@ export default function ContextualFooter() {
   const activeScreen = useActiveMainScreen();
   const navigation = useNavigation<DrawerNavigationProp<RootDrawerParamList>>();
 
-  const links = CONTEXTUAL_FOOTER_LINKS[activeScreen];
+  const { user } = useAuth();
+  // Mahal admins don't record moi, so the receipt shortcuts are not for them.
+  const links = user?.userType === "MU" && activeScreen === "Dashboard" ? undefined : CONTEXTUAL_FOOTER_LINKS[activeScreen];
   const styles = useMemo(() => makeStyles(), []);
 
   if (!links?.length) return null;
