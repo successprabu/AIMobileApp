@@ -1,0 +1,134 @@
+# Builds the Android APK on every push to main and publishes it as a GitHub Release.
+# The web app (Account_UI) downloads the latest release when it deploys and serves it at
+# /downloads/MySuccess.apk. Stable link to the newest APK:
+#   https://github.com/successprabu/AIMobileApp/releases/latest/download/MySuccess.apk
+#
+# Signing: if the repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD are set, the APK is signed with that key
+# (needed for the Play Store; keep the keystore safe, every update must use it).
+# Without them it is signed with Expo's standard debug key, which is fine for direct download.
+
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Same backend as the web app. Optional keys come from repository secrets.
+      EXPO_PUBLIC_API_BASE_URL: https://successapi.azurewebsites.net/api/
+      EXPO_PUBLIC_FAST2SMS_KEY: ${{ secrets.EXPO_PUBLIC_FAST2SMS_KEY }}
+      EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY }}
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check
+        run: npx tsc --noEmit -p .
+
+      - name: Set version
+        # Each build gets a higher versionCode so phones accept it as an update.
+        run: |
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = process.env.VERSION_NAME;
+            app.expo.android.versionCode = Number(process.env.VERSION_CODE);
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Use the release key (when configured)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No release key configured: signing with the debug key."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          cat >> android/gradle.properties <<EOF
+          MYAPP_RELEASE_STORE_FILE=release.keystore
+          MYAPP_RELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD
+          MYAPP_RELEASE_KEY_ALIAS=$KEY_ALIAS
+          MYAPP_RELEASE_KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+          node -e "
+            const fs = require('fs');
+            const p = 'android/app/build.gradle';
+            let s = fs.readFileSync(p, 'utf8');
+            s = s.replace(/signingConfigs \{/, \`signingConfigs {
+                  release {
+                      storeFile file(MYAPP_RELEASE_STORE_FILE)
+                      storePassword MYAPP_RELEASE_STORE_PASSWORD
+                      keyAlias MYAPP_RELEASE_KEY_ALIAS
+                      keyPassword MYAPP_RELEASE_KEY_PASSWORD
+                  }\`);
+            s = s.replace(/(release \{[^}]*?)signingConfig signingConfigs\.debug/s, '\$1signingConfig signingConfigs.release');
+            fs.writeFileSync(p, s);
+          "
+
+      - name: Build APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/MySuccess.apk
+          ls -lh dist
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v${{ env.VERSION_NAME }}
+          name: My Success Android ${{ env.VERSION_NAME }}
+          body: |
+            Android app built from ${{ github.sha }}.
+            Install: download MySuccess.apk on your phone and open it (allow "Install unknown apps" if asked).
+          files: dist/MySuccess.apk
+          make_latest: true
+
+      - name: Keep a copy with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: MySuccess-${{ env.VERSION_NAME }}
+          path: dist/MySuccess.apk
+          retention-days: 14
