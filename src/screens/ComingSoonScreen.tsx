@@ -9,8 +9,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { MainStackParamList } from "../navigation/types";
 
 const TITLE_KEYS: Partial<Record<keyof MainStackParamList, string>> = {
-  ClientList: "Clients",
-  AddMoitechCustomer: "addMoiTechCustomer",
   FunctionMaster: "functionMaster",
   UserMaster: "userMaster",
   Transaction: "addTransaction",

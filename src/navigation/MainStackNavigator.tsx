@@ -21,6 +21,10 @@ import MahalBookingsScreen from "../screens/mahal/MahalBookingsScreen";
 import BookingFormScreen from "../screens/mahal/BookingFormScreen";
 import MyMahalsScreen from "../screens/mahal/MyMahalsScreen";
 import MahalFormScreen from "../screens/mahal/MahalFormScreen";
+import ClientListScreen from "../screens/admin/ClientListScreen";
+import RegisterClientScreen from "../screens/admin/RegisterClientScreen";
+import EnquiriesScreen from "../screens/admin/EnquiriesScreen";
+import MoitechRegScreen from "../screens/admin/MoitechRegScreen";
 import { Pressable } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../hooks/useAppTheme";
@@ -46,7 +50,9 @@ export default function MainStackNavigator() {
       }}
     >
       <Stack.Screen name="Dashboard" component={RoleDashboardScreen} />
-      <Stack.Screen name="ClientList" component={ComingSoonScreen} />
+      <Stack.Screen name="ClientList" component={ClientListScreen} />
+      <Stack.Screen name="Enquiries" component={EnquiriesScreen} />
+      <Stack.Screen name="RegisterClient" component={RegisterClientScreen} />
       <Stack.Screen name="MyMahals" component={MyMahalsScreen} />
       <Stack.Screen name="MahalBookings" component={MahalBookingsScreen} />
       {/* Forms open on top of a list, so they get a back arrow instead of the menu button. */}
@@ -72,7 +78,7 @@ export default function MainStackNavigator() {
           ),
         })}
       />
-      <Stack.Screen name="AddMoitechCustomer" component={ComingSoonScreen} />
+      <Stack.Screen name="AddMoitechCustomer" component={MoitechRegScreen} />
       <Stack.Screen name="FunctionMaster" component={FunctionMasterScreen} />
       <Stack.Screen name="UserMaster" component={UserMasterScreen} />
       <Stack.Screen name="Transaction" component={NewReceiptScreen} />

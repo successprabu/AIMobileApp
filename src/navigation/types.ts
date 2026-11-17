@@ -8,6 +8,8 @@ export type RootDrawerParamList = {
 export type MainStackParamList = {
   Dashboard: undefined;
   ClientList: undefined;
+  RegisterClient: { type?: "moitech" | "mahal" } | undefined;
+  Enquiries: undefined;
   MyMahals: undefined;
   MahalForm: { mahalId?: number } | undefined;
   MahalBookings: { tab?: string } | undefined;
