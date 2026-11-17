@@ -36,7 +36,7 @@ export default function ContextualFooter() {
   if (!links?.length) return null;
 
   const go = (screen: keyof MainStackParamList) => {
-    navigation.navigate("Home", { screen });
+    navigation.navigate("Home", { screen } as never);
   };
 
   const bottomPad = Math.max(insets.bottom, 6);

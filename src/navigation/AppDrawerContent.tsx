@@ -78,6 +78,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     accent: "#74b9ff",
     items: [
       { screen: "ThemeSettings", titleKey: "Theme Settings", icon: "palette-outline", color: PRIMARY_PINK_LIGHT, roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "UserGuide", titleKey: "userGuide", icon: "book-open-page-variant-outline", color: "#10b981", roles: ["SU", "AU", "NU", "MU"] },
       { screen: "Help", titleKey: "help", icon: "lifebuoy", color: "#3498db", roles: ["SU", "AU", "NU", "MU"] },
     ],
   },

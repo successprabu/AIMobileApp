@@ -126,7 +126,8 @@ function MoitechDashboardScreen() {
   };
 
   const go = (screen: keyof MainStackParamList) => {
-    navigation.navigate(screen);
+    // Dashboard shortcuts open screens without params.
+    navigation.navigate(screen as never);
   };
 
   if (!["SU", "AU", "NU", "MU"].includes(role)) {

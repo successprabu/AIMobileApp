@@ -137,6 +137,23 @@ export default function HelpScreen() {
           ))}
         </View>
 
+        <FadeIn index={4}>
+          <Pressable
+            onPress={() => navigation.navigate("UserGuide" as never)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.guide, { backgroundColor: c.card, borderColor: c.border, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: "#10b9811f" }]}>
+              <MaterialCommunityIcons name="book-open-page-variant-outline" size={24} color="#10b981" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: c.text, fontWeight: "800" }}>{t("userGuide", { defaultValue: "User guide" })}</Text>
+              <Text style={{ color: c.textMuted, fontSize: 13 }}>Step-by-step pictures, and the PDF to download</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={c.textMuted} />
+          </Pressable>
+        </FadeIn>
+
         <Text style={[styles.h, { color: c.text }]}>Common questions</Text>
         {faqs.map((f, i) => (
           <FaqItem key={f.q} item={f} index={i + 4} />
@@ -185,6 +202,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 10, marginTop: 14 },
   action: { alignItems: "center", padding: 12, borderRadius: 16, elevation: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
   actionIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  guide: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, marginTop: 14 },
   h: { fontWeight: "800", fontSize: 16, marginTop: 22, marginBottom: 10 },
   faq: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 8 },
   faqHead: { flexDirection: "row", alignItems: "center", gap: 10 },

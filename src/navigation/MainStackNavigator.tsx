@@ -4,6 +4,7 @@ import { DrawerToggleButton } from "@react-navigation/drawer";
 import type { MainStackParamList } from "./types";
 import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import HelpScreen from "../screens/HelpScreen";
+import UserGuideScreen from "../screens/UserGuideScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
 import TransactionListScreen from "../screens/TransactionListScreen";
 import NewExpensesScreen from "../screens/NewExpensesScreen";
@@ -95,6 +96,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="SummaryReport" component={SummaryReportScreen} />
       <Stack.Screen name="ThemeSettings" component={ThemeSettingsScreen} />
       <Stack.Screen name="Help" component={HelpScreen} />
+      <Stack.Screen name="UserGuide" component={UserGuideScreen} />
     </Stack.Navigator>
   );
 }

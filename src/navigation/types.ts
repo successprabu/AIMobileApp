@@ -31,6 +31,7 @@ export type MainStackParamList = {
   SummaryReport: undefined;
   ThemeSettings: undefined;
   Help: undefined;
+  UserGuide: undefined;
 };
 
 export type MainStackProps<T extends keyof MainStackParamList> =
