@@ -3,7 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { DrawerToggleButton } from "@react-navigation/drawer";
 import type { MainStackParamList } from "./types";
 import RoleDashboardScreen from "../screens/RoleDashboardScreen";
-import ComingSoonScreen from "../screens/ComingSoonScreen";
+import HelpScreen from "../screens/HelpScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
 import TransactionListScreen from "../screens/TransactionListScreen";
 import NewExpensesScreen from "../screens/NewExpensesScreen";
@@ -94,7 +94,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="RegionalReport" component={RegionalReportScreen} />
       <Stack.Screen name="SummaryReport" component={SummaryReportScreen} />
       <Stack.Screen name="ThemeSettings" component={ThemeSettingsScreen} />
-      <Stack.Screen name="Help" component={ComingSoonScreen} />
+      <Stack.Screen name="Help" component={HelpScreen} />
     </Stack.Navigator>
   );
 }

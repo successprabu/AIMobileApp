@@ -97,3 +97,15 @@ export const timeAgo = (v: string) => {
   const days = Math.round(hrs / 24);
   return days < 7 ? `${days} d ago` : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 };
+
+/** Anyone signed in: send a message to the MySuccess team (lands in the super admin's Enquiries). */
+export const submitEnquiry = (form: { name: string; phone?: string; email?: string; topic: string; message: string }) =>
+  call<unknown>("post", "Enquiry/Submit", { name: form.name, phone: form.phone || null, email: form.email || null, topic: form.topic, message: form.message, website: "" });
+
+export const CONTACT = {
+  email: "mysuccesstechnologies@gmail.com",
+  phoneDisplay: "+91 80503 86769",
+  phoneTel: "+918050386769",
+  whatsapp: "918050386769",
+  hours: "Mon – Sat, 9:00 AM – 8:00 PM IST",
+};

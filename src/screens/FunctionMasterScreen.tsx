@@ -28,6 +28,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet, authPost } from "../api/client";
 import { PATHS } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { FadeIn } from "../components/mahal/MahalUi";
 import { resolveFunctionIdAfterSave } from "../utils/functionSession";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -219,8 +220,16 @@ export default function FunctionMasterScreen() {
     setErrors({});
   };
 
+  const activateFunction = async (fn: FunctionRecord) => {
+    await updateUser({ functionId: fn.id });
+    showMessage(
+      t("mobile_function_now_active", {
+        defaultValue: `"${fn.functionName}" is now your active function for receipts, expenses and reports.`,
+      })
+    );
+  };
+
   const handleEdit = (fn: FunctionRecord) => {
-    void updateUser({ functionId: fn.id });
     const iso = toDateInputValue(fn.functionDate ?? "");
     setFormData({
       id: fn.id,
@@ -240,7 +249,7 @@ export default function FunctionMasterScreen() {
     setDateText(formatDisplayDate(iso));
     setErrors({});
     scrollRef.current?.scrollTo({ y: 0, animated: true });
-    showMessage(t("edit"));
+    showMessage(t("mobile_editing_function", { defaultValue: `Editing "${fn.functionName}". Change the details and tap Save.` }));
   };
 
   const handleSubmit = async () => {
@@ -269,7 +278,12 @@ export default function FunctionMasterScreen() {
         payload as unknown as Record<string, unknown>
       );
       if (json.result) {
-        const newFunctionId = await resolveFunctionIdAfterSave(customerId, json, payload);
+        // A new function becomes active (as on the website); editing one leaves the choice alone
+        // unless nothing is active yet.
+        const makeActive = payload.id === 0 || !sessionFunctionId;
+        const newFunctionId = makeActive
+          ? await resolveFunctionIdAfterSave(customerId, json, payload)
+          : null;
         if (newFunctionId) {
           await updateUser({ functionId: newFunctionId });
           showMessage(
@@ -479,10 +493,11 @@ export default function FunctionMasterScreen() {
                 </Text>
               ) : null
             }
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const isActive = sessionFunctionId > 0 && item.id === sessionFunctionId;
               return (
-              <Pressable style={styles.listRow} onPress={() => handleEdit(item)}>
+              <FadeIn index={index}>
+              <View style={[styles.listRow, isActive && styles.listRowActive]}>
                 <View style={styles.listMain}>
                   <View style={styles.listTitleRow}>
                     <Text variant="titleSmall">{item.functionName}</Text>
@@ -499,8 +514,30 @@ export default function FunctionMasterScreen() {
                     {item.funPersionNames}
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="pencil" size={22} color="#0984e3" />
-              </Pressable>
+                {isActive ? (
+                  <MaterialCommunityIcons name="check-circle" size={24} color="#16a34a" />
+                ) : (
+                  <Button
+                    mode="contained-tonal"
+                    compact
+                    icon="check"
+                    onPress={() => void activateFunction(item)}
+                    accessibilityLabel={`Use ${item.functionName}`}
+                  >
+                    {t("mobile_use_function", { defaultValue: "Use this" })}
+                  </Button>
+                )}
+                <Pressable
+                  onPress={() => handleEdit(item)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${item.functionName}`}
+                  style={styles.editBtn}
+                >
+                  <MaterialCommunityIcons name="pencil-outline" size={22} color="#0984e3" />
+                </Pressable>
+              </View>
+              </FadeIn>
             );
             }}
             ItemSeparatorComponent={() => <Divider />}
@@ -543,6 +580,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
+  listRowActive: { backgroundColor: "#16a34a12", borderLeftWidth: 4, borderLeftColor: "#16a34a" },
+  editBtn: { marginLeft: 8, padding: 6 },
   listMain: { flex: 1, marginRight: 8 },
   listTitleRow: {
     flexDirection: "row",
