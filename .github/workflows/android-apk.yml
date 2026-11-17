@@ -29,6 +29,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      version: ${{ env.VERSION_NAME }}
     env:
       # Same backend as the web app. Optional keys come from repository secrets.
       EXPO_PUBLIC_API_BASE_URL: https://successapi.azurewebsites.net/api/
@@ -107,7 +109,15 @@ jobs:
 
       - name: Build APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+        # Smaller download: 64-bit phones only (every Android phone since about 2017), native
+        # libraries and the JS bundle compressed inside the APK, and R8 removes unused code/resources.
+        run: >
+          ./gradlew assembleRelease --no-daemon
+          -PreactNativeArchitectures=arm64-v8a
+          -Pexpo.useLegacyPackaging=true
+          -Pandroid.enableBundleCompression=true
+          -Pandroid.enableMinifyInReleaseBuilds=true
+          -Pandroid.enableShrinkResourcesInReleaseBuilds=true
 
       - name: Name the APK
         run: |
@@ -115,20 +125,78 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk dist/MySuccess.apk
           ls -lh dist
 
+      # Passed to the emulator check below; not a download for users (deleted after a day).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: dist/MySuccess.apk
+          retention-days: 1
+
+  # Installs the APK on an Android emulator, opens it and fails if it crashes.
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Open the app on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          # Android 14 x86_64 images run 64-bit ARM apps through built-in translation.
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb install -r MySuccess.apk
+            adb logcat -c
+            adb shell monkey -p com.successprabu.aimobileapp -c android.intent.category.LAUNCHER 1
+            sleep 40
+            adb exec-out screencap -p > app-start.png
+            adb logcat -d > logcat.txt
+            if ! adb shell pidof com.successprabu.aimobileapp; then echo "::error::The app is not running 40 s after opening"; grep -A30 "FATAL EXCEPTION" logcat.txt | head -60; exit 1; fi
+            if grep -q "FATAL EXCEPTION" logcat.txt; then echo "::error::The app crashed"; grep -A30 "FATAL EXCEPTION" logcat.txt | head -60; exit 1; fi
+            echo "App started and is still running."
+
+      - name: Keep the screenshot and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test
+          path: |
+            app-start.png
+            logcat.txt
+          retention-days: 7
+
+  publish:
+    needs: [build, smoke-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+
+      - name: Size
+        run: ls -lh MySuccess.apk
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-v${{ env.VERSION_NAME }}
-          name: My Success Android ${{ env.VERSION_NAME }}
+          tag_name: android-v${{ needs.build.outputs.version }}
+          name: My Success Android ${{ needs.build.outputs.version }}
           body: |
             Android app built from ${{ github.sha }}.
-            Install: download MySuccess.apk on your phone and open it (allow "Install unknown apps" if asked).
-          files: dist/MySuccess.apk
+            Install on an Android phone: download MySuccess.apk and open it (allow "Install unknown apps" if asked).
+            Only MySuccess.apk is needed. The "Source code" files are added by GitHub and are not for installing.
+          files: MySuccess.apk
           make_latest: true
-
-      - name: Keep a copy with the run
-        uses: actions/upload-artifact@v4
-        with:
-          name: MySuccess-${{ env.VERSION_NAME }}
-          path: dist/MySuccess.apk
-          retention-days: 14
