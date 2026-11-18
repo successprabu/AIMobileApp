@@ -33,6 +33,7 @@ export type MainStackParamList = {
   Help: undefined;
   UserGuide: undefined;
   MoiGiven: undefined;
+  History: { action?: string } | undefined;
 };
 
 export type MainStackProps<T extends keyof MainStackParamList> =

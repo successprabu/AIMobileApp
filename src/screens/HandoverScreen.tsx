@@ -2,6 +2,7 @@ import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -15,6 +16,7 @@ import {
   Text,
 } from "react-native-paper";
 import { useTranslation } from "react-i18next";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { authGet, authPost } from "../api/client";
@@ -53,9 +55,26 @@ export default function HandoverScreen() {
   const [editing, setEditing] = useState<HandoverListRow | null>(null);
   const [snack, setSnack] = useState({ visible: false, message: "", isError: false });
 
+  // Admins can check who edited or deleted entries before accepting a handover.
+  const isAdmin = u.userType === "AU" || u.userType === "SU";
   useLayoutEffect(() => {
-    navigation.setOptions({ title: t("handOver") });
-  }, [navigation, t]);
+    navigation.setOptions({
+      title: t("handOver"),
+      headerRight: isAdmin
+        ? () => (
+            <Pressable
+              onPress={() => navigation.navigate("History", { action: "Edited" })}
+              accessibilityRole="button"
+              accessibilityLabel={t("history", { defaultValue: "History" })}
+              hitSlop={10}
+              style={{ paddingHorizontal: 8, flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <MaterialCommunityIcons name="history" size={22} color={c.headerText ?? "#fff"} />
+            </Pressable>
+          )
+        : undefined,
+    });
+  }, [navigation, t, isAdmin, c.headerText]);
 
   const showMessage = (message: string, isError = false) => {
     setSnack({ visible: true, message, isError });

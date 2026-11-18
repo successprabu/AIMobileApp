@@ -6,6 +6,7 @@ import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import HelpScreen from "../screens/HelpScreen";
 import UserGuideScreen from "../screens/UserGuideScreen";
 import MoiGivenScreen from "../screens/MoiGivenScreen";
+import HistoryScreen from "../screens/HistoryScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
 import TransactionListScreen from "../screens/TransactionListScreen";
 import NewExpensesScreen from "../screens/NewExpensesScreen";
@@ -99,6 +100,7 @@ export default function MainStackNavigator() {
       <Stack.Screen name="Help" component={HelpScreen} />
       <Stack.Screen name="UserGuide" component={UserGuideScreen} />
       <Stack.Screen name="MoiGiven" component={MoiGivenScreen} />
+      <Stack.Screen name="History" component={HistoryScreen} />
     </Stack.Navigator>
   );
 }
