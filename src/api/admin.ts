@@ -34,7 +34,7 @@ async function headers() {
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
-async function call<T>(method: "get" | "post", path: string, body?: unknown, params?: Record<string, unknown>): Promise<ApiResult<T>> {
+export async function call<T>(method: "get" | "post", path: string, body?: unknown, params?: Record<string, unknown>): Promise<ApiResult<T>> {
   try {
     const res = await axios({ method, url: `${BASE_URL}${path}`, data: body, params, timeout: 20000, headers: await headers() });
     const json = (res.data ?? {}) as { result?: boolean; message?: string; data?: T } | string;

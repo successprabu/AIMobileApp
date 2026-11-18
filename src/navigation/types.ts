@@ -32,6 +32,7 @@ export type MainStackParamList = {
   ThemeSettings: undefined;
   Help: undefined;
   UserGuide: undefined;
+  MoiGiven: undefined;
 };
 
 export type MainStackProps<T extends keyof MainStackParamList> =

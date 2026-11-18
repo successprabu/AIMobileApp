@@ -58,6 +58,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
       { screen: "Others", titleKey: "addOthers", icon: "gift-outline", color: "#00cec9", roles: ["SU", "AU", "NU"] },
       { screen: "OthersList", titleKey: "othersList", icon: "playlist-plus", color: "#81ecec", roles: ["SU", "AU", "NU"] },
       { screen: "Handover", titleKey: "handOver", icon: "handshake", color: "#f39c12", roles: ["SU", "AU", "NU"] },
+      { screen: "MoiGiven", titleKey: "moiGiven", icon: "gift-open-outline", color: "#8b5cf6", roles: ["SU", "AU"] },
     ],
   },
   {
