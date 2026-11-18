@@ -3,7 +3,9 @@ import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
+  Pressable,
   Image,
   ScrollView,
   StyleSheet,
@@ -26,6 +28,15 @@ import { useKeyboardAwareScroll } from "../hooks/useKeyboardAwareScroll";
 import type { AuthUser } from "../types/auth";
 import type { AuthStackParamList } from "./RegistrationScreen";
 import { APP_DISPLAY_NAME } from "../theme/themes";
+import Sheet from "../components/ui/Sheet";
+
+// Each product has its own sign-up (same choices as the website).
+const SCHOOL_SIGN_UP = "https://myschool-d5f9fueuajgvdkaj.westus3-01.azurewebsites.net/register-school";
+const SIGN_UPS = [
+  { id: "moitech", title: "Moitech", text: "Record moi (gifts) at your function. 7 days free.", icon: "hand-heart-outline", color: "#6366f1" },
+  { id: "mahal", title: "Mahal Management", text: "For hall owners: take bookings online. 1 month free.", icon: "office-building-outline", color: "#f59e0b" },
+  { id: "school", title: "School Website & ERP", text: "Register your school on the school site. 1 month free.", icon: "school-outline", color: "#10b981" },
+] as const;
 
 type UserTypeOption = { userType: string; userTypeDescription: string };
 
@@ -59,6 +70,12 @@ export default function LoginScreen() {
   } = useKeyboardAwareScroll({ bottomInset: insets.bottom });
 
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const [chooseSignUp, setChooseSignUp] = useState(false);
+  const startSignUp = (id: (typeof SIGN_UPS)[number]["id"]) => {
+    setChooseSignUp(false);
+    if (id === "school") void Linking.openURL(SCHOOL_SIGN_UP);
+    else navigation.navigate("SignUp", { kind: id });
+  };
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState("AU");
@@ -336,23 +353,37 @@ export default function LoginScreen() {
               <Button
                 mode="text"
                 textColor={c.primary}
-                onPress={() => navigation.navigate("SignUp")}
+                onPress={() => setChooseSignUp(true)}
                 compact
               >
                 {t("sign_up")}
               </Button>
-              <Button mode="text" textColor={c.textMuted} onPress={() => {}} compact disabled>
+              <Button mode="text" textColor={c.primary} onPress={() => navigation.navigate("ForgotPassword")} compact>
                 {t("forgot_password")}
               </Button>
             </View>
-            <Text variant="bodySmall" style={styles.forgotHint}>
-              {t("mobile_forgot_hint", {
-                defaultValue: "Forgot password: contact support or use the web portal.",
-              })}
-            </Text>
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
+      <Sheet visible={chooseSignUp} title="Sign up for" onClose={() => setChooseSignUp(false)}>
+        {SIGN_UPS.map((s) => (
+          <Pressable
+            key={s.id}
+            onPress={() => startSignUp(s.id)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.choice, { borderColor: c.border, borderLeftColor: s.color, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View style={[styles.choiceIcon, { backgroundColor: `${s.color}22` }]}>
+              <MaterialCommunityIcons name={s.icon} size={24} color={s.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: c.text, fontWeight: "800" }}>{s.title}</Text>
+              <Text style={{ color: c.textMuted, fontSize: 13 }}>{s.text}</Text>
+            </View>
+            <MaterialCommunityIcons name={s.id === "school" ? "open-in-new" : "chevron-right"} size={20} color={c.textMuted} />
+          </Pressable>
+        ))}
+      </Sheet>
     </KeyboardAvoidingView>
   );
 }
@@ -455,7 +486,8 @@ function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
       flexDirection: "row",
       justifyContent: "space-between",
     },
-    forgotHint: { textAlign: "center", color: c.textMuted, marginTop: 4 },
+    choice: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderLeftWidth: 4, marginBottom: 10 },
+    choiceIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     errorBox: {
       flexDirection: "row",
       alignItems: "center",

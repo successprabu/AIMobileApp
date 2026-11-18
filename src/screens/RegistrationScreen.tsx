@@ -30,7 +30,9 @@ import {
 
 export type AuthStackParamList = {
   Login: undefined;
-  SignUp: undefined;
+  /** kind: "moitech" (default) or "mahal" (a mahal owner account). */
+  SignUp: { kind?: "moitech" | "mahal" } | undefined;
+  ForgotPassword: undefined;
 };
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SignUp">;
@@ -60,7 +62,11 @@ function emptyForm(): RegistrationForm {
   };
 }
 
-export default function RegistrationScreen({ navigation }: Props) {
+export default function RegistrationScreen({ navigation, route }: Props) {
+  // Moitech (AU) or mahal owner (MU) account, chosen on the login screen.
+  const mahal = route.params?.kind === "mahal";
+  const userType = mahal ? "MU" : "AU";
+  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up" }), [navigation, mahal]);
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -108,13 +114,13 @@ export default function RegistrationScreen({ navigation }: Props) {
     }
     setSendingOtp(true);
     try {
-      const check = await checkMobileAvailable(form.primary_phone);
+      const check = await checkMobileAvailable(form.primary_phone, userType);
       if (!check.result) {
         showMsg(check.message ?? t("no_user_found"), true);
         return;
       }
       // The server makes the code and sends the SMS.
-      const sent = await sendOtp(form.primary_phone);
+      const sent = await sendOtp(form.primary_phone, userType);
       if (!sent.ok) {
         showMsg(sent.message || t("an_error_occurred"), true);
         return;
@@ -165,7 +171,7 @@ export default function RegistrationScreen({ navigation }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await registerCustomer(form);
+      const res = await registerCustomer(form, userType);
       if (res.result) {
         showMsg(t("mobile_register_success", { defaultValue: "Registration successful!" }));
         setTimeout(() => navigation.replace("Login"), 1500);

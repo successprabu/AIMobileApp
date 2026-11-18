@@ -109,3 +109,7 @@ export const CONTACT = {
   whatsapp: "918050386769",
   hours: "Mon – Sat, 9:00 AM – 8:00 PM IST",
 };
+
+/** Signed in: change the password (the current one is needed). */
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  call<unknown>("post", "Auth/ChangePassword", { currentPassword, newPassword });

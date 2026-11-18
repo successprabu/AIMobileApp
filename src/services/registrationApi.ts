@@ -24,7 +24,7 @@ export type RegistrationForm = {
   isActive: boolean;
 };
 
-export async function checkMobileAvailable(mobile: string): Promise<{
+export async function checkMobileAvailable(mobile: string, userType = "AU"): Promise<{
   result?: boolean;
   message?: string;
 }> {
@@ -32,7 +32,7 @@ export async function checkMobileAvailable(mobile: string): Promise<{
     params: {
       userName: mobile,
       appName: "MOI",
-      userType: "AU",
+      userType,
     },
   });
   return data;
@@ -67,11 +67,16 @@ async function otpCall(path: string, body: Record<string, string>): Promise<OtpR
   }
 }
 
+/** userType: "AU" for a Moitech account, "MU" for a mahal owner. */
 export async function registerCustomer(
-  payload: RegistrationForm
+  payload: RegistrationForm,
+  userType = "AU"
 ): Promise<{ result?: boolean; message?: string }> {
   const body = {
     ...payload,
+    userType,
+    customerId: 0,
+    appName: "MOI",
     pincode: Number(payload.pincode) || 0,
     createdDt: new Date().toISOString(),
     updatedDt: new Date().toISOString(),
@@ -79,3 +84,8 @@ export async function registerCustomer(
   const { data } = await axios.post(`${BASE_URL}Auth/AddCustomer`, body);
   return data;
 }
+
+/** Forgot password: OTP to the registered mobile, then the new password with the OTP. */
+export const forgotPassword = (mobile: string) => otpCall("Auth/ForgotPassword", { phone: mobile });
+export const resetPassword = (mobile: string, otp: string, newPassword: string) =>
+  otpCall("Auth/ResetPassword", { phone: mobile, otp, newPassword });

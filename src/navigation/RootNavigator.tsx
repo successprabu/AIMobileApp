@@ -8,6 +8,7 @@ import LoginScreen from "../screens/LoginScreen";
 import RegistrationScreen from "../screens/RegistrationScreen";
 import AppDrawerNavigator from "./AppDrawerNavigator";
 import type { AuthStackParamList } from "../screens/RegistrationScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -59,6 +60,11 @@ export default function RootNavigator() {
             name="SignUp"
             component={RegistrationScreen}
             options={{ title: "My Success" }}
+          />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+            options={{ title: "Forgot password" }}
           />
         </Stack.Navigator>
       )}

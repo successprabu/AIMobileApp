@@ -33,6 +33,7 @@ export type MainStackParamList = {
   Help: undefined;
   UserGuide: undefined;
   MoiGiven: undefined;
+  ChangePassword: undefined;
   History: { action?: string } | undefined;
 };
 
