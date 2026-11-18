@@ -24,8 +24,9 @@ function buildInitialForm(
   functionId: number,
   userId: number
 ): HandoverForm {
-  const totalRcdAmount =
-    row && row.receipt === 0 ? row.others : row?.receipt ?? 0;
+  // Money the collector should hand over: receipts minus the expenses they paid, plus any cash given with
+  // other gifts (same as the Total column on the Handover screen and on the website).
+  const totalRcdAmount = row ? (row.receipt ?? 0) + (row.others ?? 0) - (row.expense ?? 0) : 0;
 
   return {
     id: 0,
@@ -135,11 +136,16 @@ export default function HandoverEditModal({
             />
             <TextInput
               {...fieldProps}
-              label={t("total")}
+              label={t("handoverExpected", { defaultValue: "Should hand over" })}
               mode="outlined"
               value={String(form.totalRcdAmount)}
               disabled
             />
+            {row ? (
+              <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: -4, marginBottom: 8 }}>
+                {`${t("receipt")} ₹${row.receipt ?? 0} − ${t("expenses")} ₹${row.expense ?? 0}${row.others ? ` + ${t("others")} ₹${row.others}` : ""}`}
+              </Text>
+            ) : null}
             <VoiceTextField
               label={t("handoverAmount")}
               mode="outlined"

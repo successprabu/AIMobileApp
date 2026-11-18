@@ -32,10 +32,9 @@ jobs:
     outputs:
       version: ${{ env.VERSION_NAME }}
     env:
-      # Same backend as the web app. Optional keys come from repository secrets.
+      # Same backend as the web app. No secret keys go into the app: anything in an APK can be read.
+      # (SMS OTPs are sent by the API; see Auth/SendOtp.)
       EXPO_PUBLIC_API_BASE_URL: https://successapi.azurewebsites.net/api/
-      EXPO_PUBLIC_FAST2SMS_KEY: ${{ secrets.EXPO_PUBLIC_FAST2SMS_KEY }}
-      EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY }}
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 1.0.${{ github.run_number }}
 

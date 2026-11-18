@@ -22,10 +22,9 @@ import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import { APP_DISPLAY_NAME } from "../theme/themes";
 import {
   checkMobileAvailable,
-  generateOtp,
   registerCustomer,
-  registrationInitiate,
-  sendOtpSms,
+  sendOtp,
+  verifyOtp,
   type RegistrationForm,
 } from "../services/registrationApi";
 
@@ -71,7 +70,6 @@ export default function RegistrationScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showOptional, setShowOptional] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
@@ -115,9 +113,12 @@ export default function RegistrationScreen({ navigation }: Props) {
         showMsg(check.message ?? t("no_user_found"), true);
         return;
       }
-      const otp = generateOtp();
-      setGeneratedOtp(otp);
-      await sendOtpSms(form.primary_phone, otp);
+      // The server makes the code and sends the SMS.
+      const sent = await sendOtp(form.primary_phone);
+      if (!sent.ok) {
+        showMsg(sent.message || t("an_error_occurred"), true);
+        return;
+      }
       setOtpSent(true);
       setOtpTimer(180);
       setResendEnabled(false);
@@ -130,12 +131,13 @@ export default function RegistrationScreen({ navigation }: Props) {
   };
 
   const handleVerifyOtp = async () => {
-    if (form.otp !== generatedOtp) {
-      setErrors({ otp: t("mobile_invalid_otp", { defaultValue: "Invalid OTP." }) });
-      return;
-    }
     try {
-      await registrationInitiate(form.primary_phone);
+      // The server checks the code.
+      const checked = await verifyOtp(form.primary_phone, form.otp);
+      if (!checked.ok) {
+        setErrors({ otp: checked.message || t("mobile_invalid_otp", { defaultValue: "Invalid OTP." }) });
+        return;
+      }
       setOtpVerified(true);
       showMsg(t("verifyOTP"));
     } catch {

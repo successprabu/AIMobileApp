@@ -1,10 +1,6 @@
 import axios from "axios";
 import { BASE_URL } from "../api/endpoints";
 
-const OTP_SMS_URL = "https://www.fast2sms.com/dev/bulkV2";
-const OTP_KEY =
-  process.env.EXPO_PUBLIC_FAST2SMS_KEY ??
-  "xjOLRnX3rkQIbDWCNdKzUZrvDkh4oNE2c5piae82FQuFC0wj0hShCZvrJ1uH";
 
 export type RegistrationForm = {
   id: number;
@@ -28,10 +24,6 @@ export type RegistrationForm = {
   isActive: boolean;
 };
 
-export function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 export async function checkMobileAvailable(mobile: string): Promise<{
   result?: boolean;
   message?: string;
@@ -46,30 +38,33 @@ export async function checkMobileAvailable(mobile: string): Promise<{
   return data;
 }
 
-export async function sendOtpSms(mobile: string, otp: string): Promise<void> {
-  await axios.get(OTP_SMS_URL, {
-    params: {
-      authorization: OTP_KEY,
-      route: "otp",
-      variables_values: otp,
-      flash: 0,
-      numbers: mobile,
-    },
-  });
+type OtpResult = { ok: boolean; message: string };
+
+/** Asks our API to send a registration OTP by SMS. The server makes the code; no SMS key is in the app. */
+export async function sendOtp(mobile: string, userType = "AU"): Promise<OtpResult> {
+  return otpCall("Auth/SendOtp", { phone: mobile, userType, appName: "MOI" });
 }
 
-export async function registrationInitiate(mobile: string): Promise<unknown> {
-  const { data } = await axios.post(`${BASE_URL}Auth/AddRegistrationInitiate`, {
-    id: 0,
-    primary_phone: mobile,
-    userType: "AU",
-    customerId: 0,
-    country_code: "+91",
-    appName: "MOI",
-    createdBy: "SYSTEM",
-    createdDt: new Date().toISOString(),
-  });
-  return data;
+/** Asks our API to check the OTP. Once it is right, this number may register. */
+export async function verifyOtp(mobile: string, otp: string): Promise<OtpResult> {
+  return otpCall("Auth/VerifyOtp", { phone: mobile, otp });
+}
+
+async function otpCall(path: string, body: Record<string, string>): Promise<OtpResult> {
+  try {
+    const { data } = await axios.post(`${BASE_URL}${path}`, body, { timeout: 20000 });
+    return { ok: data?.result !== false, message: data?.message ?? "" };
+  } catch (err) {
+    const e = err as { response?: { status?: number; data?: { message?: string } } };
+    const message =
+      e.response?.data?.message ??
+      (e.response?.status === 429
+        ? "Too many tries. Please wait a few minutes and try again."
+        : !e.response
+          ? "Could not reach the server. Check your connection and try again."
+          : "Something went wrong. Please try again.");
+    return { ok: false, message };
+  }
 }
 
 export async function registerCustomer(

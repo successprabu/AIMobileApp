@@ -2,9 +2,6 @@ import type { LangCode } from "../context/LanguageContext";
 
 const TRANSLITERATION_LANGS = new Set<LangCode>(["ta", "hi", "ml", "te", "kn"]);
 
-const GOOGLE_TRANSLATE_KEY =
-  process.env.EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY?.trim() ?? "";
-
 /** Languages that support Google Input Tools transliteration (Roman → native script). */
 export function isSuggestionLanguage(lang: LangCode): boolean {
   return TRANSLITERATION_LANGS.has(lang);
@@ -15,13 +12,6 @@ export function canUseSuggestions(
   suggestionTargetLanguage: LangCode
 ): boolean {
   return isSuggestionLanguage(suggestionTargetLanguage);
-}
-
-function isMostlyLatin(text: string): boolean {
-  const letters = text.replace(/[\s\d.,!?'"-]/g, "");
-  if (!letters.length) return true;
-  const nonLatin = letters.replace(/[A-Za-z]/g, "").length;
-  return nonLatin / letters.length < 0.35;
 }
 
 function uniqueUpTo(items: string[], max: number): string[] {
@@ -65,37 +55,6 @@ export async function fetchTransliterationSuggestions(
   return [];
 }
 
-/** English → app regional language (optional; needs EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY). */
-async function fetchEnglishTranslation(
-  text: string,
-  targetLang: LangCode
-): Promise<string | null> {
-  if (!GOOGLE_TRANSLATE_KEY || !text.trim() || !TRANSLITERATION_LANGS.has(targetLang)) {
-    return null;
-  }
-
-  try {
-    const url = `https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(GOOGLE_TRANSLATE_KEY)}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        q: text,
-        source: "en",
-        target: targetLang,
-        format: "text",
-      }),
-    });
-    const data = (await response.json()) as {
-      data?: { translations?: { translatedText?: string }[] };
-    };
-    const translated = data?.data?.translations?.[0]?.translatedText?.trim();
-    return translated || null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Suggestions for text fields: type in English (Roman letters) → up to 5 options
  * in the regional language chosen in the app menu.
@@ -113,14 +72,6 @@ export async function fetchInputSuggestions(
     suggestionTargetLanguage
   );
 
-  if (!isMostlyLatin(text)) {
-    return uniqueUpTo(transliterated, 5);
-  }
-
-  const translated = await fetchEnglishTranslation(text, suggestionTargetLanguage);
-  const merged = translated
-    ? uniqueUpTo([translated, ...transliterated], 5)
-    : uniqueUpTo(transliterated, 5);
-
-  return merged;
+  // (English → regional translation was removed: it needed a Google key inside the app, where anyone could read it.)
+  return uniqueUpTo(transliterated, 5);
 }
