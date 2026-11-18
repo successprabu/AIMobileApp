@@ -82,6 +82,11 @@ export default function LoginScreen() {
   const [userTypeDescription, setUserTypeDescription] = useState("");
   const [userTypes, setUserTypes] = useState<UserTypeOption[]>([]);
   const [loginError, setLoginError] = useState("");
+  // The API says "Invalid User" for a wrong mobile number or password.
+  const friendly = (message?: string | null) =>
+    message && /^invalid user$/i.test(message.trim())
+      ? t("wrong_mobile_or_password", { defaultValue: "Wrong mobile number or password. Please check and try again." })
+      : message ?? undefined;
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -182,11 +187,11 @@ export default function LoginScreen() {
           );
         }
       } else {
-        setLoginError(data.message ?? t("mobile_login_failed", { defaultValue: "Login failed." }));
+        setLoginError(friendly(data.message) ?? t("mobile_login_failed", { defaultValue: "Login failed." }));
       }
     } catch (error) {
       const err = error as { response?: { data?: { message?: string } } };
-      setLoginError(err.response?.data?.message ?? t("an_error_occurred"));
+      setLoginError(friendly(err.response?.data?.message) ?? t("an_error_occurred"));
     } finally {
       setLoading(false);
     }
@@ -264,7 +269,7 @@ export default function LoginScreen() {
                   label={t("mobile_number")}
                   mode="outlined"
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={(v) => { setUsername(v); if (loginError) setLoginError(""); }}
                   onEndEditing={handleUsernameBlur}
                   onFocus={() => onFieldFocus("username")}
                   placeholder={t("enter_mobile_number")}
@@ -287,7 +292,7 @@ export default function LoginScreen() {
                   label={t("password")}
                   mode="outlined"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(v) => { setPassword(v); if (loginError) setLoginError(""); }}
                   onFocus={() => onFieldFocus("password")}
                   placeholder={t("enter_password")}
                   secureTextEntry={!showPassword}
