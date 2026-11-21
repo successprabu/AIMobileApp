@@ -1,11 +1,12 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Chip, HelperText, Menu, Snackbar, Switch, Text, TextInput } from "react-native-paper";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import type { MainStackParamList } from "../../navigation/types";
 import { AMENITIES, EVENT_TYPES, getDistricts, getStates, listMyMahals, saveMahal } from "../../api/mahal";
+import HallPhotos, { uploadQueued, type QueuedPhoto } from "./HallPhotos";
 import { FadeIn } from "../../components/mahal/MahalUi";
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -53,6 +54,9 @@ export default function MahalFormScreen() {
   const [menu, setMenu] = useState<"state" | "district" | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  // Photos of a saved hall (ids, cover first), and photos picked for a new hall (uploaded once it is saved).
+  const [photos, setPhotos] = useState<number[]>([]);
+  const [queue, setQueue] = useState<QueuedPhoto[]>([]);
 
   useLayoutEffect(() => navigation.setOptions({ title: mahalId ? "Edit mahal" : "Add mahal" }), [navigation, mahalId]);
 
@@ -62,6 +66,7 @@ export default function MahalFormScreen() {
       void listMyMahals().then((r) => {
         const m = r.data?.find((x) => x.id === mahalId);
         if (!m) return;
+        setPhotos(m.photos ?? []);
         setForm({
           ...blank,
           ...m,
@@ -112,7 +117,6 @@ export default function MahalFormScreen() {
     if (!form.district) e.district = "Choose the district";
     if (form.pincode.length !== 6) e.pincode = "6 digit pincode";
     if (form.contactNumber && form.contactNumber.replace(/\D/g, "").length < 10) e.contactNumber = "Enter a valid phone number";
-    if (form.imageUrl && !/^https?:\/\//i.test(form.imageUrl)) e.imageUrl = "Paste a link starting with https://";
     if (form.isOnlineBooking && form.eventTypes.length === 0) e.eventTypes = "Pick at least one event";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -133,6 +137,16 @@ export default function MahalFormScreen() {
       pricePerDay: num(form.pricePerDay),
       advanceAmount: num(form.advanceAmount),
     });
+    if (r.ok && !form.id && queue.length && r.data?.id) {
+      setMessage(`Uploading ${queue.length} photo${queue.length > 1 ? "s" : ""}…`);
+      const failed = await uploadQueued(r.data.id, queue);
+      if (failed) {
+        setSaving(false);
+        setMessage(`${failed} photo(s) could not be uploaded. Open the hall and add them again.`);
+        setTimeout(() => navigation.goBack(), 2500);
+        return;
+      }
+    }
     setSaving(false);
     if (r.ok) navigation.goBack();
     else setMessage(r.message);
@@ -228,11 +242,14 @@ export default function MahalFormScreen() {
         </FadeIn>
 
         <FadeIn index={4} style={[styles.card, { backgroundColor: c.card }]}>
-          <Text style={[styles.section, { color: c.text }]}>Contact and photo</Text>
+          <Text style={[styles.section, { color: c.text }]}>Photos</Text>
+          <HallPhotos mahalId={form.id || 0} photos={photos} onPhotos={setPhotos} queue={queue} onQueue={setQueue} onMessage={setMessage} />
+        </FadeIn>
+
+        <FadeIn index={5} style={[styles.card, { backgroundColor: c.card }]}>
+          <Text style={[styles.section, { color: c.text }]}>Contact</Text>
           {field("contactPerson", "Contact person")}
           {field("contactNumber", "Contact number (shown to customers)", { keyboardType: "phone-pad" })}
-          {field("imageUrl", "Photo link (https://…)", { autoCapitalize: "none", keyboardType: "url" })}
-          {/^https?:\/\//i.test(form.imageUrl) && <Image source={{ uri: form.imageUrl }} style={styles.preview} resizeMode="cover" />}
         </FadeIn>
 
         <Button mode="contained" icon="content-save" onPress={save} loading={saving} disabled={saving} style={styles.save} contentStyle={{ height: 52 }} labelStyle={{ fontSize: 16, fontWeight: "700" }}>
@@ -252,6 +269,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  preview: { height: 140, borderRadius: 12, marginTop: 10 },
   save: { borderRadius: 14, marginTop: 4 },
 });

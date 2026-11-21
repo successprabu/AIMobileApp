@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Platform } from "react-native";
 import { BASE_URL } from "./endpoints";
 import { getStoredUserJson } from "../storage/userStorage";
 
@@ -33,6 +34,9 @@ export type Mahal = {
   amenities?: string[];
   eventTypes?: string[];
   imageUrl?: string | null;
+  /** Uploaded photo ids, cover first. */
+  photos?: number[];
+  coverPhotoId?: number | null;
   isOnlineBooking?: boolean;
   isActive?: boolean;
   pendingRequests?: number;
@@ -172,3 +176,32 @@ export const fmtRange = (from: string, to?: string) => {
 
 export const fmtDateTime = (v: string) =>
   new Date(v).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+// ---- hall photos (same API as the website)
+/** Address of a hall photo. thumb: the small copy for lists. */
+export const photoUrl = (id: number, thumb = false) => `${BASE_URL}MahalBooking/Public/Photo/${id}${thumb ? "?size=thumb" : ""}`;
+
+/** Uploads a photo already shrunk on the phone (full + small copy, both JPEG files on the device). */
+export async function uploadPhoto(mahalId: number, fullUri: string, thumbUri?: string): Promise<ApiResult<{ id: number }[]>> {
+  const form = new FormData();
+  form.append("mahalId", String(mahalId));
+  // On a phone React Native sends files from { uri, name, type }; the browser version needs the file itself.
+  const part = async (uri: string, name: string) =>
+    Platform.OS === "web" ? await (await fetch(uri)).blob() : ({ uri, name, type: "image/jpeg" } as unknown as Blob);
+  form.append("file", await part(fullUri, "photo.jpg"), "photo.jpg");
+  if (thumbUri) form.append("thumb", await part(thumbUri, "thumb.jpg"), "thumb.jpg");
+  try {
+    const res = await axios.post(`${BASE_URL}${R}Photos/Upload`, form, {
+      timeout: 60000,
+      // The phone needs the multipart type set; the browser sets it itself (with the boundary).
+      headers: { ...(await headers()), ...(Platform.OS === "web" ? {} : { "Content-Type": "multipart/form-data" }) },
+    });
+    const json = (res.data ?? {}) as { result?: boolean; message?: string; data?: { id: number }[] };
+    return { ok: json.result !== false, message: json.message ?? "", data: json.data };
+  } catch (err) {
+    const e = err as { response?: { data?: { message?: string } } };
+    return { ok: false, message: e.response?.data?.message ?? "The photo could not be uploaded. Check your connection and try again." };
+  }
+}
+export const deletePhoto = (id: number) => call<{ id: number }[]>("post", `${R}Photos/Delete`, undefined, { id });
+export const setCoverPhoto = (id: number) => call<{ id: number }[]>("post", `${R}Photos/Cover`, undefined, { id });

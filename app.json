@@ -45,7 +45,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow access to photos for receipt import."
+          "photosPermission": "Allow access to photos to import receipts and to add photos of your hall."
         }
       ]
     ]

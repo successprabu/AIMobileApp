@@ -6,7 +6,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import type { MainStackParamList } from "../../navigation/types";
-import { listMyMahals, type Mahal } from "../../api/mahal";
+import { listMyMahals, photoUrl, type Mahal } from "../../api/mahal";
 import { FadeIn } from "../../components/mahal/MahalUi";
 import { formatInr } from "../../utils/formatCurrency";
 
@@ -69,10 +69,16 @@ export default function MyMahalsScreen() {
             <FadeIn index={index}>
               <View style={[styles.card, { backgroundColor: c.card, opacity: m.isActive === false ? 0.65 : 1 }]}>
                 <View style={[styles.banner, { backgroundColor: color }]}>
-                  {m.imageUrl ? (
-                    <Image source={{ uri: m.imageUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                  {m.coverPhotoId || m.imageUrl ? (
+                    <Image source={{ uri: m.coverPhotoId ? photoUrl(m.coverPhotoId, true) : m.imageUrl! }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                   ) : (
                     <MaterialCommunityIcons name="office-building" size={44} color="rgba(255,255,255,0.9)" />
+                  )}
+                  {(m.photos?.length ?? 0) > 1 && (
+                    <View style={styles.count}>
+                      <MaterialCommunityIcons name="image-multiple" size={12} color="#fff" />
+                      <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>{m.photos!.length}</Text>
+                    </View>
                   )}
                   <View style={styles.badges}>
                     {m.isOnlineBooking && m.isActive !== false && <Badge text="Online" color="#16a34a" />}
@@ -120,6 +126,7 @@ function Badge({ text, color }: { text: string; color: string }) {
 }
 
 const styles = StyleSheet.create({
+  count: { position: "absolute", left: 10, bottom: 10, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(15,23,42,0.7)", borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 },
   card: { borderRadius: 18, overflow: "hidden", marginBottom: 16, elevation: 2, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } },
   banner: { height: 120, alignItems: "center", justifyContent: "center" },
   badges: { position: "absolute", top: 10, left: 10, flexDirection: "row", gap: 6 },
