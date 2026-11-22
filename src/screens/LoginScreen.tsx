@@ -56,7 +56,7 @@ const DECOR_ICONS: (keyof typeof MaterialCommunityIcons.glyphMap)[] = [
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const { signIn } = useAuth();
+  const { signIn, sessionEnded, clearSessionEnded } = useAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
   const insets = useSafeAreaInsets();
@@ -256,6 +256,14 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            {sessionEnded && !loginError ? (
+              <View style={[styles.errorBox, { backgroundColor: "#e0f2fe", borderColor: "#7dd3fc" }]}>
+                <MaterialCommunityIcons name="information-outline" size={20} color="#0369a1" />
+                <Text style={[styles.errorText, { color: "#0369a1" }]}>
+                  {t("session_ended_sign_in", { defaultValue: "Your session has ended. Please sign in again." })}
+                </Text>
+              </View>
+            ) : null}
             {loginError ? (
               <View style={styles.errorBox}>
                 <MaterialCommunityIcons name="alert-circle-outline" size={18} color={c.danger} />
@@ -269,7 +277,7 @@ export default function LoginScreen() {
                   label={t("mobile_number")}
                   mode="outlined"
                   value={username}
-                  onChangeText={(v) => { setUsername(v); if (loginError) setLoginError(""); }}
+                  onChangeText={(v) => { setUsername(v); if (loginError) setLoginError(""); if (sessionEnded) clearSessionEnded(); }}
                   onEndEditing={handleUsernameBlur}
                   onFocus={() => onFieldFocus("username")}
                   placeholder={t("enter_mobile_number")}
@@ -292,7 +300,7 @@ export default function LoginScreen() {
                   label={t("password")}
                   mode="outlined"
                   value={password}
-                  onChangeText={(v) => { setPassword(v); if (loginError) setLoginError(""); }}
+                  onChangeText={(v) => { setPassword(v); if (loginError) setLoginError(""); if (sessionEnded) clearSessionEnded(); }}
                   onFocus={() => onFieldFocus("password")}
                   placeholder={t("enter_password")}
                   secureTextEntry={!showPassword}
