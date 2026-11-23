@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from "react-native";
 import {
-  Button,
   Checkbox,
   Snackbar,
   Switch,
@@ -19,7 +18,10 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
-import { APP_DISPLAY_NAME } from "../theme/themes";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AuthCard, AuthHero, PillButton, PopCheck, Rise, StepBar } from "../components/ui/AuthUi";
+import { SuccessBurst } from "../components/ui/Motion";
 import {
   checkMobileAvailable,
   registerCustomer,
@@ -66,7 +68,12 @@ export default function RegistrationScreen({ navigation, route }: Props) {
   // Moitech (AU) or mahal owner (MU) account, chosen on the login screen.
   const mahal = route.params?.kind === "mahal";
   const userType = mahal ? "MU" : "AU";
-  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up" }), [navigation, mahal]);
+  // The coloured hero carries the title and a back arrow, so the plain header is hidden.
+  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up", headerShown: false }), [navigation, mahal]);
+  const product = mahal
+    ? { label: "Mahal Management", icon: "office-building-outline" as const, color: "#f59e0b" }
+    : { label: "Moitech", icon: "hand-heart-outline" as const, color: "#6366f1" };
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -76,6 +83,8 @@ export default function RegistrationScreen({ navigation, route }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showOptional, setShowOptional] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0);
@@ -145,7 +154,7 @@ export default function RegistrationScreen({ navigation, route }: Props) {
         return;
       }
       setOtpVerified(true);
-      showMsg(t("verifyOTP"));
+      showMsg(t("mobile_verified", { defaultValue: "Mobile number verified" }));
     } catch {
       showMsg(t("an_error_occurred"), true);
     }
@@ -173,8 +182,8 @@ export default function RegistrationScreen({ navigation, route }: Props) {
     try {
       const res = await registerCustomer(form, userType);
       if (res.result) {
-        showMsg(t("mobile_register_success", { defaultValue: "Registration successful!" }));
-        setTimeout(() => navigation.replace("Login"), 1500);
+        // A short celebration, then the sign-in screen (SuccessBurst calls replace when it finishes).
+        setRegistered(true);
       } else {
         showMsg(res.message ?? t("an_error_occurred"), true);
       }
@@ -188,39 +197,45 @@ export default function RegistrationScreen({ navigation, route }: Props) {
     }
   };
 
+  const step = otpVerified ? 2 : otpSent ? 1 : 0;
+  const fieldStyle = [inputTheme.style, styles.field];
+
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Image source={require("../../assets/brand-logo.png")} style={styles.logo} />
-          <Text variant="headlineSmall" style={styles.title}>
-            {APP_DISPLAY_NAME}
-          </Text>
-          <Text variant="bodyMedium" style={styles.sub}>
-            {t("registration")}
-          </Text>
-        </View>
-
-        <View style={styles.toggleRow}>
-          <Text variant="bodyMedium">{t("display_mandatory_fields_only")}</Text>
-          <Switch value={!showOptional} onValueChange={(v) => setShowOptional(!v)} />
-        </View>
-
-        <TextInput
-          {...inputTheme}
-          label={t("name")}
-          mode="outlined"
-          value={form.name}
-          onChangeText={(v) => setField("name", v)}
-          error={!!errors.name}
-          style={[inputTheme.style, styles.field]}
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <AuthHero
+          compact
+          art={mahal ? "mahal" : "moitech"}
+          paddingTop={insets.top}
+          onBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Login"))}
+          badge={product}
+          title={t("create_account", { defaultValue: "Create an account" })}
+          subtitle={mahal
+            ? t("signup_mahal_sub", { defaultValue: "Take hall bookings online. 1 month free." })
+            : t("signup_moitech_sub", { defaultValue: "Record moi (gifts) at your function. 7 days free." })}
         />
-        {errors.name ? <Text style={styles.err}>{errors.name}</Text> : null}
 
-        <View style={styles.row}>
+        <AuthCard>
+          <StepBar
+            steps={[t("step_mobile", { defaultValue: "Mobile" }), t("step_verify", { defaultValue: "Verify" }), t("step_details", { defaultValue: "Details" })]}
+            step={step}
+          />
+
+          <Text style={styles.section}>{t("verify_your_mobile", { defaultValue: "Verify your mobile" })}</Text>
+
+          <TextInput
+            {...inputTheme}
+            label={t("name")}
+            mode="outlined"
+            value={form.name}
+            onChangeText={(v) => setField("name", v)}
+            error={!!errors.name}
+            outlineStyle={styles.outline}
+            left={<TextInput.Icon icon="account-outline" />}
+            style={fieldStyle}
+          />
+          {errors.name ? <Text style={styles.err}>{errors.name}</Text> : null}
+
           <TextInput
             {...inputTheme}
             label={t("primary_phone")}
@@ -230,151 +245,182 @@ export default function RegistrationScreen({ navigation, route }: Props) {
             onChangeText={(v) => setField("primary_phone", v.replace(/\D/g, "").slice(0, 10))}
             disabled={otpVerified}
             error={!!errors.primary_phone}
-            style={[inputTheme.style, styles.field, styles.flex1]}
+            outlineStyle={styles.outline}
+            left={<TextInput.Icon icon="cellphone" />}
+            right={otpVerified ? <TextInput.Icon icon="check-circle" color="#16a34a" /> : undefined}
+            style={fieldStyle}
           />
-          <Button
-            mode="contained"
-            buttonColor={c.primary}
-            onPress={() => void handleSendOtp()}
-            loading={sendingOtp}
-            disabled={(otpSent && !resendEnabled) || otpVerified}
-            style={styles.otpBtn}
-          >
-            {resendEnabled ? t("resendOTP") : t("sendOTP")}
-          </Button>
-        </View>
-        {errors.primary_phone ? <Text style={styles.err}>{errors.primary_phone}</Text> : null}
+          {errors.primary_phone ? <Text style={styles.err}>{errors.primary_phone}</Text> : null}
 
-        <View style={styles.row}>
+          {otpVerified ? (
+            <PopCheck label={t("mobile_verified", { defaultValue: "Mobile number verified" })} />
+          ) : (
+            <>
+              {!otpSent || resendEnabled ? (
+                <PillButton
+                  label={resendEnabled ? t("resendOTP") : t("sendOTP")}
+                  icon="message-text-outline"
+                  variant={otpSent ? "soft" : "solid"}
+                  onPress={() => void handleSendOtp()}
+                  loading={sendingOtp}
+                  disabled={sendingOtp}
+                  style={styles.gap}
+                />
+              ) : null}
+
+              {otpSent ? (
+                <Rise>
+                  <View style={styles.row}>
+                    <TextInput
+                      {...inputTheme}
+                      label={t("otp")}
+                      mode="outlined"
+                      keyboardType="number-pad"
+                      value={form.otp}
+                      onChangeText={(v) => setField("otp", v.replace(/\D/g, "").slice(0, 6))}
+                      error={!!errors.otp}
+                      outlineStyle={styles.outline}
+                      left={<TextInput.Icon icon="shield-key-outline" />}
+                      style={[inputTheme.style, styles.field, styles.flex1, styles.otp]}
+                      autoComplete="sms-otp"
+                      textContentType="oneTimeCode"
+                    />
+                    <PillButton
+                      label={t("verifyOTP")}
+                      onPress={() => void handleVerifyOtp()}
+                      disabled={form.otp.length !== 6}
+                      style={styles.verifyBtn}
+                    />
+                  </View>
+                  {errors.otp ? <Text style={styles.err}>{errors.otp}</Text> : null}
+                  {otpTimer > 0 ? (
+                    <View style={styles.timerRow}>
+                      <MaterialCommunityIcons name="timer-sand" size={14} color={c.textMuted} />
+                      <Text variant="bodySmall" style={styles.timer}>
+                        {t("resendIn")} {otpTimer} {t("seconds")}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Rise>
+              ) : null}
+            </>
+          )}
+        </AuthCard>
+
+        <AuthCard delay={380} style={[styles.secondCard, !otpVerified && styles.locked]}>
+          <View style={styles.sectionRow}>
+            <Text style={[styles.section, { marginBottom: 0 }]}>{t("account_details", { defaultValue: "Account details" })}</Text>
+            {!otpVerified ? <MaterialCommunityIcons name="lock-outline" size={18} color={c.textMuted} /> : null}
+          </View>
+          {!otpVerified ? (
+            <Text style={styles.hint}>{t("verify_first", { defaultValue: "Verify your mobile number first, then set your password." })}</Text>
+          ) : null}
+
           <TextInput
             {...inputTheme}
-            label={t("otp")}
+            label={t("password")}
+            mode="outlined"
+            secureTextEntry={!showPassword}
+            value={form.password}
+            onChangeText={(v) => setField("password", v)}
+            error={!!errors.password}
+            outlineStyle={styles.outline}
+            left={<TextInput.Icon icon="lock-outline" />}
+            right={<TextInput.Icon icon={showPassword ? "eye-off" : "eye"} onPress={() => setShowPassword((x) => !x)} forceTextInputFocus={false} />}
+            style={fieldStyle}
+          />
+          {errors.password ? <Text style={styles.err}>{errors.password}</Text> : null}
+          <TextInput
+            {...inputTheme}
+            label={t("confirm_password")}
+            mode="outlined"
+            secureTextEntry={!showPassword}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            error={!!errors.confirmPassword}
+            outlineStyle={styles.outline}
+            left={<TextInput.Icon icon="lock-check-outline" />}
+            style={fieldStyle}
+          />
+          {errors.confirmPassword ? <Text style={styles.err}>{errors.confirmPassword}</Text> : null}
+
+          <TextInput
+            {...inputTheme}
+            label={t("pincode")}
             mode="outlined"
             keyboardType="number-pad"
-            value={form.otp}
-            onChangeText={(v) => setField("otp", v.replace(/\D/g, "").slice(0, 6))}
-            disabled={otpVerified}
-            error={!!errors.otp}
-            style={[inputTheme.style, styles.field, styles.flex1]}
+            value={String(form.pincode)}
+            onChangeText={(v) => setField("pincode", v.replace(/\D/g, "").slice(0, 6))}
+            error={!!errors.pincode}
+            outlineStyle={styles.outline}
+            left={<TextInput.Icon icon="map-marker-outline" />}
+            style={fieldStyle}
           />
-          <Button
-            mode="contained-tonal"
-            onPress={() => void handleVerifyOtp()}
-            disabled={form.otp.length !== 6 || otpVerified}
-            style={styles.otpBtn}
-          >
-            {t("verifyOTP")}
-          </Button>
-        </View>
-        {otpSent && !otpVerified && otpTimer > 0 ? (
-          <Text variant="bodySmall" style={styles.timer}>
-            {t("resendIn")} {otpTimer} {t("seconds")}
-          </Text>
-        ) : null}
+          {errors.pincode ? <Text style={styles.err}>{errors.pincode}</Text> : null}
 
-        <TextInput
-          {...inputTheme}
-          label={t("password")}
-          mode="outlined"
-          secureTextEntry
-          value={form.password}
-          onChangeText={(v) => setField("password", v)}
-          error={!!errors.password}
-          style={[inputTheme.style, styles.field]}
-        />
-        <TextInput
-          {...inputTheme}
-          label={t("confirm_password")}
-          mode="outlined"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          error={!!errors.confirmPassword}
-          style={[inputTheme.style, styles.field]}
-        />
-        {errors.confirmPassword ? (
-          <Text style={styles.err}>{errors.confirmPassword}</Text>
-        ) : null}
+          <Pressable onPress={() => setShowOptional((v) => !v)} style={styles.toggleRow} accessibilityRole="switch" accessibilityState={{ checked: showOptional }}>
+            <MaterialCommunityIcons name="card-account-details-outline" size={20} color={c.primary} />
+            <Text style={styles.toggleText}>{t("add_address_optional", { defaultValue: "Add address (optional)" })}</Text>
+            <Switch value={showOptional} onValueChange={setShowOptional} color={c.primary} />
+          </Pressable>
 
-        <TextInput
-          {...inputTheme}
-          label={t("pincode")}
-          mode="outlined"
-          keyboardType="number-pad"
-          value={String(form.pincode)}
-          onChangeText={(v) => setField("pincode", v.replace(/\D/g, "").slice(0, 6))}
-          error={!!errors.pincode}
-          style={[inputTheme.style, styles.field]}
-        />
+          {showOptional ? (
+            <Rise>
+              {(["country", "state", "district", "address_line1"] as const).map((k) => (
+                <TextInput
+                  key={k}
+                  {...inputTheme}
+                  label={t(k)}
+                  mode="outlined"
+                  value={form[k]}
+                  onChangeText={(v) => setField(k, v)}
+                  outlineStyle={styles.outline}
+                  style={fieldStyle}
+                />
+              ))}
+              <View style={styles.checkRow}>
+                <Checkbox
+                  status={form.is_primary_phone_whatsup ? "checked" : "unchecked"}
+                  onPress={() => setField("is_primary_phone_whatsup", !form.is_primary_phone_whatsup)}
+                  color={c.primary}
+                />
+                <MaterialCommunityIcons name="whatsapp" size={18} color="#25d366" />
+                <Text style={{ color: c.text }}>{t("is_primary_phone_whatsup")}</Text>
+              </View>
+            </Rise>
+          ) : null}
 
-        {showOptional ? (
-          <>
-            <TextInput
-              {...inputTheme}
-              label={t("country")}
-              mode="outlined"
-              value={form.country}
-              onChangeText={(v) => setField("country", v)}
-              style={[inputTheme.style, styles.field]}
-            />
-            <TextInput
-              {...inputTheme}
-              label={t("state")}
-              mode="outlined"
-              value={form.state}
-              onChangeText={(v) => setField("state", v)}
-              style={[inputTheme.style, styles.field]}
-            />
-            <TextInput
-              {...inputTheme}
-              label={t("district")}
-              mode="outlined"
-              value={form.district}
-              onChangeText={(v) => setField("district", v)}
-              style={[inputTheme.style, styles.field]}
-            />
-            <TextInput
-              {...inputTheme}
-              label={t("address_line1")}
-              mode="outlined"
-              value={form.address_line1}
-              onChangeText={(v) => setField("address_line1", v)}
-              style={[inputTheme.style, styles.field]}
-            />
-            <View style={styles.checkRow}>
-              <Checkbox
-                status={form.is_primary_phone_whatsup ? "checked" : "unchecked"}
-                onPress={() =>
-                  setField("is_primary_phone_whatsup", !form.is_primary_phone_whatsup)
-                }
-              />
-              <Text>{t("is_primary_phone_whatsup")}</Text>
-            </View>
-          </>
-        ) : null}
+          <PillButton
+            label={t("register")}
+            icon="account-plus"
+            onPress={() => void handleRegister()}
+            loading={submitting}
+            disabled={!otpVerified || submitting}
+            style={styles.registerBtn}
+          />
+        </AuthCard>
 
-        <Button
-          mode="contained"
-          buttonColor={c.primary}
-          icon="account-plus"
-          onPress={() => void handleRegister()}
-          loading={submitting}
-          disabled={!otpVerified}
-          style={styles.registerBtn}
-        >
-          {t("register")}
-        </Button>
-
-        <Button mode="text" textColor={c.primary} onPress={() => navigation.navigate("Login")} style={styles.back}>
-          {t("sign_in")}
-        </Button>
+        <Rise delay={560} style={styles.signInRow}>
+          <Text style={{ color: c.textMuted }}>{t("already_have_account", { defaultValue: "Already have an account?" })}</Text>
+          <Pressable onPress={() => navigation.navigate("Login")} accessibilityRole="link" hitSlop={8}>
+            <Text style={{ color: c.primary, fontWeight: "800" }}>{t("sign_in")}</Text>
+          </Pressable>
+        </Rise>
       </ScrollView>
+
+      {registered ? (
+        <SuccessBurst
+          title={t("mobile_register_success", { defaultValue: "Registration successful!" })}
+          subtitle={t("signin_with_new_account", { defaultValue: "Sign in with your mobile number and password." })}
+          onDone={() => setTimeout(() => navigation.replace("Login"), 700)}
+        />
+      ) : null}
 
       <Snackbar
         visible={snack.visible}
         onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
         duration={3500}
-        style={snack.isError ? styles.snackErr : undefined}
+        style={snack.isError ? styles.snackErr : styles.snackOk}
       >
         {snack.message}
       </Snackbar>
@@ -385,26 +431,28 @@ export default function RegistrationScreen({ navigation, route }: Props) {
 function makeRegStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
-    scroll: { padding: 20, paddingBottom: 40 },
-    header: { alignItems: "center", marginBottom: 16 },
-    logo: { width: 48, height: 52, marginBottom: 8 },
-    title: { fontWeight: "700", color: c.text },
-    sub: { color: c.textMuted, marginTop: 4, textAlign: "center" },
-    toggleRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    field: { marginBottom: 4, backgroundColor: c.inputBg },
-    row: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+    scroll: { paddingBottom: 40 },
+    section: { fontSize: 17, fontWeight: "900", color: c.text, marginBottom: 12 },
+    sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+    hint: { color: c.textMuted, marginBottom: 12, marginTop: 4 },
+    field: { marginBottom: 10, backgroundColor: c.inputBg },
+    outline: { borderRadius: 14 },
+    otp: { letterSpacing: 6 },
+    row: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
     flex1: { flex: 1 },
-    otpBtn: { marginTop: 8 },
-    timer: { color: c.textMuted, marginBottom: 8 },
-    err: { color: c.danger, marginBottom: 8, marginLeft: 4 },
-    checkRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-    registerBtn: { marginTop: 16, paddingVertical: 4 },
-    back: { marginTop: 8 },
+    gap: { marginTop: 4, marginBottom: 6 },
+    verifyBtn: { marginTop: 4 },
+    timerRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
+    timer: { color: c.textMuted },
+    err: { color: c.danger, marginTop: -6, marginBottom: 8, marginLeft: 6, fontSize: 12 },
+    secondCard: { marginTop: 16 },
+    locked: { opacity: 0.6 },
+    toggleRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: c.primaryMuted, marginTop: 4, marginBottom: 12 },
+    toggleText: { flex: 1, color: c.text, fontWeight: "700" },
+    checkRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 },
+    registerBtn: { marginTop: 8 },
+    signInRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 22 },
     snackErr: { backgroundColor: c.danger },
+    snackOk: { backgroundColor: "#15803d" },
   });
 }

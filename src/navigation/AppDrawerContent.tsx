@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Animated, Image, Pressable, View, StyleSheet } from "react-native";
+import { Alert, Animated, Easing, Image, Pressable, View, StyleSheet } from "react-native";
 import {
   DrawerContentScrollView,
+  useDrawerStatus,
   type DrawerContentComponentProps,
 } from "@react-navigation/drawer";
+import { ND } from "../components/ui/Motion";
 import { Text, Switch } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -109,14 +111,82 @@ function userInitials(name: string): string {
   return (name.slice(0, 2) || "MS").toUpperCase();
 }
 
-/** Fades and slides a menu row in when the sidebar opens. */
-function SlideIn({ index, children }: { index: number; children: React.ReactNode }) {
+/** Fades and slides a menu row in each time the sidebar opens (`play` changes on every open). */
+function SlideIn({ index, play, children }: { index: number; play: number; children: React.ReactNode }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 260, delay: Math.min(index, 14) * 28, useNativeDriver: true }).start();
-  }, [index, v]);
+    v.setValue(0);
+    Animated.timing(v, { toValue: 1, duration: 300, delay: Math.min(index, 14) * 30, easing: Easing.out(Easing.cubic), useNativeDriver: ND }).start();
+  }, [index, play, v]);
   return (
-    <Animated.View style={{ opacity: v, transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }] }}>{children}</Animated.View>
+    <Animated.View style={{ opacity: v, transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] }) }] }}>{children}</Animated.View>
+  );
+}
+
+/** A menu row: springs when pressed; the open screen gets a filled pill with a white marker that grows in. */
+function MenuRow({ label, icon, color, active, onPress, c }: { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string; active: boolean; onPress: () => void; c: ReturnType<typeof useAppTheme>["theme"]["colors"] }) {
+  const press = useRef(new Animated.Value(1)).current;
+  const on = useRef(new Animated.Value(active ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.spring(on, { toValue: active ? 1 : 0, friction: 7, tension: 120, useNativeDriver: ND }).start();
+  }, [active, on]);
+  const squeeze = (v: number) => Animated.spring(press, { toValue: v, friction: 5, tension: 260, useNativeDriver: ND }).start();
+  return (
+    <Animated.View style={{ transform: [{ scale: press }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => squeeze(0.96)}
+        onPressOut={() => squeeze(1)}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        style={({ pressed }) => [styles.item, { backgroundColor: !active && pressed ? c.primaryMuted : "transparent" }]}
+      >
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, styles.activeFill, { backgroundColor: c.primary, opacity: on, transform: [{ scaleX: on.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}
+        />
+        <Animated.View pointerEvents="none" style={[styles.marker, { opacity: on, transform: [{ scaleY: on }] }]} />
+        <View style={[styles.itemIcon, { backgroundColor: active ? "rgba(255,255,255,0.22)" : `${color}1f` }]}>
+          <MaterialCommunityIcons name={icon} size={19} color={active ? "#fff" : color} />
+        </View>
+        <Text style={[styles.itemLabel, { color: active ? "#fff" : c.text, fontWeight: active ? "800" : "600" }]} numberOfLines={1}>
+          {label}
+        </Text>
+        {active && <MaterialCommunityIcons name="chevron-right" size={18} color="#fff" />}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/** Section heading; its arrow turns when the section folds. */
+function SectionHead({ title, folded, onPress, color }: { title: string; folded: boolean; onPress: () => void; color: string }) {
+  const v = useRef(new Animated.Value(folded ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: folded ? 1 : 0, duration: 220, useNativeDriver: ND }).start();
+  }, [folded, v]);
+  return (
+    <Pressable onPress={onPress} style={styles.sectionHead} accessibilityRole="button" accessibilityState={{ expanded: !folded }}>
+      <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
+      <Animated.View style={{ transform: [{ rotate: v.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) }] }}>
+        <MaterialCommunityIcons name="chevron-up" size={18} color={color} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/** The avatar pops in with a soft ring each time the sidebar opens. */
+function Avatar({ text, color, play }: { text: string; color: string; play: number }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    v.setValue(0);
+    Animated.spring(v, { toValue: 1, friction: 5, tension: 80, useNativeDriver: ND }).start();
+  }, [play, v]);
+  return (
+    <View style={styles.avatarRing}>
+      <Animated.View style={[styles.avatar, { transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }], opacity: v }]}>
+        <Text style={[styles.avatarText, { color }]}>{text}</Text>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -133,6 +203,12 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   const { theme, mode, toggleMode } = useAppTheme();
   const c = theme.colors;
   const [folded, setFolded] = useState<Record<string, boolean>>({});
+  // Counts sidebar openings so the entrance animations replay each time.
+  const drawerOpen = useDrawerStatus() === "open";
+  const [play, setPlay] = useState(0);
+  useEffect(() => {
+    if (drawerOpen) setPlay((p) => p + 1);
+  }, [drawerOpen]);
   // Before any navigation the stack has no recorded route yet: that is the dashboard.
   const activeScreen = useMemo(() => getActiveScreen(state) ?? "Dashboard", [state]);
   const role = user?.userType ?? "";
@@ -159,19 +235,23 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
       <View style={[styles.header, { paddingTop: insets.top + 14, backgroundColor: c.drawerHeader }]}>
         <View style={styles.bubbleA} />
         <View style={styles.bubbleB} />
+        <View style={styles.bubbleC} />
         <View style={styles.brandRow}>
           <View style={styles.logoRing}>
             <Image source={require("../../assets/brand-logo.png")} style={styles.logo} resizeMode="contain" />
           </View>
           <Text style={styles.brandTitle}>{APP_DISPLAY_NAME}</Text>
+          <Pressable onPress={() => navigation.closeDrawer()} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Close menu" hitSlop={8}>
+            <MaterialCommunityIcons name="close" size={18} color="#fff" />
+          </Pressable>
         </View>
         <View style={styles.profileRow}>
-          <View style={styles.avatar}>
-            <Text style={[styles.avatarText, { color: c.drawerHeader }]}>{userInitials(displayName)}</Text>
-          </View>
+          <Avatar text={userInitials(displayName)} color={c.drawerHeader} play={play} />
           <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.hello}>{t("hello", { defaultValue: "Hello" })} 👋</Text>
             <Text style={styles.profileName} numberOfLines={1}>{displayName || "—"}</Text>
             <View style={styles.rolePill}>
+              <MaterialCommunityIcons name="shield-account-outline" size={12} color="#fff" />
               <Text style={styles.roleText} numberOfLines={1}>{designation}</Text>
             </View>
           </View>
@@ -184,38 +264,20 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
           const title = section.key === "more" ? t("mobile_more", { defaultValue: "More" }) : t(section.titleKey);
           return (
             <View key={section.key} style={{ marginBottom: 6 }}>
-              <Pressable
-                onPress={() => setFolded((f) => ({ ...f, [section.key]: !isFolded }))}
-                style={styles.sectionHead}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: !isFolded }}
-              >
-                <Text style={[styles.sectionTitle, { color: c.textMuted }]}>{title}</Text>
-                <MaterialCommunityIcons name={isFolded ? "chevron-down" : "chevron-up"} size={18} color={c.textMuted} />
-              </Pressable>
+              <SectionHead title={title} folded={isFolded} color={c.textMuted} onPress={() => setFolded((f) => ({ ...f, [section.key]: !isFolded }))} />
               {!isFolded &&
                 section.visible.map((item) => {
-                  const active = activeScreen === item.screen;
                   const index = row++;
                   return (
-                    <SlideIn key={item.screen} index={index}>
-                      <Pressable
+                    <SlideIn key={item.screen} index={index} play={play}>
+                      <MenuRow
+                        label={t(item.titleKey, { defaultValue: item.titleKey })}
+                        icon={item.icon}
+                        color={item.color}
+                        active={activeScreen === item.screen}
                         onPress={() => go(item.screen)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        style={({ pressed }) => [
-                          styles.item,
-                          { backgroundColor: active ? c.primary : pressed ? c.primaryMuted : "transparent" },
-                        ]}
-                      >
-                        <View style={[styles.itemIcon, { backgroundColor: active ? "rgba(255,255,255,0.22)" : `${item.color}1f` }]}>
-                          <MaterialCommunityIcons name={item.icon} size={19} color={active ? "#fff" : item.color} />
-                        </View>
-                        <Text style={[styles.itemLabel, { color: active ? "#fff" : c.text, fontWeight: active ? "800" : "600" }]} numberOfLines={1}>
-                          {t(item.titleKey, { defaultValue: item.titleKey })}
-                        </Text>
-                        {active && <MaterialCommunityIcons name="chevron-right" size={18} color="#fff" />}
-                      </Pressable>
+                        c={c}
+                      />
                     </SlideIn>
                   );
                 })}
@@ -225,7 +287,7 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
       </DrawerContentScrollView>
 
       <View style={[styles.footer, { borderTopColor: c.border, paddingBottom: insets.bottom + 12, backgroundColor: c.drawerFooter }]}>
-        <View style={styles.footerRow}>
+        <View style={[styles.footerRow, styles.themeCard, { backgroundColor: c.chipBg }]}>
           <MaterialCommunityIcons name={mode === "dark" ? "weather-night" : "white-balance-sunny"} size={20} color={c.primary} />
           <Text style={{ flex: 1, color: c.text, fontWeight: "600" }}>{t("mobile_dark_theme", { defaultValue: "Dark theme" })}</Text>
           <Switch value={mode === "dark"} onValueChange={() => void toggleMode()} />
@@ -238,14 +300,14 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
                 key={code}
                 onPress={() => void changeLanguage(code)}
                 accessibilityLabel={`Language ${code}`}
-                style={[styles.langPill, { backgroundColor: on ? c.primary : c.chipBg }]}
+                style={({ pressed }) => [styles.langPill, { backgroundColor: on ? c.primary : c.chipBg, transform: [{ scale: pressed ? 0.9 : on ? 1.06 : 1 }] }]}
               >
                 <Text style={{ color: on ? "#fff" : c.textMuted, fontWeight: "700", fontSize: 13 }}>{LANG_LABEL[code]}</Text>
               </Pressable>
             );
           })}
         </View>
-        <Pressable onPress={confirmLogout} style={({ pressed }) => [styles.logout, { borderColor: c.danger, backgroundColor: pressed ? `${c.danger}14` : "transparent" }]}>
+        <Pressable onPress={confirmLogout} style={({ pressed }) => [styles.logout, { backgroundColor: pressed ? `${c.danger}2e` : `${c.danger}17`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
           <MaterialCommunityIcons name="logout" size={18} color={c.danger} />
           <Text style={{ color: c.danger, fontWeight: "800" }}>{t("Logout")}</Text>
         </Pressable>
@@ -259,6 +321,13 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 18, paddingBottom: 18, overflow: "hidden", borderBottomRightRadius: 28 },
   bubbleA: { position: "absolute", width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(255,255,255,0.10)", top: -50, right: -40 },
   bubbleB: { position: "absolute", width: 90, height: 90, borderRadius: 45, backgroundColor: "rgba(255,255,255,0.08)", bottom: -30, right: 60 },
+  bubbleC: { position: "absolute", width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(0,0,0,0.12)", bottom: -60, left: -40 },
+  closeBtn: { marginLeft: "auto", width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  hello: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "600" },
+  avatarRing: { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: "rgba(255,255,255,0.55)", alignItems: "center", justifyContent: "center" },
+  activeFill: { borderRadius: 14 },
+  marker: { position: "absolute", left: 3, top: 12, bottom: 12, width: 4, borderRadius: 2, backgroundColor: "#fff" },
+  themeCard: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 14 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   logoRing: { width: 30, height: 30, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.95)", alignItems: "center", justifyContent: "center" },
   logo: { width: 22, height: 24 },
@@ -267,7 +336,7 @@ const styles = StyleSheet.create({
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
   avatarText: { fontWeight: "900", fontSize: 18 },
   profileName: { color: "#fff", fontSize: 18, fontWeight: "800" },
-  rolePill: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2, marginTop: 4 },
+  rolePill: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2, marginTop: 4 },
   roleText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   scrollInner: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 },
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 6 },
@@ -279,5 +348,5 @@ const styles = StyleSheet.create({
   footerRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   langRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   langPill: { minWidth: 38, height: 32, borderRadius: 999, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
-  logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, borderRadius: 14, borderWidth: 1.5 },
+  logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 46, borderRadius: 999 },
 });

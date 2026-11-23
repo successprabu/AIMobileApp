@@ -9,6 +9,7 @@ import RegistrationScreen from "../screens/RegistrationScreen";
 import AppDrawerNavigator from "./AppDrawerNavigator";
 import type { AuthStackParamList } from "../screens/RegistrationScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import { HeaderBackground, HeaderTitle } from "../components/ui/AppBars";
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -47,7 +48,11 @@ export default function RootNavigator() {
             headerShown: true,
             headerStyle: { backgroundColor: c.header },
             headerTintColor: c.headerText,
-            headerTitleStyle: { fontWeight: "600" },
+            headerTitleStyle: { fontWeight: "800" },
+            headerShadowVisible: false,
+            animation: "slide_from_right",
+            headerBackground: () => <HeaderBackground color={c.header} />,
+            headerTitle: ({ children }) => <HeaderTitle tint={c.headerText}>{children}</HeaderTitle>,
             contentStyle: { backgroundColor: c.background },
           }}
         >

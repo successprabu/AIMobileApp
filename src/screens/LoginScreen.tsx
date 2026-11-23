@@ -6,14 +6,13 @@ import {
   Linking,
   Platform,
   Pressable,
-  Image,
   ScrollView,
   StyleSheet,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { Button, Text, TextInput } from "react-native-paper";
+import { Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
@@ -29,6 +28,8 @@ import type { AuthUser } from "../types/auth";
 import type { AuthStackParamList } from "./RegistrationScreen";
 import { APP_DISPLAY_NAME } from "../theme/themes";
 import Sheet from "../components/ui/Sheet";
+import { AuthCard, AuthHero, Notice, PillButton, Rise } from "../components/ui/AuthUi";
+import { SuccessBurst } from "../components/ui/Motion";
 
 // Each product has its own sign-up (same choices as the website).
 const SCHOOL_SIGN_UP = "https://myschool-d5f9fueuajgvdkaj.westus3-01.azurewebsites.net/register-school";
@@ -45,14 +46,6 @@ type AccountCheckRow = {
   userTypeDescription: string;
 };
 
-const DECOR_ICONS: (keyof typeof MaterialCommunityIcons.glyphMap)[] = [
-  "ring",
-  "heart",
-  "flower",
-  "party-popper",
-  "camera",
-  "silverware-fork-knife",
-];
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -90,6 +83,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [welcome, setWelcome] = useState<AuthUser | null>(null);
 
   const validateLoginInput = (u: string, p: string): string | null => {
     if (!/^\d+$/.test(u.trim())) {
@@ -178,7 +172,8 @@ export default function LoginScreen() {
         const decoded = jwtDecode<{ exp?: number }>(data.data.token);
         const now = Date.now() / 1000;
         if (decoded.exp != null && decoded.exp > now) {
-          await signIn(data.data);
+          // Celebrate first; SuccessBurst signs in when it finishes (about a second).
+          setWelcome(data.data);
         } else {
           setLoginError(
             t("session_expired", {
@@ -198,6 +193,10 @@ export default function LoginScreen() {
   };
 
   const keyboardVerticalOffset = Platform.OS === "ios" ? insets.top : 0;
+  const clearNotes = () => {
+    if (loginError) setLoginError("");
+    if (sessionEnded) clearSessionEnded();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -207,13 +206,9 @@ export default function LoginScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.flex}>
-          <View style={styles.topBand} />
           <ScrollView
             ref={scrollRef}
-            contentContainerStyle={[
-              styles.scroll,
-              { paddingBottom: scrollPaddingBottom },
-            ]}
+            contentContainerStyle={[styles.scroll, { paddingBottom: scrollPaddingBottom }]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
@@ -221,63 +216,32 @@ export default function LoginScreen() {
             onScroll={(e) => onScrollOffset(e.nativeEvent.contentOffset.y)}
             scrollEventThrottle={16}
           >
-            <View style={styles.decorRow}>
-              {DECOR_ICONS.map((icon) => (
-                <View key={icon} style={styles.decorChip}>
-                  <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
-                </View>
-              ))}
-            </View>
+            <AuthHero
+              paddingTop={insets.top}
+              art="success"
+              title={APP_DISPLAY_NAME}
+              subtitle={t("mobile_login_marriage_tagline", {
+                defaultValue: "Marriage & event accounts — receipts, expenses & gifts",
+              })}
+            />
 
-            <View style={styles.headerCard}>
-              <View style={styles.logoRing}>
-                <Image
-                  source={require("../../assets/brand-logo.png")}
-                  style={styles.logo}
-                  resizeMode="contain"
-                  accessibilityLabel={APP_DISPLAY_NAME}
-                />
-              </View>
-              <Text variant="headlineMedium" style={styles.title}>
-                {APP_DISPLAY_NAME}
+            <AuthCard>
+              <Text style={styles.cardTitle}>{t("welcome_back", { defaultValue: "Welcome Back" })}</Text>
+              <Text style={styles.cardSub}>
+                {t("mobile_login_subtitle", { defaultValue: "Sign in with your mobile number" })}
               </Text>
-              <Text variant="bodyMedium" style={styles.subtitle}>
-                {t("mobile_login_marriage_tagline", {
-                  defaultValue: "Marriage & event accounts — receipts, expenses & gifts",
-                })}
-              </Text>
-              <View style={styles.taglineRow}>
-                <MaterialCommunityIcons name="calendar-heart" size={16} color={c.primary} />
-                <Text style={styles.taglineText}>
-                  {t("mobile_login_subtitle", {
-                    defaultValue: "Sign in with your mobile number",
-                  })}
-                </Text>
-              </View>
-            </View>
 
-            {sessionEnded && !loginError ? (
-              <View style={[styles.errorBox, { backgroundColor: "#e0f2fe", borderColor: "#7dd3fc" }]}>
-                <MaterialCommunityIcons name="information-outline" size={20} color="#0369a1" />
-                <Text style={[styles.errorText, { color: "#0369a1" }]}>
-                  {t("session_ended_sign_in", { defaultValue: "Your session has ended. Please sign in again." })}
-                </Text>
-              </View>
-            ) : null}
-            {loginError ? (
-              <View style={styles.errorBox}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={18} color={c.danger} />
-                <Text style={styles.errorText}>{loginError}</Text>
-              </View>
-            ) : null}
+              {sessionEnded && !loginError ? (
+                <Notice kind="info" text={t("session_ended_sign_in", { defaultValue: "Your session has ended. Please sign in again." })} />
+              ) : null}
+              {loginError ? <Notice kind="error" text={loginError} /> : null}
 
-            <View style={styles.formCard}>
               <View ref={setFieldAnchorRef("username")}>
                 <TextInput
                   label={t("mobile_number")}
                   mode="outlined"
                   value={username}
-                  onChangeText={(v) => { setUsername(v); if (loginError) setLoginError(""); if (sessionEnded) clearSessionEnded(); }}
+                  onChangeText={(v) => { setUsername(v); clearNotes(); }}
                   onEndEditing={handleUsernameBlur}
                   onFocus={() => onFieldFocus("username")}
                   placeholder={t("enter_mobile_number")}
@@ -285,30 +249,32 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   disabled={loading}
                   style={styles.field}
+                  outlineStyle={styles.outline}
                   outlineColor={c.border}
                   activeOutlineColor={c.primary}
-                  left={<TextInput.Icon icon="cellphone" />}
+                  textColor={c.text}
+                  left={<TextInput.Icon icon="cellphone" color={(f) => (f ? c.primary : c.textMuted)} />}
+                  right={checkingUser ? <TextInput.Icon icon={() => <ActivityIndicator size="small" color={c.primary} />} /> : undefined}
                   returnKeyType="next"
                 />
               </View>
-              {checkingUser ? (
-                <ActivityIndicator style={styles.inlineSpinner} color={c.primary} />
-              ) : null}
 
               <View ref={setFieldAnchorRef("password")}>
                 <TextInput
                   label={t("password")}
                   mode="outlined"
                   value={password}
-                  onChangeText={(v) => { setPassword(v); if (loginError) setLoginError(""); if (sessionEnded) clearSessionEnded(); }}
+                  onChangeText={(v) => { setPassword(v); clearNotes(); }}
                   onFocus={() => onFieldFocus("password")}
                   placeholder={t("enter_password")}
                   secureTextEntry={!showPassword}
                   disabled={loading}
                   style={styles.field}
+                  outlineStyle={styles.outline}
                   outlineColor={c.border}
                   activeOutlineColor={c.primary}
-                  left={<TextInput.Icon icon="lock-outline" />}
+                  textColor={c.text}
+                  left={<TextInput.Icon icon="lock-outline" color={(f) => (f ? c.primary : c.textMuted)} />}
                   right={
                     <TextInput.Icon
                       icon={showPassword ? "eye-off" : "eye"}
@@ -322,7 +288,7 @@ export default function LoginScreen() {
               </View>
 
               {userTypes.length > 1 ? (
-                <>
+                <Rise>
                   <Text variant="labelLarge" style={styles.label}>
                     {t("userType")}
                   </Text>
@@ -338,63 +304,67 @@ export default function LoginScreen() {
                       }}
                     >
                       {userTypes.map((type) => (
-                        <Picker.Item
-                          key={type.userType}
-                          label={type.userTypeDescription}
-                          value={type.userType}
-                        />
+                        <Picker.Item key={type.userType} label={type.userTypeDescription} value={type.userType} />
                       ))}
                     </Picker>
                   </View>
-                </>
+                </Rise>
               ) : null}
 
-              <Button
-                mode="contained"
-                onPress={() => void userLogin()}
-                loading={loading}
-                disabled={loading}
-                style={styles.button}
-                contentStyle={styles.buttonContent}
-                buttonColor={c.primary}
-              >
-                {t("sign_in")}
-              </Button>
-            </View>
+              <Pressable onPress={() => navigation.navigate("ForgotPassword")} style={styles.forgot} accessibilityRole="link" hitSlop={8}>
+                <Text style={styles.forgotText}>{t("forgot_password")}</Text>
+              </Pressable>
 
-            <View style={styles.links}>
-              <Button
-                mode="text"
-                textColor={c.primary}
+              <PillButton label={t("sign_in")} icon="login" onPress={() => void userLogin()} loading={loading} disabled={loading} />
+
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>{t("new_here", { defaultValue: "New here?" })}</Text>
+                <View style={styles.orLine} />
+              </View>
+
+              <PillButton
+                label={t("create_account", { defaultValue: "Create an account" })}
+                icon="account-plus-outline"
+                variant="outline"
                 onPress={() => setChooseSignUp(true)}
-                compact
-              >
-                {t("sign_up")}
-              </Button>
-              <Button mode="text" textColor={c.primary} onPress={() => navigation.navigate("ForgotPassword")} compact>
-                {t("forgot_password")}
-              </Button>
-            </View>
+              />
+            </AuthCard>
+
+            <Rise delay={520} style={styles.footer}>
+              <MaterialCommunityIcons name="shield-check-outline" size={14} color={c.textMuted} />
+              <Text style={styles.footerText}>MySuccess Tech · {t("secure_sign_in", { defaultValue: "Secure sign in" })}</Text>
+            </Rise>
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
-      <Sheet visible={chooseSignUp} title="Sign up for" onClose={() => setChooseSignUp(false)}>
-        {SIGN_UPS.map((s) => (
-          <Pressable
-            key={s.id}
-            onPress={() => startSignUp(s.id)}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.choice, { borderColor: c.border, borderLeftColor: s.color, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <View style={[styles.choiceIcon, { backgroundColor: `${s.color}22` }]}>
-              <MaterialCommunityIcons name={s.icon} size={24} color={s.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: c.text, fontWeight: "800" }}>{s.title}</Text>
-              <Text style={{ color: c.textMuted, fontSize: 13 }}>{s.text}</Text>
-            </View>
-            <MaterialCommunityIcons name={s.id === "school" ? "open-in-new" : "chevron-right"} size={20} color={c.textMuted} />
-          </Pressable>
+      {welcome ? (
+        <SuccessBurst
+          title={t("signed_in_welcome", { defaultValue: "Welcome, {{name}}!", name: welcome.name ?? "" }).replace(/,\s*!$/, "!")}
+          subtitle={t("signing_you_in", { defaultValue: "Opening your account…" })}
+          onDone={() => void signIn(welcome)}
+        />
+      ) : null}
+      <Sheet visible={chooseSignUp} title={t("sign_up_for", { defaultValue: "Sign up for" })} onClose={() => setChooseSignUp(false)}>
+        {SIGN_UPS.map((s, i) => (
+          <Rise key={s.id} delay={i * 90}>
+            <Pressable
+              onPress={() => startSignUp(s.id)}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.choice, { borderColor: c.border, opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+            >
+              <View style={[styles.choiceIcon, { backgroundColor: s.color }]}>
+                <MaterialCommunityIcons name={s.icon} size={24} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: c.text, fontWeight: "800", fontSize: 15 }}>{s.title}</Text>
+                <Text style={{ color: c.textMuted, fontSize: 13, marginTop: 2 }}>{s.text}</Text>
+              </View>
+              <View style={[styles.choiceGo, { backgroundColor: `${s.color}1f` }]}>
+                <MaterialCommunityIcons name={s.id === "school" ? "open-in-new" : "arrow-right"} size={18} color={s.color} />
+              </View>
+            </Pressable>
+          </Rise>
         ))}
       </Sheet>
     </KeyboardAvoidingView>
@@ -404,115 +374,29 @@ export default function LoginScreen() {
 function makeStyles(c: ReturnType<typeof useAppTheme>["theme"]["colors"]) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
-    topBand: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 140,
-      backgroundColor: c.marriageSoft,
-      borderBottomLeftRadius: 32,
-      borderBottomRightRadius: 32,
-    },
-    scroll: { paddingHorizontal: 20, paddingTop: 36, flexGrow: 1 },
-    decorRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      justifyContent: "center",
-      gap: 8,
-      marginBottom: 16,
-    },
-    decorChip: {
-      backgroundColor: c.surface,
-      borderRadius: 20,
-      padding: 8,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    headerCard: {
-      alignItems: "center",
-      backgroundColor: c.surface,
-      borderRadius: 20,
-      padding: 22,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      shadowColor: c.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.12,
-      shadowRadius: 14,
-      elevation: 4,
-    },
-    logoRing: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: c.marriageSoft,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 12,
-      borderWidth: 2,
-      borderColor: c.primary,
-    },
-    logo: { width: 48, height: 52 },
-    title: { fontWeight: "800", color: c.text, textAlign: "center" },
-    subtitle: {
-      marginTop: 8,
-      color: c.textMuted,
-      textAlign: "center",
-      lineHeight: 20,
-      paddingHorizontal: 8,
-    },
-    taglineRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginTop: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-      backgroundColor: c.marriageSoft,
-    },
-    taglineText: { color: c.primary, fontSize: 13, fontWeight: "600" },
-    formCard: {
-      backgroundColor: c.card,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginBottom: 8,
-    },
-    label: { marginTop: 4, color: c.textMuted },
-    field: { marginBottom: 8, backgroundColor: c.inputBg },
+    scroll: { flexGrow: 1 },
+    cardTitle: { fontSize: 22, fontWeight: "900", color: c.text },
+    cardSub: { color: c.textMuted, marginTop: 2, marginBottom: 16 },
+    label: { marginTop: 4, marginBottom: 4, color: c.textMuted },
+    field: { marginBottom: 12, backgroundColor: c.inputBg },
+    outline: { borderRadius: 14 },
     pickerWrap: {
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: 12,
+      borderRadius: 14,
       overflow: "hidden",
       backgroundColor: c.inputBg,
       marginBottom: 8,
     },
-    button: { marginTop: 12, borderRadius: 12 },
-    buttonContent: { paddingVertical: 6 },
-    links: {
-      marginTop: 16,
-      flexDirection: "row",
-      justifyContent: "space-between",
-    },
-    choice: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderLeftWidth: 4, marginBottom: 10 },
-    choiceIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-    errorBox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      backgroundColor: `${c.danger}18`,
-      borderColor: `${c.danger}40`,
-      borderWidth: 1,
-      padding: 12,
-      borderRadius: 12,
-      marginBottom: 12,
-    },
-    errorText: { color: c.danger, flex: 1 },
-    inlineSpinner: { marginBottom: 8 },
+    forgot: { alignSelf: "flex-end", marginBottom: 16, marginTop: -2 },
+    forgotText: { color: c.primary, fontWeight: "700" },
+    orRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 18 },
+    orLine: { flex: 1, height: 1, backgroundColor: c.border },
+    orText: { color: c.textMuted, fontSize: 13, fontWeight: "600" },
+    footer: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 22, marginBottom: 12 },
+    footerText: { color: c.textMuted, fontSize: 12 },
+    choice: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 12, backgroundColor: c.card },
+    choiceIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+    choiceGo: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   });
 }

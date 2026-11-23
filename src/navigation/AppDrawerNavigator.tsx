@@ -1,4 +1,5 @@
 import React from "react";
+import { useWindowDimensions } from "react-native";
 import {
   createDrawerNavigator,
   type DrawerNavigationProp,
@@ -16,6 +17,10 @@ export type AppDrawerNavigation = DrawerNavigationProp<RootDrawerParamList>;
 
 export default function AppDrawerNavigator() {
   const { theme } = useAppTheme();
+  // A plain number: with "88%" plus maxWidth the drawer slid in by the uncapped width and its left edge was cut
+  // off on wide phones.
+  const { width } = useWindowDimensions();
+  const drawerWidth = Math.round(Math.min(width * 0.88, 340));
   return (
     <Drawer.Navigator
       drawerContent={(props) => <AppDrawerContent {...props} />}
@@ -25,8 +30,7 @@ export default function AppDrawerNavigator() {
         swipeEnabled: true,
         overlayColor: theme.colors.overlay,
         drawerStyle: {
-          width: "88%",
-          maxWidth: 340,
+          width: drawerWidth,
           backgroundColor: "transparent",
         },
       }}

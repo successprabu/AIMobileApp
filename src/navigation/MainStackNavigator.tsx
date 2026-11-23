@@ -1,6 +1,5 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { DrawerToggleButton } from "@react-navigation/drawer";
 import type { MainStackParamList } from "./types";
 import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import HelpScreen from "../screens/HelpScreen";
@@ -29,8 +28,7 @@ import ClientListScreen from "../screens/admin/ClientListScreen";
 import RegisterClientScreen from "../screens/admin/RegisterClientScreen";
 import EnquiriesScreen from "../screens/admin/EnquiriesScreen";
 import MoitechRegScreen from "../screens/admin/MoitechRegScreen";
-import { Pressable } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BackButton, HeaderBackground, HeaderTitle, MenuButton } from "../components/ui/AppBars";
 import { useAppTheme } from "../hooks/useAppTheme";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -45,11 +43,14 @@ export default function MainStackNavigator() {
       screenOptions={{
         headerShown: true,
         animation: "slide_from_right",
+        animationDuration: 280,
         headerStyle: { backgroundColor: c.header },
         headerTintColor: c.headerText,
-        headerTitleStyle: { fontWeight: "600" },
+        headerTitleStyle: { fontWeight: "800" },
         headerShadowVisible: false,
-        headerLeft: (props) => <DrawerToggleButton {...props} tintColor={c.headerText} />,
+        headerBackground: () => <HeaderBackground color={c.header} />,
+        headerTitle: ({ children }) => <HeaderTitle tint={c.headerText}>{children}</HeaderTitle>,
+        headerLeft: () => <MenuButton tint={c.headerText} />,
         contentStyle: { backgroundColor: c.background },
       }}
     >
@@ -64,22 +65,14 @@ export default function MainStackNavigator() {
         name="MahalForm"
         component={MahalFormScreen}
         options={({ navigation }) => ({
-          headerLeft: () => (
-            <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} style={{ paddingRight: 16, paddingVertical: 4 }}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={c.headerText} />
-            </Pressable>
-          ),
+          headerLeft: () => <BackButton tint={c.headerText} onPress={() => navigation.goBack()} />,
         })}
       />
       <Stack.Screen
         name="BookingForm"
         component={BookingFormScreen}
         options={({ navigation }) => ({
-          headerLeft: () => (
-            <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} style={{ paddingRight: 16, paddingVertical: 4 }}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={c.headerText} />
-            </Pressable>
-          ),
+          headerLeft: () => <BackButton tint={c.headerText} onPress={() => navigation.goBack()} />,
         })}
       />
       <Stack.Screen name="AddMoitechCustomer" component={MoitechRegScreen} />
