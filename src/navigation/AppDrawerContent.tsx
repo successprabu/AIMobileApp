@@ -35,6 +35,7 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
       { screen: "Enquiries", titleKey: "enquiries", roles: ["SU"] },
       { screen: "MahalBookings", titleKey: "mahalBookings", roles: ["SU", "MU"] },
       { screen: "MyMahals", titleKey: "myMahals", roles: ["SU", "MU"] },
+      { screen: "FollowUps", titleKey: "followUps", roles: ["SU", "MU"] },
       { screen: "AddMoitechCustomer", titleKey: "addMoiTechCustomer", roles: ["MU"] },
     ],
   },

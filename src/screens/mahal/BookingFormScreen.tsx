@@ -10,6 +10,15 @@ import type { MainStackParamList } from "../../navigation/types";
 import { EVENT_TYPES, getBooking, listMyMahals, PAY_METHODS, saveBooking, toLocalIso, type Mahal } from "../../api/mahal";
 import { eventStyle, FadeIn } from "../../components/mahal/MahalUi";
 import { formatInr } from "../../utils/formatCurrency";
+import AiBookingCard from "./AiBookingCard";
+import { aiEnabled, type BookingDraft } from "../../api/mahalAi";
+
+/** "2026-12-12" + "06:00" as a local date-time. */
+const at = (day: string, time: string) => {
+  const [y, m, d] = day.split("-").map(Number);
+  const [h, min] = time.split(":").map(Number);
+  return new Date(y, m - 1, d, h, min, 0, 0);
+};
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -92,6 +101,49 @@ export default function BookingFormScreen() {
   }, [bookingId]);
 
   const mahal = mahals.find((m) => m.id === form.mahalId);
+  const [ai, setAi] = useState(false);
+  const [aiNote, setAiNote] = useState("");
+  useEffect(() => {
+    if (!bookingId) void aiEnabled().then(setAi);
+  }, [bookingId]);
+
+  /** Fills the form from what the owner typed or said (the AI's draft); the owner checks it and saves. */
+  const applyDraft = (d: BookingDraft) => {
+    setForm((f) => {
+      const n = { ...f };
+      if (d.mahalId) n.mahalId = d.mahalId;
+      if (d.customerName) n.customerName = d.customerName;
+      if (d.phone) n.primary_phone = d.phone;
+      if (d.eventType) n.eventType = d.eventType;
+      if (d.guestCount) n.guestCount = String(d.guestCount);
+      if (d.fromDate) {
+        n.fromDate = at(d.fromDate, d.startTime ?? "06:00");
+        let to = at(d.toDate ?? d.fromDate, d.endTime ?? "22:00");
+        if (to <= n.fromDate) {
+          to = new Date(n.fromDate);
+          to.setDate(to.getDate() + 1);
+          to.setHours(6, 0, 0, 0);
+        }
+        n.toDate = to;
+      }
+      if (d.totalAmount != null) n.totalAmount = String(d.totalAmount);
+      if (d.discount != null) n.discount = String(d.discount);
+      if (d.advance != null) n.advance = String(d.advance);
+      if (d.payMethod) n.payMethod = d.payMethod;
+      if (d.remarks) n.remarks = d.remarks;
+      return n;
+    });
+    const e: Record<string, string> = {};
+    for (const m of d.missing) {
+      if (m === "hall") e.mahalId = "Choose the hall";
+      if (m === "customer name") e.customerName = "Not in your note: please type it";
+      if (m === "phone") e.primary_phone = "Not in your note: please type it";
+      if (m === "date") e.fromDate = "Not in your note: please choose";
+    }
+    setErrors(e);
+    setAiNote(`Filled by AI. Please check every detail before saving.${d.note ? ` ${d.note}` : ""}`);
+  };
+
   const set = (k: keyof typeof form, v: unknown) => {
     setForm((f) => ({ ...f, [k]: v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
@@ -184,6 +236,13 @@ export default function BookingFormScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        {ai && !bookingId ? <AiBookingCard mahalId={form.mahalId || undefined} onDraft={applyDraft} /> : null}
+        {aiNote ? (
+          <FadeIn style={[styles.aiNote, { backgroundColor: c.primaryMuted }]}>
+            <MaterialCommunityIcons name="creation" size={18} color={c.primary} />
+            <Text style={{ color: c.text, flex: 1, fontWeight: "600" }}>{aiNote}</Text>
+          </FadeIn>
+        ) : null}
         <FadeIn style={[styles.card, { backgroundColor: c.card }]}>
           <Text style={[styles.section, { color: c.text }]}>Hall and dates</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
@@ -267,6 +326,7 @@ export default function BookingFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  aiNote: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 14, marginBottom: 12 },
   card: { borderRadius: 16, padding: 16, marginBottom: 14, elevation: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   section: { fontWeight: "800", fontSize: 16, marginBottom: 10 },
   label: { fontSize: 12, marginBottom: 4 },

@@ -10,6 +10,7 @@ import type { MainStackParamList } from "../../navigation/types";
 import { getMahalSummary, type MahalSummary } from "../../api/mahal";
 import { BookingCard, FadeIn, StatTile } from "../../components/mahal/MahalUi";
 import WelcomeBanner from "../../components/ui/WelcomeBanner";
+import { listFollowUps } from "../../api/mahalAi";
 import { formatCount, formatInr } from "../../utils/formatCurrency";
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -21,6 +22,7 @@ export default function MahalDashboardScreen() {
   const { user } = useAuth();
   const navigation = useNavigation<Nav>();
   const [s, setS] = useState<MahalSummary | null>(null);
+  const [followUps, setFollowUps] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,6 +38,8 @@ export default function MahalDashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
+      // Rule-based on the server (no AI cost): how many customers to message today.
+      void listFollowUps().then((r) => setFollowUps(r.ok && r.data ? r.data.open : null));
     }, [load])
   );
 
@@ -80,6 +84,9 @@ export default function MahalDashboardScreen() {
               </FadeIn>
               <FadeIn index={4} style={styles.tileWrap}>
                 <StatTile label="Balance to collect" value={formatInr(s.balanceDue)} icon="wallet-outline" color="#0ea5e9" />
+              </FadeIn>
+              <FadeIn index={5} style={styles.tileWrap}>
+                <StatTile label="Follow-ups today" value={followUps == null ? "…" : formatCount(followUps)} icon="message-badge-outline" color="#14b8a6" onPress={() => navigation.navigate("FollowUps")} />
               </FadeIn>
             </View>
 

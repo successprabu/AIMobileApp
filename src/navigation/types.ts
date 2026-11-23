@@ -11,6 +11,7 @@ export type MainStackParamList = {
   RegisterClient: { type?: "moitech" | "mahal" } | undefined;
   Enquiries: undefined;
   MyMahals: undefined;
+  FollowUps: undefined;
   MahalForm: { mahalId?: number } | undefined;
   MahalBookings: { tab?: string } | undefined;
   BookingForm: { bookingId?: number; mahalId?: number } | undefined;
