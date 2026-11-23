@@ -13,14 +13,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage, type LangCode } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { APP_DISPLAY_NAME, PRIMARY_PINK, PRIMARY_PINK_DARK, PRIMARY_PINK_LIGHT } from "../theme/themes";
+import { APP_DISPLAY_NAME, PRIMARY_PINK } from "../theme/themes";
 import type { MainStackParamList } from "./types";
+import { screenIcon } from "../constants/screenIcons";
 
 type Leaf = {
   screen: keyof MainStackParamList;
   titleKey: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  color: string;
   roles: string[];
 };
 
@@ -30,13 +29,13 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "home",
     accent: PRIMARY_PINK,
     items: [
-      { screen: "Dashboard", titleKey: "dashboard", icon: "view-dashboard-variant", color: PRIMARY_PINK, roles: ["SU", "AU", "NU", "MU"] },
-      { screen: "ClientList", titleKey: "Clients", icon: "account-multiple", color: "#6c5ce7", roles: ["SU"] },
-      { screen: "RegisterClient", titleKey: "registerClient", icon: "account-plus", color: "#00b894", roles: ["SU"] },
-      { screen: "Enquiries", titleKey: "enquiries", icon: "email-alert-outline", color: "#0ea5e9", roles: ["SU"] },
-      { screen: "MahalBookings", titleKey: "mahalBookings", icon: "calendar-check", color: "#e84393", roles: ["SU", "MU"] },
-      { screen: "MyMahals", titleKey: "myMahals", icon: "office-building", color: "#5f27cd", roles: ["SU", "MU"] },
-      { screen: "AddMoitechCustomer", titleKey: "addMoiTechCustomer", icon: "account-heart", color: "#00b894", roles: ["MU"] },
+      { screen: "Dashboard", titleKey: "dashboard", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "ClientList", titleKey: "Clients", roles: ["SU"] },
+      { screen: "RegisterClient", titleKey: "registerClient", roles: ["SU"] },
+      { screen: "Enquiries", titleKey: "enquiries", roles: ["SU"] },
+      { screen: "MahalBookings", titleKey: "mahalBookings", roles: ["SU", "MU"] },
+      { screen: "MyMahals", titleKey: "myMahals", roles: ["SU", "MU"] },
+      { screen: "AddMoitechCustomer", titleKey: "addMoiTechCustomer", roles: ["MU"] },
     ],
   },
   {
@@ -44,8 +43,8 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "Masters",
     accent: "#636e72",
     items: [
-      { screen: "FunctionMaster", titleKey: "functionMaster", icon: "tune-variant", color: "#576574", roles: ["SU", "AU"] },
-      { screen: "UserMaster", titleKey: "userMaster", icon: "account-cog", color: "#2d3436", roles: ["SU", "AU"] },
+      { screen: "FunctionMaster", titleKey: "functionMaster", roles: ["SU", "AU"] },
+      { screen: "UserMaster", titleKey: "userMaster", roles: ["SU", "AU"] },
     ],
   },
   {
@@ -53,15 +52,15 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "transactions",
     accent: "#00b894",
     items: [
-      { screen: "Transaction", titleKey: "addTransaction", icon: "cash-plus", color: "#00b894", roles: ["SU", "AU", "NU"] },
-      { screen: "TransactionList", titleKey: "transactionList", icon: "clipboard-text-outline", color: PRIMARY_PINK_DARK, roles: ["SU", "AU", "NU"] },
-      { screen: "AddExpenses", titleKey: "addExpenses", icon: "cash-minus", color: "#e17055", roles: ["SU", "AU", "NU"] },
-      { screen: "ExpensesList", titleKey: "expensesList", icon: "format-list-bulleted", color: "#d63031", roles: ["SU", "AU", "NU"] },
-      { screen: "Others", titleKey: "addOthers", icon: "gift-outline", color: "#00cec9", roles: ["SU", "AU", "NU"] },
-      { screen: "OthersList", titleKey: "othersList", icon: "playlist-plus", color: "#81ecec", roles: ["SU", "AU", "NU"] },
-      { screen: "Handover", titleKey: "handOver", icon: "handshake", color: "#f39c12", roles: ["SU", "AU", "NU"] },
-      { screen: "MoiGiven", titleKey: "moiGiven", icon: "gift-open-outline", color: "#8b5cf6", roles: ["SU", "AU"] },
-      { screen: "History", titleKey: "history", icon: "history", color: "#64748b", roles: ["SU", "AU"] },
+      { screen: "Transaction", titleKey: "addTransaction", roles: ["SU", "AU", "NU"] },
+      { screen: "TransactionList", titleKey: "transactionList", roles: ["SU", "AU", "NU"] },
+      { screen: "AddExpenses", titleKey: "addExpenses", roles: ["SU", "AU", "NU"] },
+      { screen: "ExpensesList", titleKey: "expensesList", roles: ["SU", "AU", "NU"] },
+      { screen: "Others", titleKey: "addOthers", roles: ["SU", "AU", "NU"] },
+      { screen: "OthersList", titleKey: "othersList", roles: ["SU", "AU", "NU"] },
+      { screen: "Handover", titleKey: "handOver", roles: ["SU", "AU", "NU"] },
+      { screen: "MoiGiven", titleKey: "moiGiven", roles: ["SU", "AU"] },
+      { screen: "History", titleKey: "history", roles: ["SU", "AU"] },
     ],
   },
   {
@@ -69,11 +68,11 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "Reports",
     accent: "#6c5ce7",
     items: [
-      { screen: "IncomeReport", titleKey: "receiptReport", icon: "chart-line", color: PRIMARY_PINK, roles: ["SU", "AU"] },
-      { screen: "ExpensesReport", titleKey: "expenseReport", icon: "chart-bar", color: "#e17055", roles: ["SU", "AU"] },
-      { screen: "OthersReport", titleKey: "othersReport", icon: "chart-timeline-variant", color: "#00b894", roles: ["SU", "AU"] },
-      { screen: "RegionalReport", titleKey: "locationAmountReport", icon: "map-marker-radius", color: "#6c5ce7", roles: ["SU", "AU"] },
-      { screen: "SummaryReport", titleKey: "summaryReport", icon: "chart-pie", color: "#a29bfe", roles: ["SU", "AU"] },
+      { screen: "IncomeReport", titleKey: "receiptReport", roles: ["SU", "AU"] },
+      { screen: "ExpensesReport", titleKey: "expenseReport", roles: ["SU", "AU"] },
+      { screen: "OthersReport", titleKey: "othersReport", roles: ["SU", "AU"] },
+      { screen: "RegionalReport", titleKey: "locationAmountReport", roles: ["SU", "AU"] },
+      { screen: "SummaryReport", titleKey: "summaryReport", roles: ["SU", "AU"] },
     ],
   },
   {
@@ -81,10 +80,10 @@ const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }
     titleKey: "mobile_more",
     accent: "#74b9ff",
     items: [
-      { screen: "ThemeSettings", titleKey: "Theme Settings", icon: "palette-outline", color: PRIMARY_PINK_LIGHT, roles: ["SU", "AU", "NU", "MU"] },
-      { screen: "ChangePassword", titleKey: "changePassword", icon: "key-change", color: "#0ea5e9", roles: ["SU", "AU", "NU", "MU"] },
-      { screen: "UserGuide", titleKey: "userGuide", icon: "book-open-page-variant-outline", color: "#10b981", roles: ["SU", "AU", "NU", "MU"] },
-      { screen: "Help", titleKey: "help", icon: "lifebuoy", color: "#3498db", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "ThemeSettings", titleKey: "Theme Settings", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "ChangePassword", titleKey: "changePassword", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "UserGuide", titleKey: "userGuide", roles: ["SU", "AU", "NU", "MU"] },
+      { screen: "Help", titleKey: "help", roles: ["SU", "AU", "NU", "MU"] },
     ],
   },
 ];
@@ -275,8 +274,8 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
                     <SlideIn key={item.screen} index={index} play={play}>
                       <MenuRow
                         label={t(item.titleKey, { defaultValue: item.titleKey })}
-                        icon={item.icon}
-                        color={item.color}
+                        icon={screenIcon(item.screen).icon}
+                        color={screenIcon(item.screen).color}
                         active={activeScreen === item.screen}
                         onPress={() => go(item.screen)}
                         c={c}

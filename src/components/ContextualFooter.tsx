@@ -17,6 +17,7 @@ import { useActiveMainScreen } from "../hooks/useActiveMainScreen";
 import type { MainStackParamList, RootDrawerParamList } from "../navigation/types";
 import { PRIMARY_PINK, PRIMARY_PINK_DARK } from "../theme/themes";
 import { ND, useReduceMotion } from "./ui/Motion";
+import { screenIcon } from "../constants/screenIcons";
 
 const FOOTER_PINK = PRIMARY_PINK;
 const FOOTER_TEXT = "#ffffff";
@@ -125,6 +126,7 @@ function FooterItem({
   styles: ReturnType<typeof makeStyles>;
 }) {
   const iconName = link.icon as keyof typeof MaterialCommunityIcons.glyphMap;
+  const tint = screenIcon(link.screen).color;
   // `on` moves to 1 when this link becomes the open screen (white pill grows in); `press` springs on touch.
   const on = useRef(new Animated.Value(active ? 1 : 0)).current;
   const press = useRef(new Animated.Value(1)).current;
@@ -145,8 +147,8 @@ function FooterItem({
         style={styles.item}
       >
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.activePill, { opacity: on, transform: [{ scale: on.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }]} />
-        <View style={[styles.iconWrap, { backgroundColor: active ? "rgba(194,24,91,0.12)" : "rgba(255,255,255,0.18)" }]}>
-          <MaterialCommunityIcons name={iconName} size={20} color={active ? FOOTER_PINK : FOOTER_TEXT} />
+        <View style={[styles.iconWrap, { backgroundColor: active ? tint : "#ffffff" }]}>
+          <MaterialCommunityIcons name={iconName} size={19} color={active ? "#ffffff" : tint} />
         </View>
         <Text variant="labelMedium" numberOfLines={1} style={[styles.shortLabel, { color: active ? FOOTER_PINK : FOOTER_TEXT }]}>
           {shortLabel}
@@ -194,7 +196,18 @@ function makeStyles() {
       borderRadius: 999,
     },
     activePill: { backgroundColor: "#ffffff", borderRadius: 999 },
-    iconWrap: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+    iconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
     shortLabel: {
       fontWeight: "800",
       fontSize: 13,

@@ -1,4 +1,5 @@
 import type { MainStackParamList } from "../navigation/types";
+import { screenIcon } from "./screenIcons";
 
 export type ContextualNavLink = {
   screen: keyof MainStackParamList;
@@ -8,13 +9,14 @@ export type ContextualNavLink = {
   icon: string;
 };
 
+/** The icon comes from SCREEN_ICON, so a screen has the same icon here as in the sidebar. */
 function link(
   screen: keyof MainStackParamList,
   titleKey: string,
   shortKey: string,
-  icon: string
+  _oldIcon?: string
 ): ContextualNavLink {
-  return { screen, titleKey, shortKey, icon };
+  return { screen, titleKey, shortKey, icon: screenIcon(screen).icon };
 }
 
 /** Footer shortcuts per screen (mirrors web header sub-links). */
