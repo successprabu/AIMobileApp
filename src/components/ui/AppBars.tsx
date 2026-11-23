@@ -43,18 +43,42 @@ export function HeaderIconButton({ icon, label, onPress, tint }: { icon: keyof t
   );
 }
 
-/** Opens the sidebar; the icon turns as it is pressed. */
+/**
+ * Opens the sidebar. A drawn "menu" mark: three rounded bars of different lengths in a glassy square; when
+ * pressed the button springs and the bars line up to full width, then settle back.
+ */
 export function MenuButton({ tint }: { tint: string }) {
   const navigation = useNavigation();
-  const spin = useRef(new Animated.Value(0)).current;
-  const press = () => {
-    spin.setValue(0);
-    Animated.timing(spin, { toValue: 1, duration: 320, easing: Easing.out(Easing.back(1.6)), useNativeDriver: ND }).start();
-    navigation.dispatch(DrawerActions.toggleDrawer());
+  const scale = useRef(new Animated.Value(1)).current;
+  const line = useRef(new Animated.Value(0)).current;
+  const pressIn = () => {
+    Animated.spring(scale, { toValue: 0.88, friction: 5, tension: 260, useNativeDriver: ND }).start();
+    Animated.timing(line, { toValue: 1, duration: 160, useNativeDriver: ND }).start();
   };
+  const pressOut = () => {
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 200, useNativeDriver: ND }).start();
+    Animated.spring(line, { toValue: 0, friction: 5, tension: 120, useNativeDriver: ND }).start();
+  };
+  // Width of each bar as a share of the longest (22px); pressing stretches the short ones to full.
+  const bar = (share: number) => ({
+    backgroundColor: tint,
+    transform: [{ scaleX: line.interpolate({ inputRange: [0, 1], outputRange: [share, 1] }) }],
+  });
   return (
-    <Animated.View style={{ marginLeft: Platform.OS === "web" ? 8 : 0, transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) }] }}>
-      <HeaderIconButton icon="menu" label="Open menu" onPress={press} tint={tint} />
+    <Animated.View style={{ marginLeft: Platform.OS === "web" ? 8 : 0, marginRight: 10, transform: [{ scale }] }}>
+      <Pressable
+        onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        accessibilityRole="button"
+        accessibilityLabel="Open menu"
+        hitSlop={8}
+        style={styles.menuBtn}
+      >
+        <Animated.View style={[styles.bar, bar(1)]} />
+        <Animated.View style={[styles.bar, bar(0.6)]} />
+        <Animated.View style={[styles.bar, bar(0.82)]} />
+      </Pressable>
     </Animated.View>
   );
 }
@@ -66,5 +90,17 @@ export function BackButton({ tint, onPress }: { tint: string; onPress: () => voi
 
 const styles = StyleSheet.create({
   glow: { position: "absolute" },
+  menuBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    justifyContent: "center",
+    paddingLeft: 10,
+    gap: 4,
+  },
+  bar: { width: 22, height: 2.6, borderRadius: 2, transformOrigin: "left" },
   iconBtn: { width: 40, height: 40, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.16)", alignItems: "center", justifyContent: "center" },
 });
