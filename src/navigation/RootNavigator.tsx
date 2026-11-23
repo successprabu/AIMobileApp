@@ -64,12 +64,12 @@ export default function RootNavigator() {
           <Stack.Screen
             name="SignUp"
             component={RegistrationScreen}
-            options={{ title: "My Success" }}
+            options={{ title: "My Success", headerShown: false }}
           />
           <Stack.Screen
             name="ForgotPassword"
             component={ForgotPasswordScreen}
-            options={{ title: "Forgot password" }}
+            options={{ title: "Forgot password", headerShown: false }}
           />
         </Stack.Navigator>
       )}

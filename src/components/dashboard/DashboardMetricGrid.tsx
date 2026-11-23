@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
+import { Rise } from "../ui/AuthUi";
 
 type Props = {
   children: React.ReactNode;
@@ -13,9 +14,9 @@ export default function DashboardMetricGrid({ children }: Props) {
   return (
     <View style={styles.grid}>
       {items.map((child, index) => (
-        <View key={index} style={styles.cell}>
+        <Rise key={index} delay={120 + index * 80} style={styles.cell}>
           {child}
-        </View>
+        </Rise>
       ))}
     </View>
   );

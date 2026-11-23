@@ -46,6 +46,7 @@ import {
   parsePickerToIso,
   todayIsoDate,
 } from "../utils/date";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -401,7 +402,7 @@ export default function FunctionMasterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Card mode="elevated" style={styles.card}>
-          <Card.Title title={t("functionCreate")} />
+          <Card.Title left={sectionIcon("calendar-star", "#c2185b")} titleStyle={sectionTitleStyle} title={t("functionCreate")} />
           <Card.Content>
             {field("functionName", "functionName", true)}
 
@@ -476,6 +477,8 @@ export default function FunctionMasterScreen() {
 
         <Card mode="outlined" style={styles.card}>
           <Card.Title
+            left={sectionIcon("format-list-bulleted", "#6366f1")}
+            titleStyle={sectionTitleStyle}
             title={t("function_list")}
             right={() =>
               loadingList ? <ActivityIndicator style={styles.listSpinner} /> : null

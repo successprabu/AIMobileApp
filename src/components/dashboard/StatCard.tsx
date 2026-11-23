@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import React, { useMemo, useRef } from "react";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { ND } from "../ui/Motion";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -15,9 +16,12 @@ type Props = {
 /** Compact colored metric tile (web dashboard style), sized for 2-column grid. */
 export default function StatCard({ title, value, subtitle, icon, accent, onPress }: Props) {
   const styles = useMemo(() => makeStyles(), []);
+  const scale = useRef(new Animated.Value(1)).current;
+  const squeeze = (v: number) => Animated.spring(scale, { toValue: v, friction: 5, tension: 260, useNativeDriver: ND }).start();
 
   const content = (
-    <View style={[styles.card, { backgroundColor: accent }]}>
+    <View style={[styles.card, { backgroundColor: accent, shadowColor: accent }]}>
+      <View pointerEvents="none" style={styles.glow} />
       <View style={styles.iconWrap}>
         <MaterialCommunityIcons name={icon} size={28} color="#ffffff" />
       </View>
@@ -39,9 +43,11 @@ export default function StatCard({ title, value, subtitle, icon, accent, onPress
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
-        {content}
-      </Pressable>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Pressable onPress={onPress} onPressIn={() => squeeze(0.95)} onPressOut={() => squeeze(1)} accessibilityRole="button" accessibilityLabel={`${title} ${value}`}>
+          {content}
+        </Pressable>
+      </Animated.View>
     );
   }
   return content;
@@ -50,15 +56,16 @@ export default function StatCard({ title, value, subtitle, icon, accent, onPress
 function makeStyles() {
   return StyleSheet.create({
     card: {
-      borderRadius: 14,
+      borderRadius: 20,
       padding: 14,
       minHeight: 118,
+      overflow: "hidden",
       flexDirection: "row",
       alignItems: "center",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.14,
-      shadowRadius: 8,
+      shadowOpacity: 0.3,
+      shadowRadius: 10,
       elevation: 4,
     },
     iconWrap: {
@@ -86,6 +93,6 @@ function makeStyles() {
       color: "rgba(255,255,255,0.78)",
       marginTop: 2,
     },
-    pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+    glow: { position: "absolute", width: 120, height: 120, borderRadius: 60, top: -50, right: -40, backgroundColor: "rgba(255,255,255,0.16)" },
   });
 }

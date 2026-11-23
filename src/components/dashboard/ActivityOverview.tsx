@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useMemo, useRef } from "react";
+import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
+import { ND } from "../ui/Motion";
 import { Text } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "../../hooks/useAppTheme";
@@ -11,6 +12,15 @@ type Props = {
   rows: DashboardDetailRow[];
   maxItems?: number;
 };
+
+/** A bar that grows from the left once when it first shows. */
+function GrowBar({ style, delay }: { style: StyleProp<ViewStyle>; delay: number }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: 1, duration: 700, delay: 200 + delay, easing: Easing.out(Easing.cubic), useNativeDriver: ND }).start();
+  }, [delay, v]);
+  return <Animated.View style={[style, { transformOrigin: "left", transform: [{ scaleX: v }] }]} />;
+}
 
 export default function ActivityOverview({ rows, maxItems = 6 }: Props) {
   const { t } = useTranslation();
@@ -60,25 +70,15 @@ export default function ActivityOverview({ rows, maxItems = 6 }: Props) {
             {formatCount(row.expenseCount)}
           </Text>
           <View style={[styles.barTrack, { backgroundColor: c.border }]}>
-            <View
-              style={[
-                styles.barReceipt,
-                {
-                  width: `${((row.transactionCount ?? 0) / maxCount) * 100}%`,
-                  backgroundColor: DASHBOARD_CHART_COLORS.receipt,
-                },
-              ]}
+            <GrowBar
+              delay={idx * 90}
+              style={[styles.barReceipt, { width: `${((row.transactionCount ?? 0) / maxCount) * 100}%`, backgroundColor: DASHBOARD_CHART_COLORS.receipt }]}
             />
           </View>
           <View style={[styles.barTrack, styles.barTrackSecond, { backgroundColor: c.border }]}>
-            <View
-              style={[
-                styles.barExpense,
-                {
-                  width: `${((row.expenseCount ?? 0) / maxCount) * 100}%`,
-                  backgroundColor: DASHBOARD_CHART_COLORS.expense,
-                },
-              ]}
+            <GrowBar
+              delay={idx * 90}
+              style={[styles.barExpense, { width: `${((row.expenseCount ?? 0) / maxCount) * 100}%`, backgroundColor: DASHBOARD_CHART_COLORS.expense }]}
             />
           </View>
           <Text variant="bodySmall" style={[styles.amounts, { color: c.textMuted }]}>

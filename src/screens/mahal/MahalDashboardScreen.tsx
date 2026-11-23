@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import type { MainStackParamList } from "../../navigation/types";
 import { getMahalSummary, type MahalSummary } from "../../api/mahal";
 import { BookingCard, FadeIn, StatTile } from "../../components/mahal/MahalUi";
+import WelcomeBanner from "../../components/ui/WelcomeBanner";
 import { formatCount, formatInr } from "../../utils/formatCurrency";
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -45,10 +46,8 @@ export default function MahalDashboardScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
-        <FadeIn style={[styles.hero, { backgroundColor: c.primary }]}>
-          <Text style={styles.heroHi}>Welcome back{name ? `, ${name}` : ""}</Text>
-          <Text style={styles.heroTitle}>Your mahal at a glance</Text>
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+        <WelcomeBanner label="Welcome back" name={name} role="Your mahal at a glance" art="mahal">
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
             <Button mode="contained" buttonColor="#fff" textColor={c.primary} icon="plus" style={styles.heroBtn} onPress={() => navigation.navigate("BookingForm", {})} disabled={s?.mahalCount === 0}>
               New booking
             </Button>
@@ -56,7 +55,7 @@ export default function MahalDashboardScreen() {
               My mahals
             </Button>
           </View>
-        </FadeIn>
+        </WelcomeBanner>
 
         {loading && !s ? (
           <ActivityIndicator style={{ marginTop: 32 }} color={c.primary} />

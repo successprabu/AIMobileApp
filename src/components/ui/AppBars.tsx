@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Animated, Easing, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
-import { ND, useReduceMotion } from "./Motion";
+import { ND } from "./Motion";
 
 /**
  * The app's top bar pieces (used as native-stack header options). Only one-time animations (on open and on
@@ -21,20 +21,12 @@ export function HeaderBackground({ color }: { color: string }) {
   );
 }
 
-/** The screen title, sliding in once when the screen opens. */
+/** The screen title. Not animated: native headers can rebuild their title view, which made it blink. */
 export function HeaderTitle({ children, tint }: { children: string; tint: string }) {
-  const reduce = useReduceMotion();
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (reduce) v.setValue(1);
-    else Animated.timing(v, { toValue: 1, duration: 340, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: ND }).start();
-  }, [reduce, v]);
   return (
-    <Animated.View style={{ opacity: v, transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
-      <Text numberOfLines={1} style={{ color: tint, fontSize: 19, fontWeight: "800", letterSpacing: 0.2 }} accessibilityRole="header">
-        {children}
-      </Text>
-    </Animated.View>
+    <Text numberOfLines={1} style={{ color: tint, fontSize: 19, fontWeight: "800", letterSpacing: 0.2 }} accessibilityRole="header">
+      {children}
+    </Text>
   );
 }
 

@@ -56,7 +56,7 @@ export function useLoop(on: boolean, duration: number, { delay = 0, pingPong = t
   return v;
 }
 
-export type HeroArtKind = "success" | "moitech" | "mahal";
+export type HeroArtKind = "success" | "moitech" | "mahal" | "reset";
 
 const ART: Record<HeroArtKind, { center?: IconName; color: string; orbit: IconName[]; rising: IconName[] }> = {
   // Login: the brand medal with stars going round it and sparkles.
@@ -64,6 +64,8 @@ const ART: Record<HeroArtKind, { center?: IconName; color: string; orbit: IconNa
   // Moitech: a gift with hearts and rupees rising out of it.
   moitech: { center: "gift-open-outline", color: "#6366f1", orbit: [], rising: ["heart", "currency-inr", "heart", "hand-heart", "currency-inr"] },
   // Mahal: a hall with booking things going round it and lights twinkling.
+  // Forgot password: a lock with a key, a message and a shield going round it.
+  reset: { center: "lock-reset", color: "#c2185b", orbit: ["key-variant", "message-processing-outline", "shield-check-outline", "cellphone-key"], rising: [] },
   mahal: { center: "office-building", color: "#f59e0b", orbit: ["calendar-check", "silverware-fork-knife", "party-popper", "flower-tulip"], rising: [] },
 };
 

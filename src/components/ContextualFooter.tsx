@@ -74,13 +74,20 @@ export default function ContextualFooter() {
   );
 }
 
+let footerShown = false;
+
 /** The bar itself: rounded top, soft glow, and it slides up once when it first appears. */
 function FooterShell({ bottomPad, styles, children }: { bottomPad: number; styles: ReturnType<typeof makeStyles>; children: React.ReactNode }) {
   const reduce = useReduceMotion();
-  const v = useRef(new Animated.Value(0)).current;
+  // Slides up only the first time; after that it just appears, so moving between screens never flickers.
+  const v = useRef(new Animated.Value(footerShown ? 1 : 0)).current;
   useEffect(() => {
-    if (reduce) v.setValue(1);
-    else Animated.spring(v, { toValue: 1, friction: 8, tension: 60, useNativeDriver: ND }).start();
+    if (footerShown || reduce) {
+      v.setValue(1);
+      return;
+    }
+    footerShown = true;
+    Animated.spring(v, { toValue: 1, friction: 8, tension: 60, useNativeDriver: ND }).start();
   }, [reduce, v]);
   return (
     <Animated.View

@@ -31,6 +31,7 @@ import {
 } from "../utils/handoverAggregation";
 import { buildReportPdfHtml, sharePdfFromHtml } from "../export/reportExport";
 import type { ReportFunctionMeta } from "../types/report";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 function metaSheetRows(meta: ReportFunctionMeta) {
   return [
@@ -214,7 +215,7 @@ export default function SummaryReportScreen() {
       {error ? <Text style={{ color: c.danger, marginBottom: 8 }}>{error}</Text> : null}
 
       <Card mode="outlined" style={{ backgroundColor: c.card, marginBottom: 12 }}>
-        <Card.Title title={t("overallSummary")} />
+        <Card.Title left={sectionIcon("chart-pie", "#6c5ce7")} titleStyle={sectionTitleStyle} title={t("overallSummary")} />
         <Card.Content>
           <DataTable>
             <DataTable.Header>
@@ -258,7 +259,7 @@ export default function SummaryReportScreen() {
       <Divider style={styles.divider} />
 
       <Card mode="outlined" style={{ backgroundColor: c.card }}>
-        <Card.Title title={t("othersSummary")} />
+        <Card.Title left={sectionIcon("gift-outline", "#00b894")} titleStyle={sectionTitleStyle} title={t("othersSummary")} />
         <Card.Content>
           <DataTable>
             <DataTable.Header>

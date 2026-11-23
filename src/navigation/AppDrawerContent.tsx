@@ -115,6 +115,8 @@ function userInitials(name: string): string {
 function SlideIn({ index, play, children }: { index: number; play: number; children: React.ReactNode }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    // Runs once per opening (play goes 1, 2, 3…); nothing before the first opening, so rows never animate twice.
+    if (!play) return;
     v.setValue(0);
     Animated.timing(v, { toValue: 1, duration: 300, delay: Math.min(index, 14) * 30, easing: Easing.out(Easing.cubic), useNativeDriver: ND }).start();
   }, [index, play, v]);
@@ -178,6 +180,7 @@ function SectionHead({ title, folded, onPress, color }: { title: string; folded:
 function Avatar({ text, color, play }: { text: string; color: string; play: number }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (!play) return;
     v.setValue(0);
     Animated.spring(v, { toValue: 1, friction: 5, tension: 80, useNativeDriver: ND }).start();
   }, [play, v]);

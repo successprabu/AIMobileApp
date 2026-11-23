@@ -33,6 +33,7 @@ import type {
   UserFormData,
 } from "../types/user";
 import type { MainStackParamList } from "../navigation/types";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -310,6 +311,8 @@ export default function UserMasterScreen() {
       >
         <Card mode="elevated" style={styles.card}>
           <Card.Title
+            left={sectionIcon("account-plus", "#c2185b")}
+            titleStyle={sectionTitleStyle}
             title={t("userCreate")}
             subtitle={
               isEditing
@@ -390,6 +393,8 @@ export default function UserMasterScreen() {
 
         <Card mode="outlined" style={styles.card}>
           <Card.Title
+            left={sectionIcon("account-group", "#6366f1")}
+            titleStyle={sectionTitleStyle}
             title={t("user_list")}
             right={() =>
               loadingList ? <ActivityIndicator style={styles.listSpinner} /> : null

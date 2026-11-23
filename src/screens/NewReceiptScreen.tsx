@@ -51,6 +51,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { importTemplateCsv } from "../utils/transactionImport";
 */
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -294,6 +295,8 @@ export default function NewReceiptScreen() {
         {lastRecord?.transaction ? (
           <Card style={styles.card}>
             <Card.Title
+              left={sectionIcon("history", "#0ea5e9")}
+              titleStyle={sectionTitleStyle}
               title={t("lastRecordHistory")}
               right={(props) => (
                 <Button

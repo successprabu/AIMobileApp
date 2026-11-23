@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
-import { Button, HelperText, Snackbar, Text, TextInput } from "react-native-paper";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { HelperText, Text, TextInput } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { FadeIn } from "../components/mahal/MahalUi";
+import { useThemedInputProps } from "../hooks/useThemedInputProps";
+import { AuthCard, AuthHero, Notice, PillButton, Rise, StepBar } from "../components/ui/AuthUi";
+import { SuccessBurst } from "../components/ui/Motion";
 import { forgotPassword, resetPassword } from "../services/registrationApi";
 import type { AuthStackParamList } from "./RegistrationScreen";
 
@@ -26,7 +29,6 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const [wait, setWait] = useState(0);
   const [message, setMessage] = useState("");
 
-  useEffect(() => navigation.setOptions({ title: "Forgot password" }), [navigation]);
   useEffect(() => {
     if (wait <= 0) return undefined;
     const id = setTimeout(() => setWait((w) => w - 1), 1000);
@@ -58,63 +60,131 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     setStep("done");
   };
 
+  const insets = useSafeAreaInsets();
+  const inputTheme = useThemedInputProps();
+  const field = [inputTheme.style, styles.field];
+  const back = () => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Login"));
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <FadeIn style={[styles.card, { backgroundColor: c.card }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
-            <View style={[styles.badge, { backgroundColor: c.primary }]}>
-              <MaterialCommunityIcons name="lock-reset" size={24} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: c.text, fontSize: 18, fontWeight: "800" }}>Forgot password</Text>
-              <Text style={{ color: c.textMuted }}>
-                {step === "phone" ? "We will send an OTP to your registered mobile." : step === "reset" ? `OTP sent to ${phone}.` : "All set."}
-              </Text>
-            </View>
-          </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <AuthHero
+          compact
+          art="reset"
+          paddingTop={insets.top}
+          onBack={back}
+          title="Forgot password"
+          subtitle={step === "phone" ? "We will send an OTP to your registered mobile." : `OTP sent to +91 ${phone}.`}
+        />
+
+        <AuthCard>
+          <StepBar steps={["Mobile", "OTP", "New password"]} step={step === "phone" ? 0 : 1} />
+          {message ? <Notice kind="error" text={message} /> : null}
 
           {step === "phone" && (
-            <FadeIn key="phone">
-              <TextInput mode="outlined" label="Registered mobile number" keyboardType="phone-pad" value={phone} onChangeText={(v) => setPhone(v.replace(/\D/g, "").slice(0, 10))} left={<TextInput.Affix text="+91" />} error={!!errors.phone} autoFocus />
+            <Rise key="phone">
+              <TextInput
+                {...inputTheme}
+                mode="outlined"
+                label="Registered mobile number"
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={(v) => { setPhone(v.replace(/\D/g, "").slice(0, 10)); setMessage(""); }}
+                left={<TextInput.Icon icon="cellphone" />}
+                outlineStyle={styles.outline}
+                error={!!errors.phone}
+                autoFocus
+                style={field}
+              />
               {!!errors.phone && <HelperText type="error">{errors.phone}</HelperText>}
-              <Button mode="contained" onPress={send} loading={busy} disabled={busy} style={styles.btn} contentStyle={{ height: 48 }}>Send OTP</Button>
-            </FadeIn>
+              <PillButton label="Send OTP" icon="message-text-outline" onPress={send} loading={busy} disabled={busy} style={styles.btn} />
+            </Rise>
           )}
 
-          {step === "reset" && (
-            <FadeIn key="reset">
-              <TextInput mode="outlined" label="OTP" keyboardType="number-pad" value={otp} onChangeText={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))} error={!!errors.otp} autoFocus textContentType="oneTimeCode" />
+          {step !== "phone" && (
+            <Rise key="reset">
+              <TextInput
+                {...inputTheme}
+                mode="outlined"
+                label="OTP"
+                keyboardType="number-pad"
+                value={otp}
+                onChangeText={(v) => { setOtp(v.replace(/\D/g, "").slice(0, 6)); setMessage(""); }}
+                left={<TextInput.Icon icon="shield-key-outline" />}
+                outlineStyle={styles.outline}
+                error={!!errors.otp}
+                autoFocus
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                style={field}
+              />
               {!!errors.otp && <HelperText type="error">{errors.otp}</HelperText>}
-              <TextInput mode="outlined" label="New password" secureTextEntry={!show} value={password} onChangeText={setPassword} error={!!errors.password} style={{ marginTop: 10 }} right={<TextInput.Icon icon={show ? "eye-off" : "eye"} onPress={() => setShow((s) => !s)} accessibilityLabel={show ? "Hide password" : "Show password"} />} />
+              <TextInput
+                {...inputTheme}
+                mode="outlined"
+                label="New password"
+                secureTextEntry={!show}
+                value={password}
+                onChangeText={setPassword}
+                error={!!errors.password}
+                left={<TextInput.Icon icon="lock-outline" />}
+                right={<TextInput.Icon icon={show ? "eye-off" : "eye"} onPress={() => setShow((x) => !x)} forceTextInputFocus={false} accessibilityLabel={show ? "Hide password" : "Show password"} />}
+                outlineStyle={styles.outline}
+                style={field}
+              />
               <HelperText type={errors.password ? "error" : "info"}>{errors.password || "At least 6 characters"}</HelperText>
-              <TextInput mode="outlined" label="Confirm new password" secureTextEntry={!show} value={confirm} onChangeText={setConfirm} error={!!errors.confirm} />
+              <TextInput
+                {...inputTheme}
+                mode="outlined"
+                label="Confirm new password"
+                secureTextEntry={!show}
+                value={confirm}
+                onChangeText={setConfirm}
+                error={!!errors.confirm}
+                left={<TextInput.Icon icon="lock-check-outline" />}
+                outlineStyle={styles.outline}
+                style={field}
+              />
               {!!errors.confirm && <HelperText type="error">{errors.confirm}</HelperText>}
-              <Button mode="contained" onPress={reset} loading={busy} disabled={busy} style={styles.btn} contentStyle={{ height: 48 }}>Change password</Button>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-                <Button icon="arrow-left" onPress={() => { setStep("phone"); setOtp(""); }} compact>Change number</Button>
-                <Button onPress={send} disabled={wait > 0 || busy} compact>{wait > 0 ? `Resend in ${wait}s` : "Resend OTP"}</Button>
+              <PillButton label="Change password" icon="lock-reset" onPress={reset} loading={busy} disabled={busy} style={styles.btn} />
+              <View style={styles.row}>
+                <Pressable onPress={() => { setStep("phone"); setOtp(""); setMessage(""); }} hitSlop={8} accessibilityRole="button" style={styles.link}>
+                  <MaterialCommunityIcons name="arrow-left" size={16} color={c.primary} />
+                  <Text style={{ color: c.primary, fontWeight: "700" }}>Change number</Text>
+                </Pressable>
+                <Pressable onPress={send} disabled={wait > 0 || busy} hitSlop={8} accessibilityRole="button" style={styles.link}>
+                  <MaterialCommunityIcons name={wait > 0 ? "timer-sand" : "refresh"} size={16} color={wait > 0 ? c.textMuted : c.primary} />
+                  <Text style={{ color: wait > 0 ? c.textMuted : c.primary, fontWeight: "700" }}>{wait > 0 ? `Resend in ${wait}s` : "Resend OTP"}</Text>
+                </Pressable>
               </View>
-            </FadeIn>
+            </Rise>
           )}
+        </AuthCard>
 
-          {step === "done" && (
-            <FadeIn key="done" style={{ alignItems: "center", paddingVertical: 8 }}>
-              <MaterialCommunityIcons name="check-circle" size={72} color={c.success} />
-              <Text style={{ color: c.text, fontSize: 18, fontWeight: "800", marginTop: 6 }}>Password changed</Text>
-              <Text style={{ color: c.textMuted, textAlign: "center", marginTop: 4 }}>Sign in with your mobile number and the new password.</Text>
-              <Button mode="contained" onPress={() => navigation.navigate("Login")} style={[styles.btn, { alignSelf: "stretch" }]} contentStyle={{ height: 48 }}>Sign in</Button>
-            </FadeIn>
-          )}
-        </FadeIn>
+        <Rise delay={500} style={styles.signIn}>
+          <Text style={{ color: c.textMuted }}>Remembered it?</Text>
+          <Pressable onPress={() => navigation.navigate("Login")} accessibilityRole="link" hitSlop={8}>
+            <Text style={{ color: c.primary, fontWeight: "800" }}>Sign in</Text>
+          </Pressable>
+        </Rise>
       </ScrollView>
-      <Snackbar visible={!!message} onDismiss={() => setMessage("")} duration={5000}>{message}</Snackbar>
+
+      {step === "done" ? (
+        <SuccessBurst
+          title="Password changed"
+          subtitle="Sign in with your mobile number and the new password."
+          onDone={() => setTimeout(() => navigation.navigate("Login"), 900)}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, padding: 20, elevation: 2, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 } },
-  badge: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  btn: { marginTop: 16, borderRadius: 12 },
+  field: { marginBottom: 4 },
+  outline: { borderRadius: 14 },
+  btn: { marginTop: 14 },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 16 },
+  link: { flexDirection: "row", alignItems: "center", gap: 4 },
+  signIn: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 22 },
 });

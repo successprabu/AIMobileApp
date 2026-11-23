@@ -18,6 +18,8 @@ import {
   TextInput,
 } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { FadeIn } from "./mahal/MahalUi";
+import EmptyState from "./ui/EmptyState";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -254,7 +256,8 @@ export default function TransactionListView({
     </View>
   );
 
-  const renderItem = ({ item }: { item: TransactionRecord }) => (
+  const renderItem = ({ item, index }: { item: TransactionRecord; index: number }) => (
+    <FadeIn index={index}>
     <View style={[styles.rowCard, { backgroundColor: c.card, borderColor: c.border }]}>
       <View style={[styles.rowStripe, { backgroundColor: accent }]} />
       <View style={styles.rowBody}>
@@ -278,6 +281,7 @@ export default function TransactionListView({
         </View>
       </View>
     </View>
+    </FadeIn>
   );
 
   return (
@@ -345,10 +349,7 @@ export default function TransactionListView({
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <MaterialCommunityIcons name="clipboard-text-outline" size={48} color={c.textMuted} />
-              <Text style={[styles.empty, { color: c.textMuted }]}>{t("noData")}</Text>
-            </View>
+            <EmptyState icon={TYPE_ICON[transType]} text={t("noData")} color={accent} />
           }
           ListFooterComponent={
             <>

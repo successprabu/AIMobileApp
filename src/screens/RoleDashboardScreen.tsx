@@ -17,6 +17,8 @@ import { PATHS } from "../api/endpoints";
 import ActivityOverview from "../components/dashboard/ActivityOverview";
 import DashboardBalanceCard from "../components/dashboard/DashboardBalanceCard";
 import DashboardMetricGrid from "../components/dashboard/DashboardMetricGrid";
+import WelcomeBanner from "../components/ui/WelcomeBanner";
+import { Rise } from "../components/ui/AuthUi";
 import StatCard from "../components/dashboard/StatCard";
 import { DASHBOARD_METRIC_COLORS } from "../constants/dashboardMetrics";
 import { useAuth } from "../context/AuthContext";
@@ -162,25 +164,7 @@ function MoitechDashboardScreen() {
         />
       }
     >
-      <View style={styles.hero}>
-        <View style={styles.heroAccent} />
-        <Image
-          source={require("../../assets/brand-logo.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <View style={styles.heroText}>
-          <Text variant="labelLarge" style={styles.heroLabel}>
-            {t("welcome_back")}
-          </Text>
-          <Text variant="headlineSmall" style={styles.heroName}>
-            {displayName}
-          </Text>
-          <Text variant="bodyMedium" style={styles.heroRole}>
-            {designation}
-          </Text>
-        </View>
-      </View>
+      <WelcomeBanner label={t("welcome_back")} name={displayName} role={designation} />
 
       {useDashboardApi ? (
         <>
@@ -240,11 +224,13 @@ function MoitechDashboardScreen() {
                 />
               </DashboardMetricGrid>
 
-              <DashboardBalanceCard
-                label={t("mobile_net_balance", { defaultValue: "Receipts minus expenses" })}
-                value={formatInr(netBalance)}
-                positive={netBalance >= 0}
-              />
+              <Rise delay={420}>
+                <DashboardBalanceCard
+                  label={t("mobile_net_balance", { defaultValue: "Receipts minus expenses" })}
+                  value={formatInr(netBalance)}
+                  positive={netBalance >= 0}
+                />
+              </Rise>
             </View>
           ) : null}
 
@@ -276,6 +262,7 @@ function MoitechDashboardScreen() {
       {useDashboardApi ? (
         <>
           {!loading && detail.length > 0 ? (
+            <Rise delay={520}>
             <Card style={styles.activityCard} mode="elevated">
               <Card.Title
                 title={t("mobile_activity_by_place", {
@@ -305,6 +292,7 @@ function MoitechDashboardScreen() {
                 </Button>
               </Card.Content>
             </Card>
+            </Rise>
           ) : null}
         </>
       ) : role === "MU" ? (

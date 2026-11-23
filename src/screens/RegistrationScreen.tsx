@@ -68,8 +68,8 @@ export default function RegistrationScreen({ navigation, route }: Props) {
   // Moitech (AU) or mahal owner (MU) account, chosen on the login screen.
   const mahal = route.params?.kind === "mahal";
   const userType = mahal ? "MU" : "AU";
-  // The coloured hero carries the title and a back arrow, so the plain header is hidden.
-  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up", headerShown: false }), [navigation, mahal]);
+  // The coloured hero carries the title and a back arrow (the header is hidden in RootNavigator).
+  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up" }), [navigation, mahal]);
   const product = mahal
     ? { label: "Mahal Management", icon: "office-building-outline" as const, color: "#f59e0b" }
     : { label: "Moitech", icon: "hand-heart-outline" as const, color: "#6366f1" };

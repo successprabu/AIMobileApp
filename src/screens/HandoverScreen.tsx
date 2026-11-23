@@ -39,6 +39,7 @@ import {
   calculateOverallTotals,
   calculateTotals,
 } from "../utils/handoverAggregation";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 export default function HandoverScreen() {
   const { t } = useTranslation();
@@ -165,7 +166,7 @@ export default function HandoverScreen() {
         }
       >
         <Card mode="outlined" style={[styles.card, { backgroundColor: c.card }]}>
-          <Card.Title title={t("handOver")} />
+          <Card.Title left={sectionIcon("handshake", "#f39c12")} titleStyle={sectionTitleStyle} title={t("handOver")} />
           <Card.Content>
             <DataTable>
               <DataTable.Header>
@@ -219,7 +220,7 @@ export default function HandoverScreen() {
         <Divider style={styles.divider} />
 
         <Card mode="outlined" style={[styles.card, { backgroundColor: c.card }]}>
-          <Card.Title title={t("othersSummary")} />
+          <Card.Title left={sectionIcon("gift-outline", "#00b894")} titleStyle={sectionTitleStyle} title={t("othersSummary")} />
           <Card.Content>
             <DataTable>
               <DataTable.Header>

@@ -47,6 +47,7 @@ import {
 } from "../utils/othersValidation";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
+import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
 function dateUTC() {
   return new Date(new Date().toUTCString()).toISOString();
@@ -301,6 +302,8 @@ export default function AddOthersScreen() {
         {lastRecord?.transaction ? (
           <Card style={styles.card}>
             <Card.Title
+              left={sectionIcon("history", "#0ea5e9")}
+              titleStyle={sectionTitleStyle}
               title={t("lastRecordHistory")}
               right={() => (
                 <Button compact onPress={() => setHistoryExpanded(!historyExpanded)}>
