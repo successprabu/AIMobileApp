@@ -24,6 +24,8 @@ export type TransactionFormData = {
   others?: number;
   othersType?: string;
   othersRemark?: string;
+  /** Others (gold): weight in grams, for the gold value. */
+  weightGrams?: number | null;
 };
 
 export type LastRecordResponse = {

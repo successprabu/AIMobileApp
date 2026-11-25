@@ -40,7 +40,8 @@ export const listGiven = () => call<{ items: GivenEntry[]; total: number; all: n
 export const saveGiven = (entry: Omit<GivenEntry, "amount"> & { amount: number }) => call<GivenEntry>("post", "MoiGiven/Save", entry);
 export const deleteGiven = (id: number) => call<unknown>("post", "MoiGiven/Delete", undefined, { id });
 export const linkGiven = (givenId: number, transactionId: number) => call<unknown>("post", "MoiGiven/Link", { givenId, transactionId });
-export const compareGiven = (functionId?: number) => call<GiveCompare>("get", "MoiGiven/Compare", undefined, { function_id: functionId || undefined });
+export const compareGiven = (functionId?: number, search?: string) =>
+  call<GiveCompare>("get", "MoiGiven/Compare", undefined, { function_id: functionId || undefined, search: search || undefined });
 
 export const STATUS_LABEL: Record<GiveStatus, { label: string; color: string }> = {
   theyMore: { label: "They gave more", color: "#16a34a" },

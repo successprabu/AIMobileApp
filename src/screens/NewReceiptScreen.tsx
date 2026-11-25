@@ -21,6 +21,8 @@ import { authPost } from "../api/client";
 import { useVoiceInput } from "../hooks/useVoiceInput";
 import { PATHS } from "../api/endpoints";
 import NewReceiptHeaderRight from "../components/NewReceiptHeaderRight";
+import VoiceEntryButton from "../components/VoiceEntryButton";
+import type { VoiceEntry } from "../api/moitech";
 import VoiceTextField from "../components/VoiceTextField";
 import { useFormAutoSave } from "../hooks/useFormAutoSave";
 import { useVoiceSaveSpeech } from "../hooks/useVoiceSaveSpeech";
@@ -188,6 +190,20 @@ export default function NewReceiptScreen() {
     setSnack({ visible: true, message, isError, duration });
   };
 
+  // Voice-only entry: the whole receipt said in one go fills the form (nothing is saved until Save).
+  const fillFromVoice = useCallback((v: VoiceEntry) => {
+    setFormData((prev) => ({
+      ...prev,
+      villageName: v.villageName || prev.villageName,
+      initial: v.initial || prev.initial,
+      name: v.name || prev.name,
+      newAmount: v.amount ?? prev.newAmount,
+      oldAmount: v.oldAmount ?? prev.oldAmount,
+      phoneNo: v.phoneNo || prev.phoneNo,
+    }));
+  }, []);
+  const voiceMessage = useCallback((message: string, isError = false) => setSnack({ visible: true, message, isError, duration: 5000 }), []);
+
   const updateField = <K extends keyof TransactionFormData>(
     key: K,
     value: TransactionFormData[K]
@@ -333,6 +349,8 @@ export default function NewReceiptScreen() {
             ) : null}
           </Card>
         ) : null}
+
+        <VoiceEntryButton onFill={fillFromVoice} onMessage={voiceMessage} />
 
         <Card style={styles.card}>
           <Card.Content>

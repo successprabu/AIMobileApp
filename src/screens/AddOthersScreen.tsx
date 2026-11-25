@@ -46,6 +46,7 @@ import {
   validateOthers,
 } from "../utils/othersValidation";
 import { useAppTheme } from "../hooks/useAppTheme";
+import { useTx } from "../i18n/site";
 import { useThemedInputProps } from "../hooks/useThemedInputProps";
 import { sectionIcon, sectionTitleStyle } from "../components/ui/SectionIcon";
 
@@ -86,6 +87,7 @@ function emptyOthersForm(
 
 export default function AddOthersScreen() {
   const { t } = useTranslation();
+  const tx = useTx();
   const { suggestionTargetLanguage } = useLanguage();
   const { user } = useAuth();
   const { theme } = useAppTheme();
@@ -238,6 +240,7 @@ export default function AddOthersScreen() {
           type: "O",
           others: Number(formData.others ?? 0),
           amount: Number(formData.amount ?? 0),
+          weightGrams: Number(formData.weightGrams) > 0 ? Number(formData.weightGrams) : null,
           oldAmount: 0,
           newAmount: 0,
         };
@@ -479,6 +482,19 @@ export default function AddOthersScreen() {
                   onPress={() => handleVoice("amount")}
                 />
               }
+            />
+
+            <Text variant="labelLarge" style={styles.label}>
+              {tx("Weight in grams (optional)")}
+            </Text>
+            <TextInput
+              {...inputTheme}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              value={formData.weightGrams ? String(formData.weightGrams) : ""}
+              onChangeText={(v) => updateField("weightGrams", v === "" ? null : Number(v.replace(/[^\d.]/g, "")) || null)}
+              placeholder={tx("For the gold value")}
+              style={[inputTheme.style, styles.input]}
             />
 
             <Text variant="labelLarge" style={styles.label}>

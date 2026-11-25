@@ -39,6 +39,14 @@ export type MainStackParamList = {
   Help: undefined;
   UserGuide: undefined;
   MoiGiven: undefined;
+  GuestEntries: undefined;
+  ThankGivers: undefined;
+  MoiFamily: undefined;
+  MoiReturn: undefined;
+  MoiBook: undefined;
+  Invitations: undefined;
+  OldNotebooks: undefined;
+  Partner: undefined;
   ChangePassword: undefined;
   History: { action?: string } | undefined;
 };

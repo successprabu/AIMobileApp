@@ -5,6 +5,14 @@ import RoleDashboardScreen from "../screens/RoleDashboardScreen";
 import HelpScreen from "../screens/HelpScreen";
 import UserGuideScreen from "../screens/UserGuideScreen";
 import MoiGivenScreen from "../screens/MoiGivenScreen";
+import GuestEntriesScreen from "../screens/moitech/GuestEntriesScreen";
+import ThankGiversScreen from "../screens/moitech/ThankGiversScreen";
+import MoiFamilyScreen from "../screens/moitech/MoiFamilyScreen";
+import MoiReturnScreen from "../screens/moitech/MoiReturnScreen";
+import MoiBookScreen from "../screens/moitech/MoiBookScreen";
+import InvitationsScreen from "../screens/moitech/InvitationsScreen";
+import OldNotebooksScreen from "../screens/moitech/OldNotebooksScreen";
+import PartnerScreen from "../screens/moitech/PartnerScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import NewReceiptScreen from "../screens/NewReceiptScreen";
@@ -106,6 +114,14 @@ export default function MainStackNavigator() {
       <Stack.Screen name="Help" component={HelpScreen} />
       <Stack.Screen name="UserGuide" component={UserGuideScreen} />
       <Stack.Screen name="MoiGiven" component={MoiGivenScreen} />
+      <Stack.Screen name="GuestEntries" component={GuestEntriesScreen} />
+      <Stack.Screen name="ThankGivers" component={ThankGiversScreen} />
+      <Stack.Screen name="MoiFamily" component={MoiFamilyScreen} />
+      <Stack.Screen name="MoiReturn" component={MoiReturnScreen} />
+      <Stack.Screen name="MoiBook" component={MoiBookScreen} />
+      <Stack.Screen name="Invitations" component={InvitationsScreen} />
+      <Stack.Screen name="OldNotebooks" component={OldNotebooksScreen} />
+      <Stack.Screen name="Partner" component={PartnerScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <Stack.Screen name="History" component={HistoryScreen} />
     </Stack.Navigator>

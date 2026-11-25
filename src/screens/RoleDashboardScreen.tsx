@@ -23,6 +23,8 @@ import StatCard from "../components/dashboard/StatCard";
 import { DASHBOARD_METRIC_COLORS } from "../constants/dashboardMetrics";
 import { useAuth } from "../context/AuthContext";
 import type { MainStackParamList } from "../navigation/types";
+import QuickActionGrid, { type QuickActionItem } from "../components/dashboard/QuickActionGrid";
+import { useTx } from "../i18n/site";
 import type { AuthUser } from "../types/auth";
 import type {
   DashboardApiResponse,
@@ -48,6 +50,7 @@ function MoitechDashboardScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const styles = useMemo(() => makeDashStyles(c), [c]);
+  const tx = useTx();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const u = user as AuthUser;
 
@@ -131,6 +134,14 @@ function MoitechDashboardScreen() {
     // Dashboard shortcuts open screens without params.
     navigation.navigate(screen as never);
   };
+  const familyActions: QuickActionItem[] = [
+    { screen: "GuestEntries", label: tx("Guest entries"), icon: "qrcode", color: "#6366f1" },
+    { screen: "ThankGivers", label: tx("Thank your givers"), icon: "whatsapp", color: "#16a34a" },
+    { screen: "Invitations", label: tx("Invitations"), icon: "email-heart-outline", color: "#db2777" },
+    { screen: "MoiBook", label: tx("Moi book"), icon: "book-open-variant", color: "#b45309" },
+    { screen: "MoiFamily", label: tx("Family live link"), icon: "share-variant", color: "#0ea5e9" },
+    ...(role !== "NU" ? [{ screen: "MoiReturn" as const, label: tx("Moi to return"), icon: "calendar-heart" as const, color: "#7c3aed" }] : []),
+  ];
 
   if (!["SU", "AU", "NU", "MU", "MS"].includes(role)) {
     return (
@@ -223,6 +234,8 @@ function MoitechDashboardScreen() {
                   onPress={() => go("ExpensesList")}
                 />
               </DashboardMetricGrid>
+
+              <QuickActionGrid title={tx("Family tools")} actions={familyActions} onPress={go} />
 
               <Rise delay={420}>
                 <DashboardBalanceCard
