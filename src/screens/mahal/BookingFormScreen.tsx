@@ -1,4 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { getQuote, listPackages, type PackageItem, type Quote } from "../../api/mahalPlus";
+import { useTx } from "../../i18n/site";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Chip, HelperText, Snackbar, Text, TextInput } from "react-native-paper";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -57,6 +59,8 @@ export default function BookingFormScreen() {
       payMethod: "Cash",
       remarks: "",
       rcdAmount: 0,
+      packageId: null as number | null,
+      addonIds: [] as number[],
     };
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -95,6 +99,8 @@ export default function BookingFormScreen() {
           payMethod: b.payMethod ?? "Cash",
           remarks: b.remarks ?? "",
           rcdAmount: b.rcdAmount ?? 0,
+          packageId: b.packageId ?? null,
+          addonIds: b.addonIds ?? [],
         });
       });
     }
@@ -150,12 +156,49 @@ export default function BookingFormScreen() {
   };
   const money = (v: string) => v.replace(/[^\d.]/g, "").slice(0, 10);
 
-  // Suggest rent from the hall's daily price for new bookings.
+  // Packages and add-ons of the hall, and the price-list quote (weekend, muhurtham, extras) for the dates (Phase 2).
+  const tx = useTx();
+  const [extras, setExtras] = useState<PackageItem[]>([]);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [rentTyped, setRentTyped] = useState(!!bookingId);
   useEffect(() => {
-    if (bookingId || !mahal?.pricePerDay || form.totalAmount) return;
-    const days = Math.max(1, Math.ceil((form.toDate.getTime() - form.fromDate.getTime()) / 86400000));
-    setForm((f) => ({ ...f, totalAmount: String(mahal.pricePerDay! * days), advance: f.advance || (mahal.advanceAmount ? String(mahal.advanceAmount) : "") }));
-  }, [bookingId, mahal, form.fromDate, form.toDate, form.totalAmount]);
+    if (!form.mahalId) {
+      setExtras([]);
+      return;
+    }
+    void listPackages(form.mahalId).then((r) => setExtras(r.ok ? (r.data ?? []).filter((x) => x.isActive) : []));
+  }, [form.mahalId]);
+  const addonKey = form.addonIds.join(",");
+  useEffect(() => {
+    if (!form.mahalId || form.toDate <= form.fromDate) {
+      setQuote(null);
+      return undefined;
+    }
+    let live = true;
+    const t = setTimeout(async () => {
+      const r = await getQuote({ mahalId: form.mahalId, from: toLocalIso(form.fromDate), to: toLocalIso(form.toDate), packageId: form.packageId, addonIds: form.addonIds });
+      if (!live) return;
+      if (r.ok && r.data) setQuote(r.data);
+      else if (mahal?.pricePerDay) {
+        // Older server without the price list: rent × days, as before.
+        const days = Math.max(1, Math.ceil((form.toDate.getTime() - form.fromDate.getTime()) / 86400000));
+        setQuote({ total: mahal.pricePerDay * days, rent: mahal.pricePerDay * days, days: [], package: null, addons: [] });
+      } else setQuote(null);
+    }, 300);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.mahalId, form.fromDate, form.toDate, form.packageId, addonKey, mahal?.pricePerDay]);
+  // New bookings take the price-list total until the owner types their own rent.
+  useEffect(() => {
+    if (bookingId || rentTyped || !quote?.total) return;
+    setForm((f) => ({ ...f, totalAmount: String(quote.total), advance: f.advance || (mahal?.advanceAmount ? String(mahal.advanceAmount) : "") }));
+  }, [bookingId, rentTyped, quote, mahal]);
+  const muhurthamDays = (quote?.days ?? []).filter((d) => d.kind === "muhurtham").length;
+  const packages = extras.filter((x) => x.kind === "package");
+  const addons = extras.filter((x) => x.kind === "addon");
 
   const balance = useMemo(
     () => Math.max(0, (Number(form.totalAmount) || 0) - (Number(form.discount) || 0) - (Number(form.advance) || 0) - (form.rcdAmount || 0)),
@@ -210,6 +253,8 @@ export default function BookingFormScreen() {
       advance: Number(form.advance) || 0,
       payMethod: form.payMethod,
       remarks: form.remarks,
+      packageId: form.packageId,
+      addonIds: form.addonIds,
     });
     setSaving(false);
     if (r.ok) navigation.goBack();
@@ -290,10 +335,51 @@ export default function BookingFormScreen() {
           <TextInput mode="outlined" label="Email" keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={(v) => set("email", v)} error={!!errors.email} style={styles.input} />
         </FadeIn>
 
+        {extras.length > 0 && (
+          <FadeIn index={2} style={[styles.card, { backgroundColor: c.card }]}>
+            <Text style={[styles.section, { color: c.text }]}>{tx("Packages and add-ons")}</Text>
+            {packages.length > 0 && (
+              <View style={styles.wrap}>
+                <Chip selected={!form.packageId} onPress={() => set("packageId", null)}>{tx("Hall only")}</Chip>
+                {packages.map((x) => (
+                  <Chip key={x.id} selected={form.packageId === x.id} onPress={() => set("packageId", x.id)}>{`${x.name} +${formatInr(x.price)}/${tx("day")}`}</Chip>
+                ))}
+              </View>
+            )}
+            {addons.length > 0 && (
+              <View style={[styles.wrap, { marginTop: 8 }]}>
+                {addons.map((x) => {
+                  const on = form.addonIds.includes(x.id);
+                  return (
+                    <Chip key={x.id} selected={on} icon={on ? "check" : "plus"} showSelectedCheck={false}
+                      onPress={() => set("addonIds", on ? form.addonIds.filter((i) => i !== x.id) : [...form.addonIds, x.id])}>
+                      {`${x.name} ${formatInr(x.price)}${x.unit === "event" ? "" : `/${tx("day")}`}`}
+                    </Chip>
+                  );
+                })}
+              </View>
+            )}
+          </FadeIn>
+        )}
+
         <FadeIn index={2} style={[styles.card, { backgroundColor: c.card }]}>
           <Text style={[styles.section, { color: c.text }]}>Payment</Text>
+          {!!quote?.total && (
+            <View style={[styles.quote, { backgroundColor: `${c.primary}12` }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: c.text, fontWeight: "700" }}>Price list: {formatInr(quote.total)}</Text>
+                <Text style={{ color: c.textMuted, fontSize: 12 }}>
+                  {[quote.days.length ? `rent ${formatInr(quote.rent)}` : "", muhurthamDays ? tx("includes {{n}} muhurtham day(s)", { n: muhurthamDays }) : "",
+                    quote.package ? `${quote.package.name} ${formatInr(quote.package.amount)}` : "", ...quote.addons.map((a) => `${a.name} ${formatInr(a.amount)}`)].filter(Boolean).join(" · ")}
+                </Text>
+              </View>
+              {Number(form.totalAmount) !== quote.total && (
+                <Button compact onPress={() => { setRentTyped(true); set("totalAmount", String(quote.total)); }}>Use it</Button>
+              )}
+            </View>
+          )}
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <TextInput mode="outlined" label="Hall rent" keyboardType="numeric" value={form.totalAmount} onChangeText={(v) => set("totalAmount", money(v))} left={<TextInput.Affix text="₹" />} style={[styles.input, { flex: 1 }]} />
+            <TextInput mode="outlined" label="Total rent" keyboardType="numeric" value={form.totalAmount} onChangeText={(v) => { setRentTyped(true); set("totalAmount", money(v)); }} left={<TextInput.Affix text="₹" />} style={[styles.input, { flex: 1 }]} />
             <TextInput mode="outlined" label="Discount" keyboardType="numeric" value={form.discount} onChangeText={(v) => set("discount", money(v))} left={<TextInput.Affix text="₹" />} error={!!errors.discount} style={[styles.input, { flex: 1 }]} />
           </View>
           <TextInput mode="outlined" label="Advance received" keyboardType="numeric" value={form.advance} onChangeText={(v) => set("advance", money(v))} left={<TextInput.Affix text="₹" />} style={styles.input} />
@@ -326,6 +412,7 @@ export default function BookingFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  quote: { flexDirection: "row", alignItems: "center", gap: 8, padding: 10, borderRadius: 12, marginBottom: 8 },
   aiNote: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 14, marginBottom: 12 },
   card: { borderRadius: 16, padding: 16, marginBottom: 14, elevation: 1, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
   section: { fontWeight: "800", fontSize: 16, marginBottom: 10 },

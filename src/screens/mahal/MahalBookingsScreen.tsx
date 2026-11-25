@@ -28,6 +28,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getInvoice, markReminder } from "../../api/mahalOps";
 import { hallMessage, invoiceMessage, openWhatsApp, shareInvoicePdf } from "../../utils/hallMessages";
 import { useMessageLang, useTx } from "../../i18n/site";
+import EventChecklist from "../../components/mahal/EventChecklist";
 
 const TABS: { key: string; label: string; count: keyof BookingCounts }[] = [
   { key: "Pending", label: "Requests", count: "Pending" },
@@ -465,6 +466,11 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
 
               <Section title="Payment">
                 <Line label="Hall rent" value={formatInr(b.totalAmount)} />
+                {(!!b.packageName || !!b.addons?.length) && (
+                  <Text style={{ color: c.textMuted, fontSize: 12, marginBottom: 4 }}>
+                    {[b.packageName && `${tx("Package")}: ${b.packageName}`, ...(b.addons ?? []).map((a) => a.name)].filter(Boolean).join(" · ")}
+                  </Text>
+                )}
                 {b.discount > 0 && <Line label="Discount" value={`− ${formatInr(b.discount)}`} />}
                 <Line label="Received" value={`${formatInr(paid)}${b.payMethod ? ` · ${b.payMethod}` : ""}`} />
                 <View style={[styles.line, { marginTop: 4 }]}>
@@ -511,6 +517,8 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
                   )}
                 </View>
               )}
+
+              {(b.status === "Confirmed" || b.status === "Completed") && <EventChecklist bookingId={b.id} onMessage={setError} />}
 
               {!!b.remarks && (
                 <Section title="Notes">

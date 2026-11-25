@@ -144,3 +144,20 @@ export async function sharePdfReport(
   const html = buildReportPdfHtml(sections, meta ?? null);
   await sharePdfFromHtml(html, dialogTitle);
 }
+
+/** Several sheets in one Excel file, shared from the phone. Each sheet: rows of { column label: value }. */
+export async function shareWorkbook(sheets: { name: string; rows: Record<string, unknown>[] }[], fileName: string) {
+  const wb = XLSX.utils.book_new();
+  sheets.forEach((s) => {
+    const ws = XLSX.utils.json_to_sheet(s.rows.length ? s.rows : [{ note: "No data" }]);
+    XLSX.utils.book_append_sheet(wb, ws, s.name.replace(/[[\]:*?/\\]/g, "_").slice(0, 31) || "Sheet1");
+  });
+  const base64 = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+  const path = `${FileSystem.cacheDirectory ?? ""}${fileName}`;
+  await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
+  await Sharing.shareAsync(path, {
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    dialogTitle: fileName,
+    UTI: "org.openxmlformats.spreadsheetml.sheet",
+  });
+}

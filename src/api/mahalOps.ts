@@ -59,6 +59,8 @@ export type Invoice = {
     fromDate: string;
     toDate: string;
   };
+  /** Hall rent, package and add-on lines (Phase 2); older servers send none. */
+  lines?: { label: string; qty: number; amount: number }[];
   amounts: { rent: number; discount: number; total: number; taxable: number; cgst: number; sgst: number; paid: number; balance: number };
   payments: { id: number; amount: number; payMethod?: string | null; date: string; online: boolean }[];
 };

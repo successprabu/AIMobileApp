@@ -296,5 +296,8 @@
   "followUps": "பின்தொடர்தல்",
   "mahalExpenses": "செலவுகள் மற்றும் லாபம்",
   "mahalExpensesStaff": "செலவுகள்",
-  "mahalStaff": "பணியாளர் உள்நுழைவுகள்"
+  "mahalStaff": "பணியாளர் உள்நுழைவுகள்",
+  "mahalReports": "அறிக்கைகள்",
+  "mahalVendors": "விற்பனையாளர்கள்",
+  "mahalReviews": "மதிப்புரைகள்"
 }

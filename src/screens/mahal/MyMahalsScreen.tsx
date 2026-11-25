@@ -10,6 +10,8 @@ import { listMyMahals, photoUrl, type Mahal } from "../../api/mahal";
 import { FadeIn } from "../../components/mahal/MahalUi";
 import { formatInr } from "../../utils/formatCurrency";
 import BillingSheet from "../../components/mahal/BillingSheet";
+import PricingSheet from "../../components/mahal/PricingSheet";
+import ChecklistSheet from "../../components/mahal/ChecklistSheet";
 import { useTx } from "../../i18n/site";
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
@@ -25,6 +27,8 @@ export default function MyMahalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [billing, setBilling] = useState<Mahal | null>(null);
+  const [pricing, setPricing] = useState<Mahal | null>(null);
+  const [checklist, setChecklist] = useState<Mahal | null>(null);
   const tx = useTx();
 
   useLayoutEffect(() => navigation.setOptions({ title: "My mahals" }), [navigation]);
@@ -112,6 +116,11 @@ export default function MyMahalsScreen() {
                       accessibilityLabel={tx("GST invoice and online payment")} onPress={() => setBilling(m)}>
                       {tx("Billing")}
                     </Button>
+                    <Button compact mode="outlined" icon="tag-outline" textColor={m.weekendPrice || m.muhurthamPrice || m.weekdayDiscount ? c.success : undefined}
+                      accessibilityLabel={tx("Weekend and muhurtham prices, packages and add-ons")} onPress={() => setPricing(m)}>
+                      {tx("Prices")}
+                    </Button>
+                    <Button compact mode="outlined" icon="clipboard-check-outline" onPress={() => setChecklist(m)}>{tx("Checklist")}</Button>
                   </View>
                 </View>
               </View>
@@ -120,6 +129,9 @@ export default function MyMahalsScreen() {
         }}
       />
       <FAB icon="plus" label="Add mahal" color="#fff" style={[styles.fab, { backgroundColor: c.primary }]} onPress={() => navigation.navigate("MahalForm", {})} />
+      <PricingSheet mahal={pricing} onClose={() => setPricing(null)}
+        onSaved={(nm, msg) => { setPricing(null); setMessage(msg); setMahals((list) => list.map((x) => (x.id === nm.id ? { ...x, ...nm } : x))); }} />
+      <ChecklistSheet mahal={checklist} onClose={() => setChecklist(null)} onSaved={(msg) => { setChecklist(null); setMessage(msg); }} />
       <BillingSheet mahal={billing} onClose={() => setBilling(null)}
         onSaved={(nm, msg) => { setBilling(null); setMessage(msg); setMahals((list) => list.map((x) => (x.id === nm.id ? { ...x, ...nm } : x))); }} />
       <Snackbar visible={!!message} onDismiss={() => setMessage("")}>{message}</Snackbar>

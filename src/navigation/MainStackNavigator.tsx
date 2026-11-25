@@ -27,6 +27,9 @@ import FollowUpsScreen from "../screens/mahal/FollowUpsScreen";
 import MahalFormScreen from "../screens/mahal/MahalFormScreen";
 import MahalExpensesScreen from "../screens/mahal/MahalExpensesScreen";
 import MahalStaffScreen from "../screens/mahal/MahalStaffScreen";
+import MahalReviewsScreen from "../screens/mahal/MahalReviewsScreen";
+import MahalVendorsScreen from "../screens/mahal/MahalVendorsScreen";
+import MahalReportsScreen from "../screens/mahal/MahalReportsScreen";
 import ClientListScreen from "../screens/admin/ClientListScreen";
 import RegisterClientScreen from "../screens/admin/RegisterClientScreen";
 import EnquiriesScreen from "../screens/admin/EnquiriesScreen";
@@ -66,6 +69,9 @@ export default function MainStackNavigator() {
       <Stack.Screen name="FollowUps" component={FollowUpsScreen} options={{ title: "Follow-ups" }} />
       <Stack.Screen name="MahalExpenses" component={MahalExpensesScreen} />
       <Stack.Screen name="MahalStaff" component={MahalStaffScreen} />
+      <Stack.Screen name="MahalReviews" component={MahalReviewsScreen} />
+      <Stack.Screen name="MahalVendors" component={MahalVendorsScreen} />
+      <Stack.Screen name="MahalReports" component={MahalReportsScreen} />
       {/* Forms open on top of a list, so they get a back arrow instead of the menu button. */}
       <Stack.Screen
         name="MahalForm"

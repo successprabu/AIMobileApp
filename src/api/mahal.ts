@@ -46,6 +46,11 @@ export type Mahal = {
   payOnline?: boolean;
   razorpayKeyId?: string | null;
   hasRazorpaySecret?: boolean;
+  // Day prices (Phase 2)
+  weekendPrice?: number | null;
+  muhurthamPrice?: number | null;
+  weekdayDiscount?: number | null;
+  specialDates?: string[];
   pendingRequests?: number;
   upcomingEvents?: number;
 };
@@ -75,6 +80,11 @@ export type Booking = {
   createdDt?: string;
   /** Set once an invoice has been made. */
   invoiceNo?: number | null;
+  // Package and add-ons (Phase 2)
+  packageId?: number | null;
+  packageName?: string | null;
+  addonIds?: number[];
+  addons?: { id: number; name: string; amount: number }[];
 };
 
 export type BookingCounts = { Pending: number; Upcoming: number; Completed: number; Cancelled: number; All: number };

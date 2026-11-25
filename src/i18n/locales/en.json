@@ -353,5 +353,8 @@
   "followUps": "Follow-ups",
   "mahalExpenses": "Expenses and profit",
   "mahalExpensesStaff": "Expenses",
-  "mahalStaff": "Staff logins"
+  "mahalStaff": "Staff logins",
+  "mahalReports": "Reports",
+  "mahalVendors": "Vendors",
+  "mahalReviews": "Reviews"
 }
