@@ -12,6 +12,8 @@ export type MainStackParamList = {
   Enquiries: undefined;
   MyMahals: undefined;
   FollowUps: undefined;
+  MahalExpenses: undefined;
+  MahalStaff: undefined;
   MahalForm: { mahalId?: number } | undefined;
   MahalBookings: { tab?: string } | undefined;
   BookingForm: { bookingId?: number; mahalId?: number } | undefined;

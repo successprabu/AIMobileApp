@@ -39,6 +39,13 @@ export type Mahal = {
   coverPhotoId?: number | null;
   isOnlineBooking?: boolean;
   isActive?: boolean;
+  // Billing (owner): GST invoice and online advance payment through the hall's own Razorpay account.
+  gstEnabled?: boolean;
+  gstin?: string | null;
+  gstRate?: number | null;
+  payOnline?: boolean;
+  razorpayKeyId?: string | null;
+  hasRazorpaySecret?: boolean;
   pendingRequests?: number;
   upcomingEvents?: number;
 };
@@ -66,6 +73,8 @@ export type Booking = {
   remarks?: string | null;
   cancelReason?: string | null;
   createdDt?: string;
+  /** Set once an invoice has been made. */
+  invoiceNo?: number | null;
 };
 
 export type BookingCounts = { Pending: number; Upcoming: number; Completed: number; Cancelled: number; All: number };
@@ -76,7 +85,9 @@ export type MahalSummary = {
   pendingRequests: number;
   upcomingEvents: number;
   monthBookings: number;
-  monthRevenue: number;
+  /** null for staff logins (they don't see income). */
+  monthRevenue: number | null;
+  isStaff?: boolean;
   balanceDue: number;
   upcoming: Booking[];
   pending: Booking[];

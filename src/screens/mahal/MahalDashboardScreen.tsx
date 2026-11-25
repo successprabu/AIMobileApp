@@ -12,6 +12,8 @@ import { BookingCard, FadeIn, StatTile } from "../../components/mahal/MahalUi";
 import WelcomeBanner from "../../components/ui/WelcomeBanner";
 import { listFollowUps } from "../../api/mahalAi";
 import { formatCount, formatInr } from "../../utils/formatCurrency";
+import RemindersCard from "../../components/mahal/RemindersCard";
+import { useTx } from "../../i18n/site";
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -26,6 +28,9 @@ export default function MahalDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const tx = useTx();
+  // Staff logins (manager) don't see income or hall settings.
+  const staff = user?.userType === "MS" || !!s?.isStaff;
 
   const load = useCallback(async () => {
     const r = await getMahalSummary();
@@ -55,9 +60,15 @@ export default function MahalDashboardScreen() {
             <Button mode="contained" buttonColor="#fff" textColor={c.primary} icon="plus" style={styles.heroBtn} onPress={() => navigation.navigate("BookingForm", {})} disabled={s?.mahalCount === 0}>
               New booking
             </Button>
-            <Button mode="outlined" textColor="#fff" icon="office-building" style={[styles.heroBtn, { borderColor: "rgba(255,255,255,0.6)" }]} onPress={() => navigation.navigate("MyMahals")}>
-              My mahals
-            </Button>
+            {staff ? (
+              <Button mode="outlined" textColor="#fff" icon="receipt-text-outline" style={[styles.heroBtn, { borderColor: "rgba(255,255,255,0.6)" }]} onPress={() => navigation.navigate("MahalExpenses")}>
+                {tx("Expenses")}
+              </Button>
+            ) : (
+              <Button mode="outlined" textColor="#fff" icon="office-building" style={[styles.heroBtn, { borderColor: "rgba(255,255,255,0.6)" }]} onPress={() => navigation.navigate("MyMahals")}>
+                My mahals
+              </Button>
+            )}
           </View>
         </WelcomeBanner>
 
@@ -68,7 +79,7 @@ export default function MahalDashboardScreen() {
             <MaterialCommunityIcons name="office-building-plus-outline" size={48} color={c.primary} />
             <Text style={{ color: c.text, fontWeight: "800", fontSize: 17, marginTop: 8 }}>Add your mahal to start taking bookings</Text>
             <Text style={{ color: c.textMuted, textAlign: "center", marginTop: 4 }}>Enter capacity, rent and facilities, and turn on online booking.</Text>
-            <Button mode="contained" icon="plus" style={{ marginTop: 14, borderRadius: 12 }} onPress={() => navigation.navigate("MahalForm", {})}>Add mahal</Button>
+            {!staff && <Button mode="contained" icon="plus" style={{ marginTop: 14, borderRadius: 12 }} onPress={() => navigation.navigate("MahalForm", {})}>Add mahal</Button>}
           </FadeIn>
         ) : s ? (
           <>
@@ -79,9 +90,11 @@ export default function MahalDashboardScreen() {
               <FadeIn index={2} style={styles.tileWrap}>
                 <StatTile label="Upcoming events" value={formatCount(s.upcomingEvents)} icon="calendar-check" color={c.primary} onPress={() => navigation.navigate("MahalBookings", { tab: "Upcoming" })} />
               </FadeIn>
-              <FadeIn index={3} style={styles.tileWrap}>
-                <StatTile label="This month's rent" value={formatInr(s.monthRevenue)} icon="currency-inr" color={c.success} />
-              </FadeIn>
+              {!staff && (
+                <FadeIn index={3} style={styles.tileWrap}>
+                  <StatTile label="This month's rent" value={formatInr(s.monthRevenue)} icon="currency-inr" color={c.success} onPress={() => navigation.navigate("MahalExpenses")} />
+                </FadeIn>
+              )}
               <FadeIn index={4} style={styles.tileWrap}>
                 <StatTile label="Balance to collect" value={formatInr(s.balanceDue)} icon="wallet-outline" color="#0ea5e9" />
               </FadeIn>
@@ -89,6 +102,10 @@ export default function MahalDashboardScreen() {
                 <StatTile label="Follow-ups today" value={followUps == null ? "…" : formatCount(followUps)} icon="message-badge-outline" color="#14b8a6" onPress={() => navigation.navigate("FollowUps")} />
               </FadeIn>
             </View>
+
+            <FadeIn index={5}>
+              <RemindersCard onMessage={setMessage} />
+            </FadeIn>
 
             <FadeIn index={5} style={[styles.card, { backgroundColor: c.card }]}>
               <Text style={[styles.cardTitle, { color: c.text }]}>Bookings per month</Text>

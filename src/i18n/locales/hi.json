@@ -181,5 +181,8 @@
   "changePassword": "पासवर्ड बदलें",
   "wrong_mobile_or_password": "मोबाइल नंबर या पासवर्ड गलत है। कृपया जाँचकर फिर से कोशिश करें।",
   "session_ended_sign_in": "आपका सत्र समाप्त हो गया है। कृपया फिर से साइन इन करें।",
-  "followUps": "फ़ॉलो-अप"
+  "followUps": "फ़ॉलो-अप",
+  "mahalExpenses": "खर्च और मुनाफ़ा",
+  "mahalExpensesStaff": "खर्च",
+  "mahalStaff": "स्टाफ़ लॉगिन"
 }

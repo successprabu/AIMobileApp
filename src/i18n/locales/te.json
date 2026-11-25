@@ -175,5 +175,8 @@
   "changePassword": "పాస్‌వర్డ్ మార్చండి",
   "wrong_mobile_or_password": "మొబైల్ నంబర్ లేదా పాస్‌వర్డ్ తప్పు. తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.",
   "session_ended_sign_in": "మీ సెషన్ ముగిసింది. దయచేసి మళ్లీ సైన్ ఇన్ చేయండి.",
-  "followUps": "ఫాలో-అప్‌లు"
+  "followUps": "ఫాలో-అప్‌లు",
+  "mahalExpenses": "ఖర్చులు మరియు లాభం",
+  "mahalExpensesStaff": "ఖర్చులు",
+  "mahalStaff": "సిబ్బంది లాగిన్‌లు"
 }

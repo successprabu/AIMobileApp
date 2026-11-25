@@ -24,6 +24,10 @@ import {
 } from "../../api/mahal";
 import { BookingCard, eventStyle, FadeIn, StatusPill } from "../../components/mahal/MahalUi";
 import { formatInr } from "../../utils/formatCurrency";
+import { useAuth } from "../../context/AuthContext";
+import { getInvoice, markReminder } from "../../api/mahalOps";
+import { hallMessage, invoiceMessage, openWhatsApp, shareInvoicePdf } from "../../utils/hallMessages";
+import { useMessageLang, useTx } from "../../i18n/site";
 
 const TABS: { key: string; label: string; count: keyof BookingCounts }[] = [
   { key: "Pending", label: "Requests", count: "Pending" },
@@ -328,6 +332,38 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
   const [paying, setPaying] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Cash");
+  const [invoicing, setInvoicing] = useState<"" | "pdf" | "wa">("");
+  const { user } = useAuth();
+  const staff = user?.userType === "MS";
+  const tx = useTx();
+  const lang = useMessageLang();
+
+  // Invoice: numbered the first time; then a PDF to share, or a WhatsApp summary to the customer.
+  const invoice = async (how: "pdf" | "wa") => {
+    if (!b) return;
+    setInvoicing(how);
+    const r = await getInvoice(b.id);
+    if (!r.ok || !r.data) {
+      setInvoicing("");
+      setError(tx(r.message));
+      return;
+    }
+    const inv = r.data;
+    setB((x) => (x ? { ...x, invoiceNo: inv.invoiceNo } : x));
+    try {
+      if (how === "pdf") await shareInvoicePdf(inv);
+      else if (!(await openWhatsApp(b.primary_phone, invoiceMessage(inv, lang)))) setError(tx("Could not open WhatsApp."));
+    } catch {
+      setError(tx("Could not make the invoice PDF. Please try again."));
+    }
+    setInvoicing("");
+  };
+
+  const offerMoitech = async () => {
+    if (!b) return;
+    if (await openWhatsApp(b.primary_phone, hallMessage("moitech", { ...b, mahalName: b.mahalName ?? "" }, lang))) void markReminder(b.id, "moitech");
+    else setError(tx("Could not open WhatsApp."));
+  };
 
   useEffect(() => {
     if (id == null) return;
@@ -459,6 +495,23 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
                 )}
               </Section>
 
+              {(b.status === "Confirmed" || b.status === "Completed") && (
+                <View style={{ marginTop: 14, gap: 8 }}>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <Button mode="outlined" icon="file-pdf-box" style={{ flex: 1 }} loading={invoicing === "pdf"} disabled={!!invoicing} onPress={() => void invoice("pdf")}>
+                      {tx("Invoice")}
+                    </Button>
+                    <Button mode="outlined" icon="whatsapp" textColor="#16a34a" style={{ flex: 1 }} loading={invoicing === "wa"} disabled={!!invoicing} onPress={() => void invoice("wa")}>
+                      {tx("Send invoice")}
+                    </Button>
+                  </View>
+                  {!!b.invoiceNo && <Text style={{ color: c.textMuted, fontSize: 12 }}>{tx("Invoice no. {{n}}", { n: b.invoiceNo })}</Text>}
+                  {b.status === "Confirmed" && s !== "Completed" && (
+                    <Button icon="hand-heart-outline" onPress={() => void offerMoitech()}>{tx("Offer Moitech free to this family")}</Button>
+                  )}
+                </View>
+              )}
+
               {!!b.remarks && (
                 <Section title="Notes">
                   <Text style={{ color: c.text }}>{b.remarks}</Text>
@@ -482,7 +535,7 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
               {!ask && (
                 <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
                   {b.status === "Confirmed" && s === "Completed" && <Button icon="check-all" onPress={() => change("Completed")} disabled={busy}>Mark completed</Button>}
-                  {b.status === "Confirmed" && <Button icon="calendar-remove" textColor={c.danger} onPress={() => setAsk("Cancelled")} disabled={busy}>Cancel booking</Button>}
+                  {b.status === "Confirmed" && !staff && <Button icon="calendar-remove" textColor={c.danger} onPress={() => setAsk("Cancelled")} disabled={busy}>Cancel booking</Button>}
                   {b.status === "Cancelled" && <Button icon="undo" onPress={() => change("Confirmed")} disabled={busy}>Restore booking</Button>}
                   {b.status === "Rejected" && <Button icon="undo" onPress={() => change("Pending")} disabled={busy}>Reopen request</Button>}
                   {b.status === "Completed" && <Button icon="undo" onPress={() => change("Confirmed")} disabled={busy}>Mark not completed</Button>}

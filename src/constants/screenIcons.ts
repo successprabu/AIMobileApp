@@ -15,6 +15,8 @@ export const SCREEN_ICON: Partial<Record<keyof MainStackParamList, { icon: Icon;
   MahalBookings: { icon: "calendar-heart", color: "#e84393" },
   MyMahals: { icon: "office-building", color: "#5f27cd" },
   FollowUps: { icon: "message-badge-outline", color: "#14b8a6" },
+  MahalExpenses: { icon: "receipt-text-outline", color: "#f59e0b" },
+  MahalStaff: { icon: "badge-account-outline", color: "#0ea5e9" },
   AddMoitechCustomer: { icon: "account-heart", color: "#00b894" },
   FunctionMaster: { icon: "calendar-star", color: "#f59e0b" },
   UserMaster: { icon: "account-cog", color: "#475569" },

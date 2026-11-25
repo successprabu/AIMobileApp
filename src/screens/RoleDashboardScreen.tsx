@@ -38,7 +38,7 @@ const API_ROLES = ["SU", "AU", "NU"] as const;
 /** Mahal admins get the mahal dashboard; Moitech roles keep the receipts dashboard. */
 export default function RoleDashboardScreen() {
   const { user } = useAuth();
-  if ((user as AuthUser | null)?.userType === "MU") return <MahalDashboardScreen />;
+  if ((user as AuthUser | null)?.userType === "MU" || (user as AuthUser | null)?.userType === "MS") return <MahalDashboardScreen />;
   return <MoitechDashboardScreen />;
 }
 
@@ -132,7 +132,7 @@ function MoitechDashboardScreen() {
     navigation.navigate(screen as never);
   };
 
-  if (!["SU", "AU", "NU", "MU"].includes(role)) {
+  if (!["SU", "AU", "NU", "MU", "MS"].includes(role)) {
     return (
       <View style={styles.center}>
         <Text variant="titleMedium">
