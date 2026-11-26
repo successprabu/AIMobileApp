@@ -93,7 +93,7 @@ export default function MoiReturnScreen() {
     <View style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 96 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}>
         <Text style={{ color: c.textMuted, marginBottom: 10 }}>{tx("When you get an invitation, add it here. You will see what that person gave at your functions and what you gave them before.")}</Text>
-        {!!data?.dueWeek && tab === "Planned" && <Text style={{ color: "#b45309", fontWeight: "700", marginBottom: 8 }}>{tx("{{n}} functions to attend in the next 7 days.", { n: data.dueWeek })}</Text>}
+        {!!data?.dueWeek && tab === "Planned" && <Text style={{ color: "#b45309", fontWeight: "700", marginBottom: 8 }}>{(data.dueWeek === 1 ? tx("1 function to attend in the next 7 days.") : tx("{{n}} functions to attend in the next 7 days.", { n: data.dueWeek }))}</Text>}
         <SegmentedButtons value={tab} onValueChange={(v) => { setData(null); setTab(v); }} style={{ marginBottom: 12 }}
           buttons={[{ value: "Planned", label: `${tx("To attend")} (${data?.planned ?? "…"})` }, { value: "Given", label: tx("Given") }, { value: "Skipped", label: tx("Skipped") }]} />
         {!data ? <ActivityIndicator color={c.primary} /> : data.items.length === 0 ? (

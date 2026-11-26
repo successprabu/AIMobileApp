@@ -4,6 +4,7 @@ import { Button, SegmentedButtons, Snackbar, Text, TextInput } from "react-nativ
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import { useTx } from "../../i18n/site";
 import { getGold, getLiveShare, inr, setGoldRate, setLiveShare, type Gold, type LiveShare } from "../../api/moitech";
 import { moiStyles } from "./moiUi";
@@ -15,6 +16,7 @@ export default function MoiFamilyScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const tx = useTx();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { user } = useAuth();
   const functionId = Number(user?.functionId) || 0;
@@ -94,7 +96,7 @@ export default function MoiFamilyScreen() {
           )}
           {gold?.items.map((i) => (
             <View key={i.type ?? "-"} style={moiStyles.row}>
-              <Text style={{ color: c.text, flex: 1 }}>{tx(i.type || "others")} × {i.count}</Text>
+              <Text style={{ color: c.text, flex: 1 }}>{t(i.type || "others")} × {i.count}</Text>
               <Text style={{ color: c.textMuted }}>{i.gold && i.weight > 0 ? w(i.weight) : ""}</Text>
               <Text style={{ color: c.text, fontWeight: "700", minWidth: 80, textAlign: "right" }}>{i.gold ? (gold.rate ? inr(i.value) : "—") : ""}</Text>
             </View>
