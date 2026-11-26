@@ -1,15 +1,22 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secureGet, secureRemove, secureSet } from "./secureStore";
 
 const USER_KEY = "user";
 
+/** In memory too: every API call reads the sign-in, and secure storage is slower than AsyncStorage. */
+let cache: string | null | undefined;
+
+/** The MySuccess sign-in (tokens + profile), kept in the phone's secure storage. */
 export async function getStoredUserJson(): Promise<string | null> {
-  return AsyncStorage.getItem(USER_KEY);
+  if (cache === undefined) cache = await secureGet(USER_KEY);
+  return cache;
 }
 
 export async function setStoredUserJson(json: string): Promise<void> {
-  await AsyncStorage.setItem(USER_KEY, json);
+  cache = json;
+  await secureSet(USER_KEY, json);
 }
 
 export async function clearStoredUser(): Promise<void> {
-  await AsyncStorage.removeItem(USER_KEY);
+  cache = null;
+  await secureRemove(USER_KEY);
 }

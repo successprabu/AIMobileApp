@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { Alert, Linking } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { IconButton, Menu } from "react-native-paper";
-import { SCHOOL_SITE } from "../api/school";
+import { SCHOOL_SITE, schoolError, schoolLogoutAll } from "../api/school";
+import { useAppLock } from "../context/AppLockContext";
+import { unregisterSchoolPush } from "../school/push";
 import { useAuth } from "../context/AuthContext";
 import { useSchoolAuth } from "../context/SchoolAuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
@@ -35,6 +37,7 @@ function SchoolMenu({ tint, onChangePassword }: { tint: string; onChangePassword
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const { schoolSignOut, setActiveApp } = useSchoolAuth();
+  const { lockEnabled, setLockEnabled } = useAppLock();
   const close = (fn: () => void) => () => {
     setOpen(false);
     fn();
@@ -47,17 +50,42 @@ function SchoolMenu({ tint, onChangePassword }: { tint: string; onChangePassword
         style: "destructive",
         onPress: () =>
           void (async () => {
+            await unregisterSchoolPush().catch(() => undefined);
             await schoolSignOut();
             await setActiveApp(user ? "mysuccess" : null);
           })(),
       },
     ]);
+  const signOutAll = () =>
+    Alert.alert("Sign out of all devices?", "Your School login ends on every phone and browser, including this one.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out everywhere",
+        style: "destructive",
+        onPress: () =>
+          void (async () => {
+            try {
+              await schoolLogoutAll();
+            } catch (e) {
+              return Alert.alert("Could not sign out everywhere", schoolError(e, "Check the network and try again."));
+            }
+            await schoolSignOut();
+            await setActiveApp(user ? "mysuccess" : null);
+          })(),
+      },
+    ]);
+  const toggleLock = async () => {
+    const err = await setLockEnabled(!lockEnabled);
+    if (err) Alert.alert("App lock", err);
+  };
   return (
     <Menu visible={open} onDismiss={() => setOpen(false)} anchor={<IconButton icon="dots-vertical" iconColor={tint} onPress={() => setOpen(true)} accessibilityLabel="Menu" />}>
       {user ? <Menu.Item leadingIcon="swap-horizontal" title="Open DigiMoi / Mahal" onPress={close(() => void setActiveApp("mysuccess"))} /> : null}
       <Menu.Item leadingIcon="key-outline" title="Change password" onPress={close(onChangePassword)} />
       <Menu.Item leadingIcon="web" title="School website" onPress={close(() => void Linking.openURL(SCHOOL_SITE))} />
+      <Menu.Item leadingIcon={lockEnabled ? "lock" : "lock-open-outline"} title={lockEnabled ? "App lock: on" : "App lock: off"} onPress={close(() => void toggleLock())} />
       <Menu.Item leadingIcon="logout" title="Sign out of School" onPress={close(signOut)} />
+      <Menu.Item leadingIcon="logout-variant" title="Sign out of all devices" onPress={close(signOutAll)} />
     </Menu>
   );
 }

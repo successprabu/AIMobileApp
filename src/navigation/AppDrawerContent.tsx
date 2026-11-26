@@ -11,6 +11,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
+import { useAppLock } from "../context/AppLockContext";
+import { revokeAllSessions } from "../api/session";
 import { useSchoolAuth } from "../context/SchoolAuthContext";
 import { useLanguage, type LangCode } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
@@ -217,6 +219,7 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const { lockEnabled, setLockEnabled } = useAppLock();
   const { school, setActiveApp } = useSchoolAuth();
   const { language, supportedLanguages, changeLanguage } = useLanguage();
   const { theme, mode, toggleMode } = useAppTheme();
@@ -237,6 +240,26 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   const go = (screen: keyof MainStackParamList) => {
     navigation.navigate("Home", { screen });
     navigation.closeDrawer();
+  };
+
+  const toggleLock = async () => {
+    const err = await setLockEnabled(!lockEnabled);
+    if (err) Alert.alert("App lock", err);
+  };
+
+  const confirmLogoutAll = () => {
+    Alert.alert("Sign out of all devices?", "Your DigiMoi / Mahal login ends on every phone and browser, including this one.", [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: "Sign out everywhere",
+        style: "destructive",
+        onPress: () =>
+          void (async () => {
+            if (!(await revokeAllSessions())) return Alert.alert("Could not sign out everywhere", "Check the network and try again.");
+            await signOut();
+          })(),
+      },
+    ]);
   };
 
   const confirmLogout = () => {
@@ -311,6 +334,11 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
           <Text style={{ flex: 1, color: c.text, fontWeight: "600" }}>{t("mobile_dark_theme", { defaultValue: "Dark theme" })}</Text>
           <Switch value={mode === "dark"} onValueChange={() => void toggleMode()} />
         </View>
+        <View style={[styles.footerRow, styles.themeCard, { backgroundColor: c.chipBg, marginTop: 6 }]}>
+          <MaterialCommunityIcons name="fingerprint" size={20} color={c.primary} />
+          <Text style={{ flex: 1, color: c.text, fontWeight: "600" }}>App lock (fingerprint / PIN)</Text>
+          <Switch value={lockEnabled} onValueChange={() => void toggleLock()} />
+        </View>
         <View style={styles.langRow}>
           {supportedLanguages.map((code) => {
             const on = language === code;
@@ -340,6 +368,9 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
           <MaterialCommunityIcons name="logout" size={18} color={c.danger} />
           <Text style={{ color: c.danger, fontWeight: "800" }}>{t("Logout")}</Text>
         </Pressable>
+        <Pressable onPress={confirmLogoutAll} style={styles.logoutAll} accessibilityRole="button" hitSlop={6}>
+          <Text style={{ color: c.textMuted, fontWeight: "700", fontSize: 13 }}>Sign out of all devices</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -357,6 +388,7 @@ const styles = StyleSheet.create({
   activeFill: { borderRadius: 14 },
   marker: { position: "absolute", left: 3, top: 12, bottom: 12, width: 4, borderRadius: 2, backgroundColor: "#fff" },
   themeCard: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 14 },
+  logoutAll: { alignItems: "center", paddingVertical: 8 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   logoRing: { width: 30, height: 30, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.95)", alignItems: "center", justifyContent: "center" },
   logo: { width: 22, height: 24 },
