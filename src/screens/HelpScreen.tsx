@@ -26,7 +26,7 @@ const MAHAL_FAQ: Faq[] = [
   { q: "How do I add my hall?", a: "Open My Mahals and tap Add mahal. Enter capacity, price per day and the events you host. Customers can find it and request a date." },
   { q: "Where are online booking requests?", a: "Open Mahal Bookings and choose the Pending tab. Open a request to confirm or reject it. The app warns you if the date is already confirmed for someone else." },
   { q: "How do I record an advance payment?", a: "Open the booking and tap Record payment. The balance updates on the booking and on your dashboard." },
-  { q: "Can families record moi at my hall?", a: "Yes. Open Moitech Reg, register the family with their mobile number, and send them the login on WhatsApp." },
+  { q: "Can families record moi at my hall?", a: "Yes. Open DigiMoi Reg, register the family with their mobile number, and send them the login on WhatsApp." },
 ];
 
 const HELPER_FAQ: Faq[] = [
@@ -36,12 +36,12 @@ const HELPER_FAQ: Faq[] = [
 ];
 
 const ADMIN_FAQ: Faq[] = [
-  { q: "How do I register a new client?", a: "Open Register client. Choose Moitech client (7 days free) or Mahal owner (1 month free), enter their name and mobile, and send the login on WhatsApp." },
+  { q: "How do I register a new client?", a: "Open Register client. Choose DigiMoi client (7 days free) or Mahal owner (1 month free), enter their name and mobile, and send the login on WhatsApp." },
   { q: "How do I stop an account?", a: "Open Clients, tap the client and turn off Account active. They cannot sign in until you turn it back on." },
   { q: "Where do website messages go?", a: "Open Enquiries. You can reply by WhatsApp or email and mark each one Replied or Closed." },
 ];
 
-const TOPICS = ["Help with my account", "Moitech", "Mahal Management", "School Website with ERP", "Pricing and plans", "Something else"];
+const TOPICS = ["Help with my account", "DigiMoi", "Mahal Management", "School Website with ERP", "Pricing and plans", "Something else"];
 
 function FaqItem({ item, index }: { item: Faq; index: number }) {
   const { theme } = useAppTheme();

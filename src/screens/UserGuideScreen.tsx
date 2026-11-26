@@ -19,7 +19,7 @@ type Step = { title: string; text: string; img?: string; points?: string[] };
 type Guide = { id: GuideId; heading: string; summary: string; color: string; sections: { title: string; steps: Step[] }[] };
 
 const PRODUCTS: { id: GuideId; label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string }[] = [
-  { id: "moitech", label: "Moitech", icon: "hand-heart-outline", color: "#6366f1" },
+  { id: "moitech", label: "DigiMoi", icon: "hand-heart-outline", color: "#6366f1" },
   { id: "mahal", label: "Mahal", icon: "office-building-outline", color: "#f59e0b" },
   { id: "school", label: "School ERP", icon: "school-outline", color: "#10b981" },
 ];

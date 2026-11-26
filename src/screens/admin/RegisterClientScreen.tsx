@@ -15,7 +15,7 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 type Kind = "moitech" | "mahal";
 
 const KINDS: Record<Kind, { label: string; product: string; userType: string; role: string; trialDays: number; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string; hint: string }> = {
-  moitech: { label: "Moitech client", product: "Moitech", userType: "AU", role: "Admin", trialDays: 7, icon: "hand-heart-outline", color: "#6366f1", hint: "Records moi at functions. 7 days free." },
+  moitech: { label: "DigiMoi client", product: "DigiMoi", userType: "AU", role: "Admin", trialDays: 7, icon: "hand-heart-outline", color: "#6366f1", hint: "Records moi at functions. 7 days free." },
   mahal: { label: "Mahal owner", product: "Mahal Management", userType: "MU", role: "Mahal Admin", trialDays: 30, icon: "office-building-outline", color: "#f59e0b", hint: "Takes hall bookings. 1 month free." },
 };
 
@@ -165,7 +165,7 @@ export default function RegisterClientScreen() {
         </FadeIn>
 
         <Button mode="contained" icon="account-plus" onPress={submit} loading={saving} disabled={saving} style={{ borderRadius: 14 }} contentStyle={{ height: 52 }} labelStyle={{ fontSize: 16, fontWeight: "700" }}>
-          Register {kind === "mahal" ? "mahal owner" : "Moitech client"}
+          Register {kind === "mahal" ? "mahal owner" : "DigiMoi client"}
         </Button>
       </ScrollView>
       <Snackbar visible={!!message} onDismiss={() => setMessage("")} duration={5000}>{message}</Snackbar>

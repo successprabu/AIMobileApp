@@ -16,7 +16,7 @@ const KIND: Record<ReminderKind, { label: string; icon: Icon; color: string }> =
   tomorrow: { label: "Event tomorrow", icon: "calendar-alert", color: "#0ea5e9" },
   balance: { label: "Balance due", icon: "cash-clock", color: "#f59e0b" },
   thanks: { label: "Say thank you", icon: "heart-outline", color: "#e11d48" },
-  moitech: { label: "Offer Moitech free", icon: "hand-heart-outline", color: "#6366f1" },
+  moitech: { label: "Offer DigiMoi free", icon: "hand-heart-outline", color: "#6366f1" },
 };
 
 /**

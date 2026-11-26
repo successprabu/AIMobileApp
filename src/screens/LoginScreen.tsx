@@ -34,7 +34,7 @@ import { SuccessBurst } from "../components/ui/Motion";
 // Each product has its own sign-up (same choices as the website).
 const SCHOOL_SIGN_UP = "https://myschool-d5f9fueuajgvdkaj.westus3-01.azurewebsites.net/register-school";
 const SIGN_UPS = [
-  { id: "moitech", title: "Moitech", text: "Record moi (gifts) at your function. 7 days free.", icon: "hand-heart-outline", color: "#6366f1" },
+  { id: "moitech", title: "DigiMoi", text: "Record moi (gifts) at your function. 7 days free.", icon: "hand-heart-outline", color: "#6366f1" },
   { id: "mahal", title: "Mahal Management", text: "For hall owners: take bookings online. 1 month free.", icon: "office-building-outline", color: "#f59e0b" },
   { id: "school", title: "School Website & ERP", text: "Register your school on the school site. 1 month free.", icon: "school-outline", color: "#10b981" },
 ] as const;

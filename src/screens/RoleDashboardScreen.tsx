@@ -318,7 +318,7 @@ function MoitechDashboardScreen() {
             <Text variant="bodyMedium" style={styles.infoBody}>
               {t("mobile_mu_hint", {
                 defaultValue:
-                  "Use the side menu for mahal booking, booking list, and Moitech registration.",
+                  "Use the side menu for mahal booking, booking list, and DigiMoi registration.",
               })}
             </Text>
           </Card.Content>

@@ -69,10 +69,10 @@ export default function RegistrationScreen({ navigation, route }: Props) {
   const mahal = route.params?.kind === "mahal";
   const userType = mahal ? "MU" : "AU";
   // The coloured hero carries the title and a back arrow (the header is hidden in RootNavigator).
-  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "Moitech sign up" }), [navigation, mahal]);
+  React.useEffect(() => navigation.setOptions({ title: mahal ? "Mahal Management sign up" : "DigiMoi sign up" }), [navigation, mahal]);
   const product = mahal
     ? { label: "Mahal Management", icon: "office-building-outline" as const, color: "#f59e0b" }
-    : { label: "Moitech", icon: "hand-heart-outline" as const, color: "#6366f1" };
+    : { label: "DigiMoi", icon: "hand-heart-outline" as const, color: "#6366f1" };
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { theme } = useAppTheme();

@@ -43,7 +43,7 @@ export default function PartnerScreen() {
   const formCard = (
     <View style={[moiStyles.card, { backgroundColor: c.card, gap: 8 }]}>
       <Text style={{ color: c.text, fontWeight: "800" }}>{tx(p ? "Your details" : "Become a partner")}</Text>
-      {!p && <Text style={{ color: c.textMuted }}>{tx("Printers, function organisers, halls and shops: sign families up for Moitech and Mahal Management, and earn a share of every payment they make.")}</Text>}
+      {!p && <Text style={{ color: c.textMuted }}>{tx("Printers, function organisers, halls and shops: sign families up for DigiMoi and Mahal Management, and earn a share of every payment they make.")}</Text>}
       <Text style={{ color: c.textMuted, fontSize: 12 }}>{tx("You are a")}</Text>
       <View style={moiStyles.wrap}>{KINDS.map((k) => <Chip key={k} selected={form.kind === k} onPress={() => setForm({ ...form, kind: k })}>{tx(k)}</Chip>)}</View>
       <TextInput dense mode="outlined" label={tx("Town")} value={form.town} onChangeText={(v) => setForm({ ...form, town: v })} />
@@ -75,7 +75,7 @@ export default function PartnerScreen() {
                   <Text style={{ color: c.textMuted, fontSize: 12, textAlign: "center" }}>{tx("Families who sign up from your link or QR within 60 days are counted for you.")}</Text>
                   <View style={moiStyles.wrap}>
                     <Button mode="contained" icon="whatsapp" buttonColor="#16a34a"
-                      onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(`${tx("Record moi on your phone with Moitech. Free trial:")} ${p.moitechLink}`)}`)}>{tx("Share on WhatsApp")}</Button>
+                      onPress={() => void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(`${tx("Record moi on your phone with DigiMoi. Free trial:")} ${p.moitechLink}`)}`)}>{tx("Share on WhatsApp")}</Button>
                     <Button icon="share-variant" onPress={() => void Share.share({ message: p.mahalLink })}>Mahal</Button>
                   </View>
                 </View>

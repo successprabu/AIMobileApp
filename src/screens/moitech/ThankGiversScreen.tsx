@@ -61,7 +61,7 @@ export default function ThankGiversScreen() {
       .split("{name}").join(fullName(e))
       .split("{amount}").join(Number(e.amount).toLocaleString("en-IN"))
       .split("{function}").join(data?.function.functionName ?? "")
-      .split("{family}").join(data?.function.funPersionNames || user?.name || "") + `\n\nRecorded with Moitech: ${SITE}`;
+      .split("{family}").join(data?.function.funPersionNames || user?.name || "") + `\n\nRecorded with DigiMoi: ${SITE}`;
 
   const mark = async (e: ThankRow, undo = false) => {
     const r = await markThanked(e.id, undo);

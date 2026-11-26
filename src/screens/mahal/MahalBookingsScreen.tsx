@@ -513,7 +513,7 @@ function BookingDetail({ id, onClose, onChanged, onEdit }: { id: number | null; 
                   </View>
                   {!!b.invoiceNo && <Text style={{ color: c.textMuted, fontSize: 12 }}>{tx("Invoice no. {{n}}", { n: b.invoiceNo })}</Text>}
                   {b.status === "Confirmed" && s !== "Completed" && (
-                    <Button icon="hand-heart-outline" onPress={() => void offerMoitech()}>{tx("Offer Moitech free to this family")}</Button>
+                    <Button icon="hand-heart-outline" onPress={() => void offerMoitech()}>{tx("Offer DigiMoi free to this family")}</Button>
                   )}
                 </View>
               )}

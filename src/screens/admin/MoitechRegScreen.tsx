@@ -30,7 +30,7 @@ export default function MoitechRegScreen() {
   const [message, setMessage] = useState("");
   const [lastSaved, setLastSaved] = useState<{ name: string; phone: string; password: string } | null>(null);
 
-  useLayoutEffect(() => navigation.setOptions({ title: "Moitech Reg" }), [navigation]);
+  useLayoutEffect(() => navigation.setOptions({ title: "DigiMoi Reg" }), [navigation]);
 
   const load = useCallback(async () => {
     const r = await listCustomers({ id: null, customer_id: me.customerID, function_name: "", current_page: 1, page_size: 50 });
@@ -101,14 +101,14 @@ export default function MoitechRegScreen() {
   };
 
   const shareText = lastSaved
-    ? `Welcome to My Success Moitech!\nSign in with mobile ${lastSaved.phone} and password ${lastSaved.password}.\nPlease change your password after you sign in.`
+    ? `Welcome to My Success DigiMoi!\nSign in with mobile ${lastSaved.phone} and password ${lastSaved.password}.\nPlease change your password after you sign in.`
     : "";
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <FadeIn style={[styles.card, { backgroundColor: c.card }]}>
-          <Text style={{ color: c.text, fontWeight: "800", fontSize: 16 }}>Register a Moitech user</Text>
+          <Text style={{ color: c.text, fontWeight: "800", fontSize: 16 }}>Register a DigiMoi user</Text>
           <Text style={{ color: c.textMuted, marginBottom: 8 }}>For a family booking your hall: they record moi at their function.</Text>
           <TextInput mode="outlined" label="Name *" value={name} onChangeText={setName} error={!!errors.name} />
           {!!errors.name && <HelperText type="error">{errors.name}</HelperText>}
@@ -133,7 +133,7 @@ export default function MoitechRegScreen() {
           </FadeIn>
         )}
 
-        <Text style={{ color: c.text, fontWeight: "800", fontSize: 16, marginVertical: 8 }}>Your Moitech users ({list.length})</Text>
+        <Text style={{ color: c.text, fontWeight: "800", fontSize: 16, marginVertical: 8 }}>Your DigiMoi users ({list.length})</Text>
         {loading ? (
           <ActivityIndicator color={c.primary} />
         ) : list.length === 0 ? (
