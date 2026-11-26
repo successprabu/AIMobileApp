@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useRoute, type RouteProp } from "@react-navigation/native";
 import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -12,6 +13,8 @@ import { Chips, Row, SCHOOL_GREEN, Section, day, inr, shareReceiptPdf, ui, type 
 /** Office: find the child, take the fee, share the receipt PDF on WhatsApp. */
 export default function CollectFeeScreen() {
   const { school } = useSchoolAuth();
+  const route = useRoute<RouteProp<{ SchoolCollectFee: { studentId?: string } | undefined }, "SchoolCollectFee">>();
+  const preset = route.params?.studentId;
   const sid = school?.user.schoolId ?? "";
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -36,6 +39,8 @@ export default function CollectFeeScreen() {
         setSettings(b.settings);
         setStudents(b.students.filter((s) => s.status === "Active"));
         setMode(b.settings.paymentModes[0] ?? null);
+        const pre = preset ? b.students.find((x) => x.id === preset) : undefined;
+        if (pre) void choose(pre);
       })
       .catch((e) => setNote({ kind: "error", text: schoolError(e, "Could not load students.") }))
       .finally(() => setLoading(false));

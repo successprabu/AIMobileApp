@@ -1,14 +1,24 @@
-import React, { useState } from "react";
-import { Alert, Linking } from "react-native";
+import React, { useEffect } from "react";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { IconButton, Menu } from "react-native-paper";
-import { SCHOOL_SITE, schoolError, schoolLogoutAll } from "../api/school";
-import { useAppLock } from "../context/AppLockContext";
-import { unregisterSchoolPush } from "../school/push";
-import { useAuth } from "../context/AuthContext";
 import { useSchoolAuth } from "../context/SchoolAuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { HeaderBackground, HeaderTitle } from "../components/ui/AppBars";
+import { HeaderBackground, HeaderTitle, MenuButton } from "../components/ui/AppBars";
+import SchoolDrawerContent from "./SchoolDrawerContent";
+import { setSchoolStack } from "../school/schoolMenu";
+import DashboardScreen from "../screens/school/DashboardScreen";
+import AiAssistantScreen from "../screens/school/AiAssistantScreen";
+import StudentsScreen from "../screens/school/StudentsScreen";
+import StudentDetailScreen from "../screens/school/StudentDetailScreen";
+import StudentFormScreen from "../screens/school/StudentFormScreen";
+import FeesScreen from "../screens/school/FeesScreen";
+import TransportScreen from "../screens/school/TransportScreen";
+import LibraryScreen from "../screens/school/LibraryScreen";
+import IdCardsScreen from "../screens/school/IdCardsScreen";
+import ReportsScreen from "../screens/school/ReportsScreen";
+import UsersScreen from "../screens/school/UsersScreen";
+import OnlinePaymentsScreen from "../screens/school/OnlinePaymentsScreen";
+import SchoolSettingsScreen from "../screens/school/SchoolSettingsScreen";
 import ParentHomeScreen from "../screens/school/ParentHomeScreen";
 import StaffHomeScreen from "../screens/school/StaffHomeScreen";
 import SchoolChangePasswordScreen from "../screens/school/SchoolChangePasswordScreen";
@@ -28,73 +38,53 @@ export type SchoolStackParamList = {
   SchoolAttendance: undefined;
   SchoolMarks: undefined;
   SchoolPost: undefined;
-  SchoolCollectFee: undefined;
+  SchoolCollectFee: { studentId?: string } | undefined;
   SchoolAdmissions: undefined;
   SchoolBusAlert: undefined;
+  SchoolDashboard: undefined;
+  SchoolAi: undefined;
+  SchoolStudents: undefined;
+  SchoolStudent: { id: string };
+  SchoolStudentForm: { id?: string } | undefined;
+  SchoolFees: undefined;
+  SchoolTransport: undefined;
+  SchoolLibrary: undefined;
+  SchoolIdCards: undefined;
+  SchoolReports: undefined;
+  SchoolUsers: undefined;
+  SchoolOnlinePayments: undefined;
+  SchoolSettings: undefined;
 };
 
 const Stack = createNativeStackNavigator<SchoolStackParamList>();
+const Drawer = createDrawerNavigator();
 
-/** The "⋮" menu on School screens: switch app, change password, website, sign out. */
-function SchoolMenu({ tint, onChangePassword }: { tint: string; onChangePassword: () => void }) {
-  const [open, setOpen] = useState(false);
-  const { user } = useAuth();
-  const { schoolSignOut, setActiveApp } = useSchoolAuth();
-  const { lockEnabled, setLockEnabled } = useAppLock();
-  const close = (fn: () => void) => () => {
-    setOpen(false);
-    fn();
-  };
-  const signOut = () =>
-    Alert.alert("Sign out of School?", user ? "You stay signed in to DigiMoi / Mahal." : undefined, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () =>
-          void (async () => {
-            await unregisterSchoolPush().catch(() => undefined);
-            await schoolSignOut();
-            await setActiveApp(user ? "mysuccess" : null);
-          })(),
-      },
-    ]);
-  const signOutAll = () =>
-    Alert.alert("Sign out of all devices?", "Your School login ends on every phone and browser, including this one.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out everywhere",
-        style: "destructive",
-        onPress: () =>
-          void (async () => {
-            try {
-              await schoolLogoutAll();
-            } catch (e) {
-              return Alert.alert("Could not sign out everywhere", schoolError(e, "Check the network and try again."));
-            }
-            await schoolSignOut();
-            await setActiveApp(user ? "mysuccess" : null);
-          })(),
-      },
-    ]);
-  const toggleLock = async () => {
-    const err = await setLockEnabled(!lockEnabled);
-    if (err) Alert.alert("App lock", err);
-  };
+/** Detail screens keep the back arrow; every other School screen shows the menu button. */
+const DETAIL = new Set(["SchoolStudent", "SchoolStudentForm"]);
+
+/** Lets the side menu and bottom bar open screens in this stack. */
+function StackLink({ navigation }: { navigation: unknown }) {
+  useEffect(() => {
+    setSchoolStack(navigation as Parameters<typeof setSchoolStack>[0]);
+  }, [navigation]);
+  return null;
+}
+
+/** School part of the app: a side menu grouped like the website, around the School screens. */
+export default function SchoolNavigator() {
+  const { theme } = useAppTheme();
   return (
-    <Menu visible={open} onDismiss={() => setOpen(false)} anchor={<IconButton icon="dots-vertical" iconColor={tint} onPress={() => setOpen(true)} accessibilityLabel="Menu" />}>
-      {user ? <Menu.Item leadingIcon="swap-horizontal" title="Open DigiMoi / Mahal" onPress={close(() => void setActiveApp("mysuccess"))} /> : null}
-      <Menu.Item leadingIcon="key-outline" title="Change password" onPress={close(onChangePassword)} />
-      <Menu.Item leadingIcon="web" title="School website" onPress={close(() => void Linking.openURL(SCHOOL_SITE))} />
-      <Menu.Item leadingIcon={lockEnabled ? "lock" : "lock-open-outline"} title={lockEnabled ? "App lock: on" : "App lock: off"} onPress={close(() => void toggleLock())} />
-      <Menu.Item leadingIcon="logout" title="Sign out of School" onPress={close(signOut)} />
-      <Menu.Item leadingIcon="logout-variant" title="Sign out of all devices" onPress={close(signOutAll)} />
-    </Menu>
+    <Drawer.Navigator
+      drawerContent={(p) => <SchoolDrawerContent {...p} />}
+      screenOptions={{ headerShown: false, drawerType: "front", drawerStyle: { width: 300, backgroundColor: theme.colors.drawerBg } }}
+    >
+      <Drawer.Screen name="SchoolStack" component={SchoolStack} />
+    </Drawer.Navigator>
   );
 }
 
-/** School part of the app: parents get their child's home, staff get the ERP home. */
-export default function SchoolNavigator() {
+/** Parents get their child's home, staff get the ERP home and every ERP screen. */
+function SchoolStack() {
   const { school } = useSchoolAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -106,6 +96,7 @@ export default function SchoolNavigator() {
     <Stack.Navigator
       screenLayout={({ children, navigation, route }) => (
         <View style={{ flex: 1, backgroundColor: c.background }}>
+          <StackLink navigation={navigation} />
           <View style={{ flex: 1 }}>{children}</View>
           <SchoolBottomBar
             navigation={navigation as unknown as SchoolTabNav}
@@ -114,13 +105,13 @@ export default function SchoolNavigator() {
           />
         </View>
       )}
-      screenOptions={({ navigation }) => ({
+      screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: SCHOOL_GREEN },
         headerTintColor: "#fff",
         headerShadowVisible: false,
         headerBackground: () => <HeaderBackground color={SCHOOL_GREEN} />,
         headerTitle: ({ children }) => <HeaderTitle tint="#fff">{children}</HeaderTitle>,
-        headerRight: () => <SchoolMenu tint="#fff" onChangePassword={() => navigation.navigate("SchoolChangePassword")} />,
+        ...(DETAIL.has(route.name) || mustChange ? {} : { headerLeft: () => <MenuButton tint="#fff" /> }),
         contentStyle: { backgroundColor: c.background },
         animation: "slide_from_right",
       })}
@@ -141,6 +132,19 @@ export default function SchoolNavigator() {
           <Stack.Screen name="SchoolCollectFee" component={CollectFeeScreen} options={{ title: "Collect fee" }} />
           <Stack.Screen name="SchoolAdmissions" component={AdmissionsScreen} options={{ title: "Enquiries & applications" }} />
           <Stack.Screen name="SchoolBusAlert" component={BusAlertScreen} options={{ title: "Bus alert" }} />
+          <Stack.Screen name="SchoolDashboard" component={DashboardScreen} options={{ title: "Dashboard" }} />
+          <Stack.Screen name="SchoolAi" component={AiAssistantScreen} options={{ title: "AI assistant" }} />
+          <Stack.Screen name="SchoolStudents" component={StudentsScreen} options={{ title: "Students" }} />
+          <Stack.Screen name="SchoolStudent" component={StudentDetailScreen} options={{ title: "Student" }} />
+          <Stack.Screen name="SchoolStudentForm" component={StudentFormScreen} options={{ title: "Student" }} />
+          <Stack.Screen name="SchoolFees" component={FeesScreen} options={{ title: "Fees" }} />
+          <Stack.Screen name="SchoolTransport" component={TransportScreen} options={{ title: "Transport" }} />
+          <Stack.Screen name="SchoolLibrary" component={LibraryScreen} options={{ title: "Library" }} />
+          <Stack.Screen name="SchoolIdCards" component={IdCardsScreen} options={{ title: "ID cards & hall tickets" }} />
+          <Stack.Screen name="SchoolReports" component={ReportsScreen} options={{ title: "Reports" }} />
+          <Stack.Screen name="SchoolUsers" component={UsersScreen} options={{ title: "Staff & logins" }} />
+          <Stack.Screen name="SchoolOnlinePayments" component={OnlinePaymentsScreen} options={{ title: "Online payments" }} />
+          <Stack.Screen name="SchoolSettings" component={SchoolSettingsScreen} options={{ title: "School settings" }} />
         </>
       )}
     </Stack.Navigator>

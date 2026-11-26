@@ -56,12 +56,22 @@ export default function ParentHomeScreen() {
   const route = useRoute<RouteProp<SchoolStackParamList, "SchoolHome">>();
   const scroller = useRef<ScrollView>(null);
   const spots = useRef<Record<string, number>>({});
+  /** A section asked for before the page was laid out: scroll when it appears. */
+  const wanted = useRef<string | null>(null);
   const spot = (key: string) => (e: { nativeEvent: { layout: { y: number } } }) => {
     spots.current[key] = e.nativeEvent.layout.y;
+    if (wanted.current === key) {
+      wanted.current = null;
+      setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - 8), animated: true }), 50);
+    }
   };
   useEffect(() => {
     const sec = route.params?.section;
     if (!sec) return;
+    if (sec !== "top" && spots.current[sec] == null) {
+      wanted.current = sec;
+      return;
+    }
     scroller.current?.scrollTo({ y: sec === "top" ? 0 : Math.max(0, (spots.current[sec] ?? 0) - 8), animated: true });
   }, [route.params?.at, route.params?.section]);
   const [payable, setPayable] = useState<Record<string, boolean>>({});

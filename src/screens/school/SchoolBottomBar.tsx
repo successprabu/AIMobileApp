@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ND } from "../../components/ui/Motion";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { SCHOOL_GREEN } from "./schoolUi";
+import { openSchoolScreen } from "../../school/schoolMenu";
 
 /** Where a tab goes: a School screen, or (parents) a part of the parent home. */
 export type SchoolTab = { key: string; label: string; emoji: string; screen: string; section?: ParentSection };
@@ -12,12 +13,13 @@ export type ParentSection = "top" | "attendance" | "notices" | "fees" | "bus" | 
 
 const STAFF: (SchoolTab & { perms: string[] })[] = [
   { key: "home", label: "Home", emoji: "🏫", screen: "SchoolHome", perms: [] },
-  { key: "att", label: "Attendance", emoji: "✅", screen: "SchoolAttendance", perms: ["attendance.students"] },
+  { key: "att", label: "Attendance", emoji: "✅", screen: "SchoolAttendance", perms: ["attendance.students", "attendance.staff"] },
+  { key: "students", label: "Students", emoji: "🧑‍🎓", screen: "SchoolStudents", perms: ["students.view"] },
+  { key: "fee", label: "Fees", emoji: "💰", screen: "SchoolFees", perms: ["fees.view", "fees.collect"] },
   { key: "post", label: "Homework", emoji: "📚", screen: "SchoolPost", perms: ["circulars", "marks.manage", "students.manage"] },
-  { key: "fee", label: "Fees", emoji: "💰", screen: "SchoolCollectFee", perms: ["fees.collect"] },
+  { key: "marks", label: "Marks", emoji: "📝", screen: "SchoolMarks", perms: ["marks.view", "marks.manage"] },
   { key: "enq", label: "Enquiries", emoji: "📥", screen: "SchoolAdmissions", perms: ["enquiries"] },
-  { key: "marks", label: "Marks", emoji: "📝", screen: "SchoolMarks", perms: ["marks.manage"] },
-  { key: "bus", label: "Bus", emoji: "🚌", screen: "SchoolBusAlert", perms: ["transport"] },
+  { key: "bus", label: "Bus", emoji: "🚌", screen: "SchoolTransport", perms: ["transport"] },
 ];
 
 const PARENT: SchoolTab[] = [
@@ -58,12 +60,8 @@ export default function SchoolBottomBar({ navigation, routeName, section }: { na
           onPress={() => {
             // Tabs swap places (Home stays underneath), so Back always goes Home and screens never pile up.
             const params = t.section ? { section: t.section, at: Date.now() } : undefined;
-            if (t.screen === "SchoolHome") {
-              if (routeName === "SchoolHome") navigation.navigate(t.screen, params);
-              else navigation.popTo(t.screen, params);
-            } else if (routeName === t.screen) return;
-            else if (routeName === "SchoolHome") navigation.navigate(t.screen, params);
-            else navigation.replace(t.screen, params);
+            if (t.screen === "SchoolHome" && routeName === "SchoolHome") navigation.navigate(t.screen, params);
+            else if (routeName !== t.screen) openSchoolScreen(t.screen, params);
           }}
         />
       ))}

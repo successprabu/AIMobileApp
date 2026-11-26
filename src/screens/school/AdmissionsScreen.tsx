@@ -3,6 +3,9 @@ import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from
 import { ActivityIndicator, Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { applications, enquiries, schoolError, setApplicationStatus, setEnquiryStatus, type Application, type Enquiry } from "../../api/school";
+import { admitApplication, applicationFileToShare, getSettings } from "../../api/schoolErp";
+import * as Sharing from "expo-sharing";
+import { PillButton } from "../../components/ui/AuthUi";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice } from "../../components/ui/AuthUi";
@@ -29,6 +32,46 @@ export default function AdmissionsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [pick, setPick] = useState<Pick | null>(null);
+  const [admit, setAdmit] = useState<Application | null>(null);
+  const [admitCls, setAdmitCls] = useState("");
+  const [admitSec, setAdmitSec] = useState("");
+  const [admitBusy, setAdmitBusy] = useState(false);
+  const [classes, setClasses] = useState<string[]>([]);
+  const [sections, setSections] = useState<string[]>([]);
+  const [done, setDone] = useState("");
+  const canAdmit = school?.user.role === "superadmin" || !!school?.permissions.includes("students.manage");
+  useEffect(() => {
+    void getSettings(sid)
+      .then((r) => {
+        setClasses(r.settings.classes);
+        setSections(r.settings.sections);
+      })
+      .catch(() => undefined);
+  }, [sid]);
+
+  const doAdmit = async () => {
+    if (!admit || !admitCls) return;
+    setAdmitBusy(true);
+    try {
+      const r = await admitApplication(sid, admit.id, { className: admitCls, section: admitSec });
+      setApps((x) => ({ ...x, items: x.items.map((i) => (i.id === admit.id ? { ...i, status: "Admitted" } : i)) }));
+      setDone(`🎉 ${admit.student.name} admitted. Admission no ${r.student.admissionNo}. The parent login is ready.`);
+      setAdmit(null);
+    } catch (e) {
+      setError(schoolError(e, "Could not admit."));
+    } finally {
+      setAdmitBusy(false);
+    }
+  };
+
+  const openDoc = async (a: Application & { documents?: { label: string; fileId: string }[] }, fileId: string) => {
+    try {
+      const uri = await applicationFileToShare(sid, a.id, fileId, school?.token ?? "");
+      await Sharing.shareAsync(uri);
+    } catch {
+      setError("Could not open the document.");
+    }
+  };
 
   const load = useCallback(async () => {
     setError("");
@@ -107,6 +150,7 @@ export default function AdmissionsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}
       >
         {error ? <Notice kind="error" text={error} /> : null}
+        {done ? <Notice kind="success" text={done} /> : null}
         <Chips<Tab> items={["Enquiries", "Applications"]} value={tab} onChange={setTab} label={(t) => (t === "Enquiries" ? `Enquiries${newEnq ? ` (${newEnq} new)` : ""}` : `Applications${newApps ? ` (${newApps} new)` : ""}`)} color={SCHOOL_GREEN} />
         <View style={{ height: 10 }} />
         {tab === "Enquiries"
@@ -136,13 +180,40 @@ export default function AdmissionsScreen() {
                 <Text style={{ color: c.textMuted, fontSize: 12 }}>
                   {a.applicationNo} · {day(a.createdAt)} · {a.parent.name}
                 </Text>
+                {((a as Application & { documents?: { label: string; fileId: string }[] }).documents ?? []).map((doc) => (
+                  <Pressable key={doc.fileId} onPress={() => void openDoc(a, doc.fileId)} style={styles.act}>
+                    <MaterialCommunityIcons name="paperclip" size={16} color={SCHOOL_GREEN} />
+                    <Text style={{ color: SCHOOL_GREEN, fontWeight: "700" }}>{doc.label}</Text>
+                  </Pressable>
+                ))}
                 {contact(a.parent.phone, a.parent.name)}
+                {canAdmit && a.status !== "Admitted" && a.status !== "Rejected" ? (
+                  <PillButton
+                    label="Admit student"
+                    icon="account-check"
+                    color={SCHOOL_GREEN}
+                    onPress={() => {
+                      setAdmit(a);
+                      setAdmitCls(classes.includes(a.student.className) ? a.student.className : "");
+                      setAdmitSec("");
+                    }}
+                    style={{ marginTop: 8 }}
+                  />
+                ) : null}
               </View>
             ))}
         {(tab === "Enquiries" ? enq.items : apps.items).length === 0 ? <Text style={{ color: c.textMuted, textAlign: "center", marginTop: 20 }}>Nothing here yet.</Text> : null}
-        {tab === "Applications" ? <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 8 }}>To admit a child (creates the student and parent login), use Applications on the website.</Text> : null}
+
       </ScrollView>
 
+      <Sheet visible={!!admit} title={`Admit ${admit?.student.name ?? ""}`} onClose={() => setAdmit(null)}>
+        <Text style={{ color: c.textMuted }}>This registers the student and creates the parent login (password = mobile number).</Text>
+        <Text style={{ color: c.text, fontWeight: "700", marginTop: 12 }}>Class</Text>
+        <Chips items={classes} value={admitCls} onChange={setAdmitCls} color={SCHOOL_GREEN} />
+        <Text style={{ color: c.text, fontWeight: "700", marginTop: 12 }}>Section</Text>
+        <Chips items={["", ...sections]} value={admitSec} onChange={setAdmitSec} label={(v) => v || "—"} color={SCHOOL_GREEN} />
+        <PillButton label="Admit" icon="account-check" color={SCHOOL_GREEN} onPress={() => void doAdmit()} loading={admitBusy} disabled={admitBusy || !admitCls} style={{ marginTop: 16 }} />
+      </Sheet>
       <Sheet visible={!!pick} title="Change status" onClose={() => setPick(null)}>
         {(pick?.kind === "enquiry" ? enq.statuses : apps.statuses.filter((s) => s !== "Admitted")).map((s) => (
           <Pressable key={s} onPress={() => void change(s)} style={[styles.option, { borderColor: c.border }]}>
