@@ -47,7 +47,7 @@ export default function RegisterClientScreen() {
     const e: Record<string, string> = {};
     if (name.trim().length < 2) e.name = "Enter the client name";
     if (!/^[6-9]\d{9}$/.test(phone)) e.phone = "Enter a 10 digit mobile number";
-    if (password.length < 6) e.password = "At least 6 characters";
+    if (password.length < 8) e.password = "At least 8 characters";
     setErrors(e);
     if (Object.keys(e).length || saving) return;
     setSaving(true);

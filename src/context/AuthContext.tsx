@@ -7,13 +7,13 @@ import React, {
   useState,
 } from "react";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import type { AuthUser } from "../types/auth";
 import {
   clearStoredUser,
   getStoredUserJson,
   setStoredUserJson,
 } from "../storage/userStorage";
+import { installSessionInterceptors, onSessionRenewed, revokeSession, sessionEndsAt } from "../api/session";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -42,9 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         if (raw) {
           const parsed = JSON.parse(raw) as AuthUser;
-          const decoded = jwtDecode<{ exp?: number }>(parsed.token);
-          const now = Date.now() / 1000;
-          if (decoded.exp != null && decoded.exp < now) {
+          if (sessionEndsAt(parsed) < Date.now()) {
             await clearStoredUser();
             setSessionEnded(true);
           } else {
@@ -75,40 +73,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  // Any API call that gets 401 for a signed-in request ends the session (every API call uses axios).
+  // Every API call uses axios: the 30-minute token is renewed in the background; a 401 that cannot be fixed by
+  // renewing ends the session.
+  useEffect(() => installSessionInterceptors(axios, () => void endSession()), [endSession]);
   useEffect(() => {
-    const id = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        const headers = (error?.config?.headers ?? {}) as Record<string, unknown>;
-        const auth = String(headers.Authorization ?? headers.authorization ?? "");
-        if (error?.response?.status === 401 && /^Bearer\s+\S+/.test(auth)) void endSession();
-        return Promise.reject(error);
-      }
-    );
-    return () => axios.interceptors.response.eject(id);
-  }, [endSession]);
+    onSessionRenewed((patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev)));
+    return () => onSessionRenewed(null);
+  }, []);
 
-  // Also sign out by itself when the login's time runs out (timers are capped at ~24 days).
+  // Also sign out by itself when the sign-in's time runs out (timers are capped at ~24 days).
   useEffect(() => {
     if (!user?.token) return undefined;
-    let ms: number;
-    try {
-      const exp = jwtDecode<{ exp?: number }>(user.token).exp;
-      if (exp == null) return undefined;
-      ms = exp * 1000 - Date.now();
-    } catch {
-      return undefined;
-    }
+    const ends = sessionEndsAt(user);
+    if (!ends) return undefined;
+    const ms = ends - Date.now();
     if (ms <= 0) {
       void endSession();
       return undefined;
     }
     const id = setTimeout(() => void endSession(), Math.min(ms, 2147483000));
     return () => clearTimeout(id);
-  }, [user?.token, endSession]);
+  }, [user, endSession]);
 
   const signOut = useCallback(async () => {
+    await revokeSession();
     await clearStoredUser();
     setUser(null);
   }, []);

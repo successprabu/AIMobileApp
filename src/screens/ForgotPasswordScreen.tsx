@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const reset = async () => {
     const e: Record<string, string> = {};
     if (!/^\d{6}$/.test(otp)) e.otp = "Enter the 6 digit OTP";
-    if (password.length < 6) e.password = "At least 6 characters";
+    if (password.length < 8) e.password = "At least 8 characters";
     if (password !== confirm) e.confirm = "The passwords do not match";
     setErrors(e);
     if (Object.keys(e).length) return;
@@ -132,7 +132,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                 outlineStyle={styles.outline}
                 style={field}
               />
-              <HelperText type={errors.password ? "error" : "info"}>{errors.password || "At least 6 characters"}</HelperText>
+              <HelperText type={errors.password ? "error" : "info"}>{errors.password || "At least 8 characters"}</HelperText>
               <TextInput
                 {...inputTheme}
                 mode="outlined"

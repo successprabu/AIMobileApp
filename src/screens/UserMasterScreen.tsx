@@ -81,6 +81,7 @@ function validateUser(
   }
   if (!isEditing) {
     if (!data.password) err.password = t("required");
+    else if (data.password.length < 8) err.password = t("passwordMin8", { defaultValue: "At least 8 characters" });
     if (!data.conpassword) err.conpassword = t("required");
     else if (data.password !== data.conpassword) err.conpassword = t("passwordMatch");
   } else if (data.password && data.password !== data.conpassword) {

@@ -27,7 +27,7 @@ export default function ChangePasswordScreen() {
   const save = async () => {
     const e: Record<string, string> = {};
     if (!form.current) e.current = "Enter your current password";
-    if (form.next.length < 6) e.next = "At least 6 characters";
+    if (form.next.length < 8) e.next = "At least 8 characters";
     if (form.next !== form.confirm) e.confirm = "The passwords do not match";
     setErrors(e);
     if (Object.keys(e).length) return;
@@ -54,7 +54,7 @@ export default function ChangePasswordScreen() {
             <TextInput mode="outlined" label="Current password" secureTextEntry={!show} value={form.current} onChangeText={set("current")} error={!!errors.current} right={<TextInput.Icon icon={show ? "eye-off" : "eye"} onPress={() => setShow((s) => !s)} accessibilityLabel={show ? "Hide passwords" : "Show passwords"} />} />
             {!!errors.current && <HelperText type="error">{errors.current}</HelperText>}
             <TextInput mode="outlined" label="New password" secureTextEntry={!show} value={form.next} onChangeText={set("next")} error={!!errors.next} style={{ marginTop: 10 }} />
-            <HelperText type={errors.next ? "error" : "info"}>{errors.next || "At least 6 characters"}</HelperText>
+            <HelperText type={errors.next ? "error" : "info"}>{errors.next || "At least 8 characters"}</HelperText>
             <TextInput mode="outlined" label="Confirm new password" secureTextEntry={!show} value={form.confirm} onChangeText={set("confirm")} error={!!errors.confirm} />
             {!!errors.confirm && <HelperText type="error">{errors.confirm}</HelperText>}
             <Button mode="contained" icon="key-change" onPress={save} loading={busy} disabled={busy} style={{ marginTop: 16, borderRadius: 12 }} contentStyle={{ height: 48 }}>Change password</Button>

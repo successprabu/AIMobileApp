@@ -365,5 +365,6 @@
   "oldNotebooks": "Old moi notebooks",
   "partnerDashboard": "Partner dashboard",
   "partners": "Partners",
-  "familyLiveLink": "Family live link & gold"
+  "familyLiveLink": "Family live link & gold",
+  "passwordMin8": "At least 8 characters"
 }

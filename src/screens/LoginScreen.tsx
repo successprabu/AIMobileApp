@@ -91,9 +91,9 @@ export default function LoginScreen() {
         defaultValue: "Please enter a valid mobile number.",
       });
     }
-    if (p.length < 6 || p.length > 16) {
+    if (p.length < 6 || p.length > 64) {
       return t("mobile_invalid_password", {
-        defaultValue: "Password must be between 6 and 16 characters.",
+        defaultValue: "Password must be between 6 and 64 characters.",
       });
     }
     return null;

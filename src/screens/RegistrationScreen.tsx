@@ -166,7 +166,7 @@ export default function RegistrationScreen({ navigation, route }: Props) {
     if (!/^\d{10}$/.test(form.primary_phone)) err.primary_phone = t("mobile_invalid_mobile");
     if (!/^\d{6}$/.test(form.otp)) err.otp = t("mobile_invalid_otp", { defaultValue: "Enter 6-digit OTP." });
     if (!otpVerified) err.otp = t("verifyOTP");
-    if (!form.password || form.password.length < 6) err.password = t("mobile_invalid_password");
+    if (!form.password || form.password.length < 8) err.password = t("mobile_invalid_password");
     if (confirmPassword !== form.password) {
       err.confirmPassword = t("mobile_password_mismatch", {
         defaultValue: "Passwords do not match.",
