@@ -10,10 +10,22 @@ import { HeaderBackground, HeaderTitle } from "../components/ui/AppBars";
 import ParentHomeScreen from "../screens/school/ParentHomeScreen";
 import StaffHomeScreen from "../screens/school/StaffHomeScreen";
 import SchoolChangePasswordScreen from "../screens/school/SchoolChangePasswordScreen";
+import AttendanceScreen from "../screens/school/AttendanceScreen";
+import MarksScreen from "../screens/school/MarksScreen";
+import PostNoticeScreen from "../screens/school/PostNoticeScreen";
+import CollectFeeScreen from "../screens/school/CollectFeeScreen";
+import AdmissionsScreen from "../screens/school/AdmissionsScreen";
+import BusAlertScreen from "../screens/school/BusAlertScreen";
 
 export type SchoolStackParamList = {
   SchoolHome: undefined;
   SchoolChangePassword: undefined;
+  SchoolAttendance: undefined;
+  SchoolMarks: undefined;
+  SchoolPost: undefined;
+  SchoolCollectFee: undefined;
+  SchoolAdmissions: undefined;
+  SchoolBusAlert: undefined;
 };
 
 const Stack = createNativeStackNavigator<SchoolStackParamList>();
@@ -82,6 +94,12 @@ export default function SchoolNavigator() {
             options={{ title: isParent ? school.schoolName ?? "School" : "School ERP" }}
           />
           <Stack.Screen name="SchoolChangePassword" component={SchoolChangePasswordScreen} options={{ title: "Change password" }} />
+          <Stack.Screen name="SchoolAttendance" component={AttendanceScreen} options={{ title: "Attendance" }} />
+          <Stack.Screen name="SchoolMarks" component={MarksScreen} options={{ title: "Enter marks" }} />
+          <Stack.Screen name="SchoolPost" component={PostNoticeScreen} options={{ title: "Homework & circulars" }} />
+          <Stack.Screen name="SchoolCollectFee" component={CollectFeeScreen} options={{ title: "Collect fee" }} />
+          <Stack.Screen name="SchoolAdmissions" component={AdmissionsScreen} options={{ title: "Enquiries & applications" }} />
+          <Stack.Screen name="SchoolBusAlert" component={BusAlertScreen} options={{ title: "Bus alert" }} />
         </>
       )}
     </Stack.Navigator>

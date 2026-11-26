@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { SchoolStackParamList } from "../../navigation/SchoolNavigator";
+import { flushAttendance, pendingAttendance } from "../../school/attendanceQueue";
 import { Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -9,17 +13,25 @@ import { Notice, Rise } from "../../components/ui/AuthUi";
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
 
-/** Each ERP page with the permission that shows it (same as the website's menu). */
+type AppScreen = Exclude<keyof SchoolStackParamList, "SchoolHome" | "SchoolChangePassword">;
+
+/** In the app: each screen with the permission that shows it. */
+const IN_APP: { screen: AppScreen; label: string; icon: Icon; perms: string[] }[] = [
+  { screen: "SchoolAttendance", label: "Attendance", icon: "calendar-check", perms: ["attendance.students"] },
+  { screen: "SchoolMarks", label: "Enter marks", icon: "clipboard-text-outline", perms: ["marks.manage"] },
+  { screen: "SchoolPost", label: "Homework & circulars", icon: "bullhorn-outline", perms: ["circulars", "marks.manage", "students.manage"] },
+  { screen: "SchoolCollectFee", label: "Collect fee", icon: "cash-check", perms: ["fees.collect"] },
+  { screen: "SchoolAdmissions", label: "Enquiries & applications", icon: "inbox-arrow-down", perms: ["enquiries"] },
+  { screen: "SchoolBusAlert", label: "Bus alert", icon: "bus-alert", perms: ["transport"] },
+];
+
+/** On the website (bigger screens): same permissions as the website's menu. */
 const PAGES: { path: string; label: string; icon: Icon; perms: string[] }[] = [
   { path: "dashboard", label: "Dashboard", icon: "view-dashboard-outline", perms: ["dashboard"] },
-  { path: "attendance", label: "Attendance", icon: "calendar-check", perms: ["attendance.students", "attendance.staff"] },
-  { path: "fees", label: "Fees", icon: "cash-multiple", perms: ["fees.view", "fees.collect"] },
-  { path: "marks", label: "Marks", icon: "clipboard-text-outline", perms: ["marks.view", "marks.manage"] },
-  { path: "circulars", label: "Circulars & homework", icon: "bullhorn-outline", perms: ["circulars", "marks.manage", "students.manage"] },
+  { path: "attendance", label: "Staff attendance", icon: "account-clock-outline", perms: ["attendance.staff"] },
+  { path: "fees", label: "Fees & dues", icon: "cash-multiple", perms: ["fees.view", "fees.collect"] },
   { path: "students", label: "Students", icon: "account-school-outline", perms: ["students.view"] },
-  { path: "enquiries", label: "Enquiries", icon: "inbox-arrow-down", perms: ["enquiries"] },
-  { path: "applications", label: "Applications", icon: "card-account-details-outline", perms: ["enquiries"] },
-  { path: "transport", label: "Transport", icon: "bus-school", perms: ["transport"] },
+  { path: "transport", label: "Bus routes", icon: "bus-school", perms: ["transport"] },
   { path: "library", label: "Library", icon: "library-shelves", perms: ["library"] },
   { path: "reports", label: "Reports", icon: "chart-bar", perms: ["reports"] },
   { path: "website", label: "Website", icon: "web", perms: ["website.manage", "settings.manage"] },
@@ -27,17 +39,33 @@ const PAGES: { path: string; label: string; icon: Icon; perms: string[] }[] = [
 
 const ROLE: Record<string, string> = { superadmin: "Super admin", admin: "School admin", teacher: "Teaching staff", nonteaching: "Office staff" };
 
-/**
- * School → Staff home (first version). Shows the school, the person's role and every ERP page they can use.
- * Pages open on the website for now; they move into the app screen by screen (attendance first).
- */
+/** School → Staff home: daily work in the app (attendance, marks, homework, fees, enquiries, bus), the rest on the website. */
 export default function StaffHomeScreen() {
   const { school } = useSchoolAuth();
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const navigation = useNavigation<NativeStackNavigationProp<SchoolStackParamList>>();
+  const [pending, setPending] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      void flushAttendance()
+        .catch(() => 0)
+        .then(async () => setPending((await pendingAttendance()).length));
+    }, []),
+  );
   if (!school) return null;
   const can = (perms: string[]) => school.user.role === "superadmin" || perms.some((p) => school.permissions.includes(p));
   const pages = PAGES.filter((p) => can(p.perms));
+  const screens = IN_APP.filter((p) => can(p.perms));
+  const card = (key: string, label: string, icon: Icon, onPress: () => void, i: number, web?: boolean) => (
+    <Rise key={key} delay={i * 40} style={styles.cell}>
+      <Pressable onPress={onPress} style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]} accessibilityRole="button" accessibilityLabel={label}>
+        <MaterialCommunityIcons name={icon} size={28} color={web ? c.textMuted : "#059669"} />
+        <Text style={{ color: c.text, fontWeight: "700", textAlign: "center" }}>{label}</Text>
+        {web ? <MaterialCommunityIcons name="open-in-new" size={12} color={c.textMuted} /> : null}
+      </Pressable>
+    </Rise>
+  );
 
   return (
     <ScrollView style={{ backgroundColor: c.background }} contentContainerStyle={styles.wrap}>
@@ -52,22 +80,18 @@ export default function StaffHomeScreen() {
           </View>
         </View>
       </Rise>
-      <Notice kind="info" text="School ERP in the app is new. These pages open on the website for now; attendance, homework and fees are coming into the app next." />
-      <View style={styles.grid}>
-        {pages.map((p, i) => (
-          <Rise key={p.path} delay={i * 40} style={styles.cell}>
-            <Pressable
-              onPress={() => void Linking.openURL(`${SCHOOL_SITE}/admin/${p.path}`)}
-              style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}
-              accessibilityRole="button"
-              accessibilityLabel={p.label}
-            >
-              <MaterialCommunityIcons name={p.icon} size={28} color={c.primary} />
-              <Text style={{ color: c.text, fontWeight: "700", textAlign: "center" }}>{p.label}</Text>
-            </Pressable>
-          </Rise>
-        ))}
-      </View>
+      {pending ? <Notice kind="info" text={`${pending} day${pending > 1 ? "s" : ""} of attendance waiting on this phone; it is sent when you are online.`} /> : null}
+      {screens.length ? (
+        <View style={styles.grid}>{screens.map((p, i) => card(p.screen, p.label, p.icon, () => navigation.navigate(p.screen), i))}</View>
+      ) : null}
+      {pages.length ? (
+        <>
+          <Text style={{ color: c.textMuted, fontWeight: "700", marginTop: 4 }}>On the website</Text>
+          <View style={styles.grid}>
+            {pages.map((p, i) => card(p.path, p.label, p.icon, () => void Linking.openURL(`${SCHOOL_SITE}/admin/${p.path}`), i + screens.length, true))}
+          </View>
+        </>
+      ) : null}
     </ScrollView>
   );
 }

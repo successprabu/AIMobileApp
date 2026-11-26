@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, Share, StyleSheet, View } from "react-native";
-import { ActivityIndicator, Text } from "react-native-paper";
+import { Alert, AppState, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, IconButton, Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -10,15 +10,19 @@ import {
   parentCampus,
   parentChildren,
   parentCirculars,
+  parentAsk,
+  parentPayAvailable,
+  parentPayLink,
   schoolError,
-  SCHOOL_SITE,
   type Circular,
   type ParentCampus,
   type ParentChild,
 } from "../../api/school";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
-import { Notice, Rise } from "../../components/ui/AuthUi";
+import { Notice, PillButton, Rise } from "../../components/ui/AuthUi";
+import Sheet from "../../components/ui/Sheet";
+import { SCHOOL_GREEN, shareReceiptPdf } from "./schoolUi";
 
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const day = (iso: string) => {
@@ -46,14 +50,29 @@ export default function ParentHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [payable, setPayable] = useState<Record<string, boolean>>({});
+  const [payOpen, setPayOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState("");
+  const [payBusy, setPayBusy] = useState(false);
+  const [payErr, setPayErr] = useState("");
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [asking, setAsking] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
     try {
-      const [ch, ps, cp] = await Promise.all([parentChildren(), parentCirculars().catch(() => []), parentCampus().catch(() => [])]);
+      const [ch, ps, cp, pay] = await Promise.all([
+        parentChildren(),
+        parentCirculars().catch(() => []),
+        parentCampus().catch(() => []),
+        parentPayAvailable().catch(() => ({})),
+      ]);
       setChildren(ch);
       setPosts(ps);
       setCampus(cp);
+      setPayable(pay);
     } catch (e) {
       setError(schoolError(e, "Could not load your child's details. Pull down to try again."));
     } finally {
@@ -64,7 +83,45 @@ export default function ParentHomeScreen() {
 
   useEffect(() => {
     void load();
+    // Back from paying in the browser (or a notification): show the new receipt / notice.
+    const sub = AppState.addEventListener("change", (st) => {
+      if (st === "active") void load();
+    });
+    return () => sub.remove();
   }, [load]);
+
+  const startPay = async () => {
+    if (!child) return;
+    const n = Number(payAmount);
+    if (!Number.isFinite(n) || n < 1) return setPayErr("Enter the amount to pay.");
+    if (n > child.fees.balance) return setPayErr(`The balance is ${inr(child.fees.balance)}.`);
+    setPayBusy(true);
+    setPayErr("");
+    try {
+      const url = await parentPayLink(child.school.id, child.student.id, n);
+      setPayOpen(false);
+      await Linking.openURL(url);
+    } catch (e) {
+      setPayErr(schoolError(e, "Could not start the payment. Please try again."));
+    } finally {
+      setPayBusy(false);
+    }
+  };
+
+  const ask = async (q?: string) => {
+    const text = (q ?? question).trim();
+    if (!child || text.length < 3) return;
+    setQuestion(text);
+    setAsking(true);
+    setAnswer("");
+    try {
+      setAnswer(await parentAsk(child.student.id, text));
+    } catch (e) {
+      setAnswer(schoolError(e, "Could not answer now. Please try again."));
+    } finally {
+      setAsking(false);
+    }
+  };
 
   const child = children[idx];
   const items = posts.find((p) => p.studentId === child?.student.id)?.items ?? [];
@@ -95,9 +152,20 @@ export default function ParentHomeScreen() {
 
   const shareReceipt = (p: ParentChild["payments"][number]) => {
     if (!child) return;
-    void Share.share({
-      message: `${child.school.label} – Fee receipt ${p.receiptNo}\n${child.student.name} (${child.student.className} ${child.student.section ?? ""})\n${p.head}: ${inr(p.amount)} by ${p.mode} on ${day(p.date)}${p.reference ? `\nRef: ${p.reference}` : ""}`,
-    });
+    void shareReceiptPdf({
+      schoolName: child.school.label,
+      receiptNo: p.receiptNo,
+      date: day(p.date),
+      studentName: child.student.name,
+      className: child.student.className,
+      section: child.student.section,
+      admissionNo: child.student.admissionNo,
+      academicYear: child.settings.academicYear,
+      head: p.head,
+      amount: p.amount,
+      mode: p.mode,
+      reference: p.reference,
+    }).catch(() => Alert.alert("Could not make the receipt", "Please try again."));
   };
 
   if (loading) {
@@ -109,6 +177,15 @@ export default function ParentHomeScreen() {
   }
 
   return (
+    <>
+    <Sheet visible={payOpen} title="Pay school fee" onClose={() => setPayOpen(false)}>
+      <Text style={{ color: c.textMuted, marginBottom: 10 }}>
+        {child ? `${child.student.name} · balance ${inr(child.fees.balance)}. ` : ""}A secure Razorpay page opens; pay with any UPI app, card or net banking, then come back to the app.
+      </Text>
+      {payErr ? <Notice kind="error" text={payErr} /> : null}
+      <TextInput mode="outlined" label="Amount (₹)" value={payAmount} onChangeText={(v) => setPayAmount(v.replace(/[^0-9.]/g, ""))} keyboardType="decimal-pad" activeOutlineColor={SCHOOL_GREEN} />
+      <PillButton label="Continue to pay" icon="lock-outline" color={SCHOOL_GREEN} onPress={() => void startPay()} loading={payBusy} disabled={payBusy} style={{ marginTop: 14 }} />
+    </Sheet>
     <ScrollView
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.wrap}
@@ -159,6 +236,15 @@ export default function ParentHomeScreen() {
             </View>
           ))}
 
+          <Section c={c} icon="calendar-month" title="Attendance">
+            <AttendanceCalendar c={c} month={month} setMonth={setMonth} days={child.attendance} />
+            {child.attendanceSummary.absences.length ? (
+              <Text style={styles.small}>
+                Last absent: {child.attendanceSummary.absences.slice(0, 3).map((a) => `${day(a.date)} (${a.status === "L" ? "leave" : a.status === "H" ? "half day" : "absent"})`).join(", ")}
+              </Text>
+            ) : null}
+          </Section>
+
           <Section c={c} icon="bullhorn-outline" title={`Notices & homework${unread ? ` (${unread} new)` : ""}`}>
             {items.length ? (
               items.slice(0, 30).map((p) => (
@@ -207,10 +293,20 @@ export default function ParentHomeScreen() {
                 <MaterialCommunityIcons name="share-variant" size={18} color={c.primary} />
               </Pressable>
             ))}
-            {child.fees.balance > 0 ? (
-              <Pressable onPress={() => void Linking.openURL(`${SCHOOL_SITE}/login`)} style={styles.link}>
-                <Text style={{ color: c.primary, fontWeight: "700" }}>Pay online in the Parent Portal (website) →</Text>
-              </Pressable>
+            {child.fees.balance > 0 && payable[child.school.id] ? (
+              <PillButton
+                label={`Pay ${inr(child.fees.balance)} online`}
+                icon="cellphone-check"
+                color={SCHOOL_GREEN}
+                onPress={() => {
+                  setPayAmount(String(child.fees.balance));
+                  setPayErr("");
+                  setPayOpen(true);
+                }}
+                style={{ marginTop: 8 }}
+              />
+            ) : child.fees.balance > 0 ? (
+              <Text style={styles.small}>Please pay at the school office. Online payment is not turned on for this school yet.</Text>
             ) : null}
           </Section>
 
@@ -259,11 +355,89 @@ export default function ParentHomeScreen() {
               <Text style={styles.muted}>No library books now.</Text>
             )}
           </Section>
+
+          <Section c={c} icon="robot-happy-outline" title="Ask about your child">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 6 }}>
+              {["How is the attendance?", "Any fee due?", "How were the last exam marks?", "வருகை எப்படி உள்ளது?"].map((q) => (
+                <Pressable key={q} onPress={() => void ask(q)} style={styles.chip}>
+                  <Text style={{ color: c.text }}>{q}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <TextInput
+              mode="outlined"
+              dense
+              value={question}
+              onChangeText={setQuestion}
+              placeholder="Type a question (English or Tamil)"
+              onSubmitEditing={() => void ask()}
+              right={<TextInput.Icon icon="send" onPress={() => void ask()} disabled={asking} />}
+              activeOutlineColor={SCHOOL_GREEN}
+            />
+            {asking ? <ActivityIndicator style={{ marginTop: 8 }} color={SCHOOL_GREEN} /> : null}
+            {answer ? <Text style={{ color: c.text, marginTop: 8, lineHeight: 21 }}>{answer}</Text> : null}
+          </Section>
         </>
       ) : null}
     </ScrollView>
+    </>
   );
 }
+
+const ATT_COLOR: Record<string, string> = { P: "#16a34a", A: "#dc2626", L: "#d97706", H: "#2563eb" };
+
+/** Month grid: green present, red absent, amber leave, blue half day. */
+function AttendanceCalendar({ c, month, setMonth, days }: { c: Colors; month: string; setMonth: (m: string) => void; days: Record<string, string> }) {
+  const [y, m] = month.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  const count = new Date(y, m, 0).getDate();
+  const lead = (first.getDay() + 6) % 7; // Monday first
+  const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)];
+  const go = (by: number) => {
+    const d = new Date(y, m - 1 + by, 1);
+    setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  };
+  const inMonth = Object.entries(days).filter(([d]) => d.startsWith(month));
+  const present = inMonth.reduce((t, [, s]) => t + (s === "P" ? 1 : s === "H" ? 0.5 : 0), 0);
+  return (
+    <View>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <IconButton icon="chevron-left" size={20} onPress={() => go(-1)} accessibilityLabel="Previous month" />
+        <Text style={{ color: c.text, fontWeight: "800", flex: 1, textAlign: "center" }}>
+          {first.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+          {inMonth.length ? ` · ${Math.round((present / inMonth.length) * 100)}%` : ""}
+        </Text>
+        <IconButton icon="chevron-right" size={20} onPress={() => go(1)} accessibilityLabel="Next month" />
+      </View>
+      <View style={calStyles.grid}>
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          <Text key={`h${i}`} style={[calStyles.cell, { color: c.textMuted, fontWeight: "700" }]}>
+            {d}
+          </Text>
+        ))}
+        {cells.map((d, i) => {
+          const st = d ? days[`${month}-${String(d).padStart(2, "0")}`] : undefined;
+          return (
+            <View key={i} style={calStyles.cell}>
+              {d ? (
+                <View style={[calStyles.dot, st ? { backgroundColor: ATT_COLOR[st] } : null]}>
+                  <Text style={{ color: st ? "#fff" : c.text, fontSize: 12, fontWeight: st ? "800" : "400" }}>{d}</Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+      <Text style={{ color: c.textMuted, fontSize: 11, marginTop: 4 }}>Green: present · Red: absent · Amber: leave · Blue: half day</Text>
+    </View>
+  );
+}
+
+const calStyles = StyleSheet.create({
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  cell: { width: `${100 / 7}%`, alignItems: "center", paddingVertical: 3, textAlign: "center" },
+  dot: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+});
 
 type Colors = ReturnType<typeof useAppTheme>["theme"]["colors"];
 
