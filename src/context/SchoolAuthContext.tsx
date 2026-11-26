@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onSchoolSessionExpired, schoolName, setSchoolToken, type SchoolSession } from "../api/school";
+import { secureGet, secureRemove, secureSet } from "../storage/secureStore";
 
 const SESSION_KEY = "schoolSession";
 const APP_KEY = "activeApp";
@@ -29,14 +30,14 @@ export function SchoolAuthProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     (async () => {
       try {
-        const [raw, app] = await Promise.all([AsyncStorage.getItem(SESSION_KEY), AsyncStorage.getItem(APP_KEY)]);
+        const [raw, app] = await Promise.all([secureGet(SESSION_KEY), AsyncStorage.getItem(APP_KEY)]);
         if (raw) {
           const s = JSON.parse(raw) as SchoolSession;
           if (s.expiresAt > Date.now()) {
             setSchoolToken(s.token);
             setSchool(s);
           } else {
-            await AsyncStorage.removeItem(SESSION_KEY);
+            await secureRemove(SESSION_KEY);
           }
         }
         if (app === "mysuccess" || app === "school") setActive(app);
@@ -47,8 +48,8 @@ export function SchoolAuthProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const save = async (s: SchoolSession | null) => {
-    if (s) await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(s));
-    else await AsyncStorage.removeItem(SESSION_KEY);
+    if (s) await secureSet(SESSION_KEY, JSON.stringify(s));
+    else await secureRemove(SESSION_KEY);
   };
 
   const schoolSignOut = useCallback(async () => {

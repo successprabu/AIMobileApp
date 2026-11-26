@@ -176,3 +176,177 @@ export async function schoolName(schoolId: string): Promise<string | undefined> 
     return undefined;
   }
 }
+
+// ---------------------------------------------------------------- parents: Ask AI, pay in the app
+
+export async function parentAsk(studentId: string, question: string): Promise<string> {
+  const r = await schoolHttp.post<{ text: string }>("/ai", { task: "parent-assistant", studentId, question }, { timeout: 45000 });
+  return r.data.text;
+}
+
+/** Schools of this parent that take online payment. */
+export async function parentPayAvailable(): Promise<Record<string, boolean>> {
+  return (await schoolHttp.get<{ schools: Record<string, boolean> }>("/parent/pay/available")).data.schools;
+}
+
+/** A one-time checkout page (opens in the phone's browser; UPI apps open from there). */
+export async function parentPayLink(schoolId: string, studentId: string, amount: number): Promise<string> {
+  const r = await schoolHttp.post<{ payUrl: string }>("/parent/pay/order", { schoolId, studentId, amount, forApp: true });
+  return `${SCHOOL_SITE}${r.data.payUrl}`;
+}
+
+// ---------------------------------------------------------------- staff
+
+export interface SchoolSettings {
+  academicYear: string;
+  classes: string[];
+  sections: string[];
+  subjects: string[];
+  exams: { id: string; name: string; maxMarks: number }[];
+  paymentModes: string[];
+  passPercent: number;
+}
+
+export interface SchoolStudent {
+  id: string;
+  name: string;
+  className: string;
+  section?: string;
+  admissionNo: string;
+  rollNo?: string;
+  parentName?: string;
+  parentPhone?: string;
+  status: string;
+  transportRoute?: string;
+}
+
+export type AttStatus = "P" | "A" | "L" | "H";
+
+const sidPath = (sid: string) => `/schools/${encodeURIComponent(sid)}`;
+
+export async function schoolSettings(sid: string): Promise<SchoolSettings> {
+  return (await schoolHttp.get<{ settings: SchoolSettings }>(`${sidPath(sid)}/settings`)).data.settings;
+}
+
+export async function schoolStudents(sid: string): Promise<SchoolStudent[]> {
+  return (await schoolHttp.get<{ items: SchoolStudent[] }>(`${sidPath(sid)}/students`)).data.items;
+}
+
+export async function getAttendance(sid: string, date: string): Promise<Record<string, AttStatus>> {
+  return (await schoolHttp.get<{ records: Record<string, AttStatus> }>(`${sidPath(sid)}/attendance/students`, { params: { date } })).data.records;
+}
+
+export async function putAttendance(sid: string, date: string, records: Record<string, AttStatus | null>): Promise<number> {
+  return (await schoolHttp.put<{ saved: number }>(`${sidPath(sid)}/attendance/students`, { date, records })).data.saved;
+}
+
+export type MarksData = { marks: Record<string, Record<string, Record<string, number>>>; remarks: Record<string, Record<string, string>> };
+
+export async function getMarks(sid: string): Promise<MarksData> {
+  const d = (await schoolHttp.get<Partial<MarksData>>(`${sidPath(sid)}/marks`)).data;
+  return { marks: d.marks ?? {}, remarks: d.remarks ?? {} };
+}
+
+export async function putMarks(sid: string, examId: string, records: Record<string, Record<string, number | null>>): Promise<string[]> {
+  return (await schoolHttp.put<{ errors: string[] }>(`${sidPath(sid)}/marks`, { examId, records })).data.errors ?? [];
+}
+
+/** Photo (JPEG data URL, under 1 MB) → file id for a circular. */
+export async function uploadCircularFile(sid: string, dataUrl: string): Promise<string> {
+  return (await schoolHttp.post<{ fileId: string }>(`${sidPath(sid)}/circulars/files`, { data: dataUrl }, { timeout: 60000 })).data.fileId;
+}
+
+export async function postCircular(
+  sid: string,
+  c: { type: Circular["type"]; title: string; text: string; classes: string[]; dueDate?: string; attachment?: { fileId: string; name: string } | null },
+): Promise<void> {
+  await schoolHttp.post(`${sidPath(sid)}/circulars`, c);
+}
+
+export async function staffCirculars(sid: string): Promise<(Circular & { readCount: number; audience: number; classes: string[] })[]> {
+  return (await schoolHttp.get<{ items: (Circular & { readCount: number; audience: number; classes: string[] })[] }>(`${sidPath(sid)}/circulars`)).data.items;
+}
+
+export interface StudentFees {
+  student: SchoolStudent;
+  fees: ParentChild["fees"];
+  payments: FeePayment[];
+}
+
+export async function studentFees(sid: string, studentId: string): Promise<StudentFees> {
+  return (await schoolHttp.get<StudentFees>(`${sidPath(sid)}/students/${encodeURIComponent(studentId)}`)).data;
+}
+
+export async function collectFee(
+  sid: string,
+  p: { studentId: string; amount: number; mode: string; head?: string; reference?: string; note?: string },
+): Promise<{ item: FeePayment & { studentName: string; className: string; section?: string; admissionNo: string; collectedBy?: string }; fees: ParentChild["fees"] }> {
+  return (await schoolHttp.post(`${sidPath(sid)}/payments`, p)).data;
+}
+
+export interface Enquiry {
+  id: string;
+  schoolId: string;
+  type: string;
+  parentName: string;
+  studentName: string;
+  phone: string;
+  email: string;
+  grade: string;
+  message: string;
+  status: string;
+  createdAt: string;
+}
+
+export async function enquiries(sid: string): Promise<{ items: Enquiry[]; statuses: string[] }> {
+  return (await schoolHttp.get(`/admin/enquiries`, { params: { schoolId: sid } })).data;
+}
+
+export async function setEnquiryStatus(sid: string, id: string, status: string): Promise<void> {
+  await schoolHttp.patch(`/admin/enquiries/${encodeURIComponent(sid)}/${encodeURIComponent(id)}`, { status });
+}
+
+export interface Application {
+  id: string;
+  applicationNo: string;
+  status: string;
+  createdAt: string;
+  student: { name: string; className: string; dob?: string };
+  parent: { name: string; phone: string; email?: string };
+}
+
+export async function applications(sid: string): Promise<{ items: Application[]; statuses: string[] }> {
+  return (await schoolHttp.get(`${sidPath(sid)}/applications`)).data;
+}
+
+export async function setApplicationStatus(sid: string, id: string, status: string): Promise<void> {
+  await schoolHttp.patch(`${sidPath(sid)}/applications/${encodeURIComponent(id)}`, { status });
+}
+
+export interface BusRoute {
+  id: string;
+  name: string;
+  vehicleNo?: string;
+}
+
+export async function transport(sid: string): Promise<{ routes: BusRoute[]; alerts: { id: string; routeName: string; text: string; at: string; by: string }[] }> {
+  return (await schoolHttp.get(`${sidPath(sid)}/transport`)).data;
+}
+
+export async function sendBusAlert(sid: string, routeId: string, text: string): Promise<void> {
+  await schoolHttp.post(`${sidPath(sid)}/transport/alerts`, { routeId, text });
+}
+
+// ---------------------------------------------------------------- phone: push & sign-out everywhere
+
+export async function registerPushToken(token: string): Promise<void> {
+  await schoolHttp.post("/push/register", { token });
+}
+
+export async function unregisterPushToken(token: string): Promise<void> {
+  await schoolHttp.post("/push/unregister", { token }).catch(() => undefined);
+}
+
+export async function schoolLogoutAll(): Promise<void> {
+  await schoolHttp.post("/auth/logout-all", {});
+}

@@ -137,3 +137,15 @@ export const installSessionInterceptors = (client: AxiosInstance, onEnded: () =>
     client.interceptors.response.eject(res);
   };
 };
+
+/** Signs this mobile number out on every phone and browser (their refresh tokens stop working). */
+export const revokeAllSessions = async (): Promise<boolean> => {
+  const u = await read();
+  if (!u?.token) return false;
+  try {
+    const r = await fetch(`${BASE_URL}Auth/LogoutAll`, { method: "POST", headers: { Authorization: `Bearer ${u.token}` } });
+    return r.ok;
+  } catch {
+    return false;
+  }
+};

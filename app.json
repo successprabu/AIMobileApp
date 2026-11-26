@@ -24,7 +24,11 @@
         "INTERNET",
         "RECORD_AUDIO",
         "READ_MEDIA_IMAGES",
-        "READ_EXTERNAL_STORAGE"
+        "READ_EXTERNAL_STORAGE",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -45,9 +49,24 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow access to photos to import receipts and to add photos of your hall."
+          "photosPermission": "Allow access to photos to import receipts and to add photos of your hall.",
+          "cameraPermission": "Allow the camera to add photos of homework, receipts and your hall."
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow My Success to use Face ID to unlock the app."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#059669"
         }
       ]
-    ]
+    ],
+    "scheme": "mysuccess"
   }
 }

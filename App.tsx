@@ -9,6 +9,8 @@ import { SchoolAuthProvider } from "./src/context/SchoolAuthContext";
 import { LanguageProvider } from "./src/context/LanguageContext";
 import { AutoSaveProvider } from "./src/context/AutoSaveContext";
 import RootNavigator from "./src/navigation/RootNavigator";
+import { AppLockProvider } from "./src/context/AppLockContext";
+import AppServices from "./src/AppServices";
 
 function AppInner() {
   const { paperTheme, mode } = useThemeContext();
@@ -18,7 +20,10 @@ function AppInner() {
         <SchoolAuthProvider>
         <AutoSaveProvider>
         <PaperProvider theme={paperTheme}>
-          <RootNavigator />
+          <AppLockProvider>
+            <RootNavigator />
+            <AppServices />
+          </AppLockProvider>
           <StatusBar style={mode === "dark" ? "light" : "dark"} />
         </PaperProvider>
         </AutoSaveProvider>
