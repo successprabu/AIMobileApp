@@ -1,0 +1,1 @@
+expo-secure-store expo-notifications expo-device expo-local-authentication expo-application

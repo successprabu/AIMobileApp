@@ -1,0 +1,26 @@
+# One-time helper: adds Expo packages listed in .github/add-packages.txt with versions that
+# match this Expo SDK, and commits package.json + package-lock.json back to the branch.
+name: Add packages
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['.github/add-packages.txt']
+permissions:
+  contents: write
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - run: npm ci --no-audit --no-fund
+      - run: npx expo install $(cat .github/add-packages.txt)
+      - run: npx tsc --noEmit -p .
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Add packages: $(tr '\n' ' ' < .github/add-packages.txt)"
+          git push
