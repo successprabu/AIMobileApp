@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { ActivityIndicator, IconButton, Text, TextInput } from "react-native-paper";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { schoolError } from "../../api/school";
 import { deleteBusAlert, saveRoutes, studentList, transportData } from "../../api/schoolErp";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
@@ -78,6 +80,34 @@ export default function TransportScreen() {
       { text: "Delete", style: "destructive", onPress: () => void persist(routes.filter((_, j) => j !== i)) },
     ]);
 
+  /** Route sheets for drivers and attendants: stops, times and the children at each stop with parent phones. */
+  const printRoutes = async () => {
+    const esc = (t: unknown) => String(t ?? "").replace(/[&<>"]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[x] ?? x);
+    const body = routes
+      .map((r) => {
+        const kids = Object.entries(r.students ?? {});
+        const stops = [...r.stops.map((st) => st.name), ...(kids.some(([, st]) => !r.stops.some((x) => x.name === st)) ? [""] : [])];
+        return `<div class="route"><h2>🚌 ${esc(r.name)}</h2>
+          <p>Vehicle <b>${esc(r.vehicleNo || "—")}</b> · Driver <b>${esc(r.driverName || "—")}</b> ${esc(r.driverPhone)} · Attendant ${esc(r.attendantName || "—")} · ${kids.length} children</p>
+          <table><tr><th>Stop</th><th>Pick-up</th><th>Drop</th><th>Children</th></tr>${stops
+            .map((name) => {
+              const st = r.stops.find((x) => x.name === name);
+              const here = kids
+                .filter(([, x]) => (name ? x === name : !r.stops.some((y) => y.name === x)))
+                .map(([id]) => byId.get(id))
+                .filter(Boolean)
+                .map((k) => `${esc(k!.name)} (${esc(k!.className)} ${esc(k!.section ?? "")}) ${esc(k!.parentPhone)}`)
+                .join("<br/>");
+              return `<tr><td>${esc(name || "No stop")}</td><td>${esc(st?.morning ?? "")}</td><td>${esc(st?.evening ?? "")}</td><td>${here || "—"}</td></tr>`;
+            })
+            .join("")}</table></div>`;
+      })
+      .join("");
+    const html = `<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;font-size:11px;color:#0f172a}h1{font-size:16px}h2{font-size:14px;margin:0 0 4px;color:${SCHOOL_GREEN}}.route{page-break-inside:avoid;margin-bottom:14px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #cbd5e1;padding:4px;text-align:left;vertical-align:top}th{background:#f1f5f9}</style></head><body><h1>${esc(school?.schoolName ?? "")} · Bus routes</h1>${body}</body></html>`;
+    const { uri } = await Print.printToFileAsync({ html });
+    await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Bus routes", UTI: "com.adobe.pdf" });
+  };
+
   const upd = (patch: Partial<BusRoute>) => setEdit((e) => (e ? { ...e, r: { ...e.r, ...patch } } : e));
 
   if (loading) {
@@ -96,6 +126,7 @@ export default function TransportScreen() {
           <PillButton label="Send bus alert" icon="bus-alert" color={SCHOOL_GREEN} onPress={() => openSchoolScreen("SchoolBusAlert")} style={{ flex: 1 }} />
           {canEdit ? <PillButton label="New route" icon="plus" variant="soft" color={SCHOOL_GREEN} onPress={() => setEdit({ i: -1, r: blank() })} style={{ flex: 1 }} /> : null}
         </View>
+        {routes.length ? <PillButton label="Print routes (PDF)" icon="printer" variant="outline" color={SCHOOL_GREEN} onPress={() => void printRoutes().catch(() => setNote({ kind: "error", text: "Could not make the PDF." }))} style={{ marginBottom: 12 }} /> : null}
         {routes.length === 0 ? <Text style={{ color: c.textMuted, textAlign: "center", marginVertical: 20 }}>🚌 No bus routes yet.</Text> : null}
         {routes.map((r, i) => {
           const kids = Object.entries(r.students ?? {});

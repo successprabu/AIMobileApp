@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Checkbox, IconButton, Text, TextInput } from "react-native-paper";
 import { schoolError } from "../../api/school";
-import { getSettings, saveSettings } from "../../api/schoolErp";
+import { demoData, getSettings, saveSettings } from "../../api/schoolErp";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, PillButton } from "../../components/ui/AuthUi";
@@ -64,6 +64,7 @@ export default function SchoolSettingsScreen() {
   const [feeClass, setFeeClass] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [note, setNote] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
   useEffect(() => {
@@ -104,6 +105,32 @@ export default function SchoolSettingsScreen() {
       setSaving(false);
     }
   };
+
+  /** Sample students, fees, attendance and marks to try the ERP; "remove" deletes only the sample ones. */
+  const demo = (action: "load" | "remove") =>
+    Alert.alert(
+      action === "load" ? "Load demo data?" : "Remove demo data?",
+      action === "load" ? "Adds sample students with fees, attendance and marks, marked as demo, so you can try every screen." : "Deletes only the demo students and their records. Your real students stay.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: action === "load" ? "Load" : "Remove",
+          style: action === "remove" ? "destructive" : "default",
+          onPress: () =>
+            void (async () => {
+              setDemoBusy(true);
+              try {
+                const r = await demoData(sid, action);
+                setNote({ kind: "success", text: action === "load" ? `🧪 Demo data loaded${r.students ? `: ${r.students} students` : ""}.` : `🧹 Demo data removed${r.removedStudents != null ? `: ${r.removedStudents} students` : ""}.` });
+              } catch (e) {
+                setNote({ kind: "error", text: schoolError(e, "Could not change demo data.") });
+              } finally {
+                setDemoBusy(false);
+              }
+            })(),
+        },
+      ],
+    );
 
   const classFee = feeClass ? s.classFees?.[feeClass] : undefined;
 
@@ -189,6 +216,13 @@ export default function SchoolSettingsScreen() {
         })}
       </Section>
       <PillButton label="Save settings" icon="content-save-outline" color={SCHOOL_GREEN} onPress={() => void save()} loading={saving} disabled={saving} />
+      <Section icon="flask-outline" title="🧪 Demo data">
+        <Text style={{ color: c.textMuted }}>Try the ERP with sample students before adding real ones.</Text>
+        <View style={[styles.two, { marginTop: 8 }]}>
+          <PillButton label="Load demo" icon="database-plus" variant="soft" color={SCHOOL_GREEN} onPress={() => demo("load")} loading={demoBusy} disabled={demoBusy} style={{ flex: 1 }} />
+          <PillButton label="Remove demo" icon="database-remove" variant="outline" color={c.danger} onPress={() => demo("remove")} disabled={demoBusy} style={{ flex: 1 }} />
+        </View>
+      </Section>
     </ScrollView>
   );
 }

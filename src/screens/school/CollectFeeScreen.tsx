@@ -8,7 +8,7 @@ import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, PillButton } from "../../components/ui/AuthUi";
 import { loadSchoolBasics } from "./AttendanceScreen";
-import { Chips, Row, SCHOOL_GREEN, Section, day, inr, shareReceiptPdf, ui, type ReceiptInfo } from "./schoolUi";
+import { Chips, Row, SCHOOL_GREEN, Section, day, inr, shareReceiptPdf, shiftDay, todayIso, ui, type ReceiptInfo } from "./schoolUi";
 
 /** Office: find the child, take the fee, share the receipt PDF on WhatsApp. */
 export default function CollectFeeScreen() {
@@ -28,6 +28,8 @@ export default function CollectFeeScreen() {
   const [mode, setMode] = useState<string | null>(null);
   const [head, setHead] = useState("Fee payment");
   const [ref, setRef] = useState("");
+  const [payDate, setPayDate] = useState(todayIso());
+  const [payNote, setPayNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ kind: "info" | "error" | "success"; text: string } | null>(null);
@@ -76,7 +78,7 @@ export default function CollectFeeScreen() {
     setBusy(true);
     setNote(null);
     try {
-      const r = await collectFee(sid, { studentId: sel.id, amount: n, mode, head: head.trim() || "Fee payment", reference: ref.trim() });
+      const r = await collectFee(sid, { studentId: sel.id, amount: n, mode, head: head.trim() || "Fee payment", reference: ref.trim(), date: payDate, note: payNote.trim() });
       const info: ReceiptInfo = {
         schoolName: school?.schoolName ?? sid,
         receiptNo: r.item.receiptNo,
@@ -97,6 +99,7 @@ export default function CollectFeeScreen() {
       setDetail((d) => (d ? { ...d, fees: r.fees, payments: [r.item, ...d.payments] } : d));
       setAmount("");
       setRef("");
+      setPayNote("");
     } catch (e) {
       setNote({ kind: "error", text: schoolError(e, "Could not save the payment. Check the network and try again.") });
     } finally {
@@ -169,6 +172,13 @@ export default function CollectFeeScreen() {
           <Chips items={settings?.paymentModes ?? []} value={mode} onChange={setMode} color={SCHOOL_GREEN} />
           <TextInput mode="outlined" label="For" value={head} onChangeText={setHead} style={{ marginTop: 10 }} activeOutlineColor={SCHOOL_GREEN} />
           {mode && mode !== "Cash" ? <TextInput mode="outlined" label="UPI / cheque / transaction no (optional)" value={ref} onChangeText={setRef} style={{ marginTop: 10 }} activeOutlineColor={SCHOOL_GREEN} /> : null}
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+            <TextInput mode="outlined" label="Date (YYYY-MM-DD)" value={payDate} onChangeText={setPayDate} style={{ flex: 1 }} activeOutlineColor={SCHOOL_GREEN} />
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Chips items={[todayIso(), shiftDay(todayIso(), -1)]} value={payDate} onChange={setPayDate} label={(d) => (d === todayIso() ? "Today" : "Yesterday")} color={SCHOOL_GREEN} />
+            </View>
+          </View>
+          <TextInput mode="outlined" label="Note (optional)" value={payNote} onChangeText={setPayNote} style={{ marginTop: 10 }} activeOutlineColor={SCHOOL_GREEN} />
           <PillButton label="Collect fee" icon="cash-check" color={SCHOOL_GREEN} onPress={() => void collect()} loading={busy} disabled={busy} style={{ marginTop: 16 }} />
 
           {detail?.payments.length ? (

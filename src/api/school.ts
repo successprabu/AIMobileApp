@@ -279,7 +279,7 @@ export async function studentFees(sid: string, studentId: string): Promise<Stude
 
 export async function collectFee(
   sid: string,
-  p: { studentId: string; amount: number; mode: string; head?: string; reference?: string; note?: string },
+  p: { studentId: string; amount: number; mode: string; head?: string; reference?: string; note?: string; date?: string },
 ): Promise<{ item: FeePayment & { studentName: string; className: string; section?: string; admissionNo: string; collectedBy?: string }; fees: ParentChild["fees"] }> {
   return (await schoolHttp.post(`${sidPath(sid)}/payments`, p)).data;
 }

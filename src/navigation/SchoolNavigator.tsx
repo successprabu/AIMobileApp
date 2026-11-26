@@ -19,6 +19,8 @@ import ReportsScreen from "../screens/school/ReportsScreen";
 import UsersScreen from "../screens/school/UsersScreen";
 import OnlinePaymentsScreen from "../screens/school/OnlinePaymentsScreen";
 import SchoolSettingsScreen from "../screens/school/SchoolSettingsScreen";
+import SchoolPickScreen from "../screens/school/SchoolPickScreen";
+import NotificationBell from "../screens/school/NotificationBell";
 import ParentHomeScreen from "../screens/school/ParentHomeScreen";
 import StaffHomeScreen from "../screens/school/StaffHomeScreen";
 import SchoolChangePasswordScreen from "../screens/school/SchoolChangePasswordScreen";
@@ -54,6 +56,7 @@ export type SchoolStackParamList = {
   SchoolUsers: undefined;
   SchoolOnlinePayments: undefined;
   SchoolSettings: undefined;
+  SchoolPick: undefined;
 };
 
 const Stack = createNativeStackNavigator<SchoolStackParamList>();
@@ -112,6 +115,7 @@ function SchoolStack() {
         headerBackground: () => <HeaderBackground color={SCHOOL_GREEN} />,
         headerTitle: ({ children }) => <HeaderTitle tint="#fff">{children}</HeaderTitle>,
         ...(DETAIL.has(route.name) || mustChange ? {} : { headerLeft: () => <MenuButton tint="#fff" /> }),
+        ...(mustChange ? {} : { headerRight: () => <NotificationBell /> }),
         contentStyle: { backgroundColor: c.background },
         animation: "slide_from_right",
       })}
@@ -145,6 +149,7 @@ function SchoolStack() {
           <Stack.Screen name="SchoolUsers" component={UsersScreen} options={{ title: "Staff & logins" }} />
           <Stack.Screen name="SchoolOnlinePayments" component={OnlinePaymentsScreen} options={{ title: "Online payments" }} />
           <Stack.Screen name="SchoolSettings" component={SchoolSettingsScreen} options={{ title: "School settings" }} />
+          <Stack.Screen name="SchoolPick" component={SchoolPickScreen} options={{ title: "Choose school" }} />
         </>
       )}
     </Stack.Navigator>

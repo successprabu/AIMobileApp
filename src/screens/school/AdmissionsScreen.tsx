@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { ActivityIndicator, Text } from "react-native-paper";
+import { ActivityIndicator, Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { applications, enquiries, schoolError, setApplicationStatus, setEnquiryStatus, type Application, type Enquiry } from "../../api/school";
-import { admitApplication, applicationFileToShare, getSettings } from "../../api/schoolErp";
+import { admitApplication, applicationFileToShare, getSettings, updateApplication } from "../../api/schoolErp";
+import type { Application as FullApplication } from "../../school/erp";
 import * as Sharing from "expo-sharing";
 import { PillButton } from "../../components/ui/AuthUi";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
@@ -39,6 +40,37 @@ export default function AdmissionsScreen() {
   const [classes, setClasses] = useState<string[]>([]);
   const [sections, setSections] = useState<string[]>([]);
   const [done, setDone] = useState("");
+  // Managing one application: status, a note for the office, a message the parent sees, and the history.
+  const [manage, setManage] = useState<FullApplication | null>(null);
+  const [mStatus, setMStatus] = useState("");
+  const [mNote, setMNote] = useState("");
+  const [mPublic, setMPublic] = useState("");
+  const [mBusy, setMBusy] = useState(false);
+  const openManage = (a: Application) => {
+    const full = a as unknown as FullApplication;
+    setManage(full);
+    setMStatus(full.status);
+    setMNote("");
+    setMPublic(full.publicNote ?? "");
+  };
+  const saveManage = async () => {
+    if (!manage) return;
+    setMBusy(true);
+    try {
+      const item = await updateApplication(sid, manage.id, {
+        ...(mStatus !== manage.status ? { status: mStatus } : {}),
+        ...(mNote.trim() ? { note: mNote.trim() } : {}),
+        publicNote: mPublic.trim(),
+      });
+      setApps((x) => ({ ...x, items: x.items.map((i) => (i.id === item.id ? (item as unknown as Application) : i)) }));
+      setManage(null);
+      setDone(mStatus !== manage.status ? `✅ Status is now ${mStatus}. The parent is emailed.` : "✅ Saved.");
+    } catch (e) {
+      setError(schoolError(e, "Could not save."));
+    } finally {
+      setMBusy(false);
+    }
+  };
   const canAdmit = school?.user.role === "superadmin" || !!school?.permissions.includes("students.manage");
   useEffect(() => {
     void getSettings(sid)
@@ -175,7 +207,7 @@ export default function AdmissionsScreen() {
                   <Text style={{ color: c.text, fontWeight: "800", flex: 1 }}>
                     {a.student.name} · {a.student.className}
                   </Text>
-                  {badge(a.status, () => setPick({ kind: "application", item: a }))}
+                  {badge(a.status, () => openManage(a))}
                 </View>
                 <Text style={{ color: c.textMuted, fontSize: 12 }}>
                   {a.applicationNo} · {day(a.createdAt)} · {a.parent.name}
@@ -213,6 +245,36 @@ export default function AdmissionsScreen() {
         <Text style={{ color: c.text, fontWeight: "700", marginTop: 12 }}>Section</Text>
         <Chips items={["", ...sections]} value={admitSec} onChange={setAdmitSec} label={(v) => v || "—"} color={SCHOOL_GREEN} />
         <PillButton label="Admit" icon="account-check" color={SCHOOL_GREEN} onPress={() => void doAdmit()} loading={admitBusy} disabled={admitBusy || !admitCls} style={{ marginTop: 16 }} />
+      </Sheet>
+      <Sheet visible={!!manage} title={`${manage?.applicationNo ?? ""} · ${manage?.student.name ?? ""}`} onClose={() => setManage(null)}>
+        {manage ? (
+          <>
+            <Text style={{ color: c.text, fontWeight: "700" }}>Status</Text>
+            <Chips items={apps.statuses.filter((x) => x !== "Admitted" || manage.status === "Admitted")} value={mStatus} onChange={setMStatus} color={SCHOOL_GREEN} />
+            <TextInput mode="outlined" label="Message the parent sees (status check, email)" value={mPublic} onChangeText={setMPublic} multiline maxLength={300} style={{ marginTop: 10 }} activeOutlineColor={SCHOOL_GREEN} />
+            <TextInput mode="outlined" label="Office note (only staff see this)" value={mNote} onChangeText={setMNote} multiline maxLength={300} style={{ marginTop: 10 }} activeOutlineColor={SCHOOL_GREEN} />
+            <PillButton label="Save" icon="content-save-outline" color={SCHOOL_GREEN} onPress={() => void saveManage()} loading={mBusy} disabled={mBusy} style={{ marginTop: 14 }} />
+            <Text style={{ color: c.text, fontWeight: "700", marginTop: 18 }}>🕘 History</Text>
+            {[...(manage.history ?? [])].reverse().map((h, i) => (
+              <View key={i} style={[styles.option, { borderColor: c.border, paddingVertical: 8, alignItems: "flex-start" }]}>
+                <View style={[styles.dot, { backgroundColor: tone(h.status), marginTop: 5 }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.text, fontWeight: "700" }}>{h.status}</Text>
+                  <Text style={{ color: c.textMuted, fontSize: 12 }}>
+                    {day(h.at)} · {h.by}
+                  </Text>
+                  {h.note ? <Text style={{ color: c.text, fontSize: 13 }}>{h.note}</Text> : null}
+                </View>
+              </View>
+            ))}
+            {manage.message ? (
+              <>
+                <Text style={{ color: c.text, fontWeight: "700", marginTop: 14 }}>✉️ Parent's message</Text>
+                <Text style={{ color: c.text }}>{manage.message}</Text>
+              </>
+            ) : null}
+          </>
+        ) : null}
       </Sheet>
       <Sheet visible={!!pick} title="Change status" onClose={() => setPick(null)}>
         {(pick?.kind === "enquiry" ? enq.statuses : apps.statuses.filter((s) => s !== "Admitted")).map((s) => (

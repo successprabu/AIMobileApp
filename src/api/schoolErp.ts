@@ -168,3 +168,20 @@ export async function onlinePayments(sid: string): Promise<OnlinePaymentSettings
 export async function saveOnlinePayments(sid: string, body: { enabled: boolean; keyId: string; keySecret?: string }): Promise<OnlinePaymentSettings> {
   return (await schoolHttp.put<OnlinePaymentSettings>(`${s(sid)}/online-payments`, body)).data;
 }
+
+// ---------------- super admin: all schools (same list as the website's school picker)
+export async function allSchools(): Promise<{ id: string; label: string }[]> {
+  const r = await schoolHttp.get<{ schools?: { id: string; label?: string; name?: string }[] }>(`${SCHOOL_SITE}/config/site.json`, { baseURL: "" });
+  return (r.data.schools ?? []).map((x) => ({ id: x.id, label: x.label ?? x.name ?? x.id }));
+}
+
+// ---------------- notifications bell (new enquiries)
+export type BellItem = { id: string; schoolId: string; type: string; parentName: string; grade: string; createdAt: string };
+export async function bell(sid: string): Promise<{ count: number; items: BellItem[] }> {
+  return (await schoolHttp.get("/admin/notifications", { params: { schoolId: sid } })).data;
+}
+
+// ---------------- demo data (settings)
+export async function demoData(sid: string, action: "load" | "remove"): Promise<{ students?: number; removedStudents?: number }> {
+  return (await schoolHttp.post(`${s(sid)}/demo-data`, { action }, { timeout: 60000 })).data;
+}
