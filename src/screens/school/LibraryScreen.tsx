@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Linking, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import { ActivityIndicator, FAB, IconButton, Text, TextInput } from "react-native-paper";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { schoolError } from "../../api/school";
 import { issueBook, library, returnBook, saveBooks, studentList } from "../../api/schoolErp";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
@@ -34,6 +36,8 @@ export default function LibraryScreen() {
   const [days, setDays] = useState("14");
   const [editBook, setEditBook] = useState<{ i: number; b: Book } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulk, setBulk] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -131,6 +135,43 @@ export default function LibraryScreen() {
       { text: "Remove", style: "destructive", onPress: () => void saveBooks(sid, books.filter((_, j) => j !== i)).then(setBooks).catch((e) => setNote({ kind: "error", text: schoolError(e, "Could not remove.") })) },
     ]);
 
+  /** One book per line: Title, Author, Category, Copies, Shelf (same as the website). */
+  const addBulk = async () => {
+    const rows = bulk
+      .split("\n")
+      .map((l) => l.split(/\t|,/).map((x) => x.trim()))
+      .filter((r) => r[0]);
+    if (!rows.length) return;
+    let n = books.length;
+    const added: Book[] = rows.map((r) => ({ accessionNo: `B${String(++n).padStart(4, "0")}`, title: r[0], author: r[1] ?? "", category: r[2] ?? "", copies: Number(r[3]) || 1, shelf: r[4] ?? "" }));
+    setBusy(true);
+    try {
+      setBooks(await saveBooks(sid, [...books, ...added]));
+      setBulk("");
+      setBulkOpen(false);
+      setNote({ kind: "success", text: `📚 ${added.length} books added.` });
+    } catch (e) {
+      Alert.alert("Could not add", schoolError(e, "Please check the lines."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportOverdue = async () => {
+    const cell = (v: string | number) => {
+      const t = String(v ?? "");
+      return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    };
+    const rows = overdue.map((l) => {
+      const s = students.find((x) => x.id === l.studentId);
+      return [l.title, l.accessionNo, l.studentName, l.className, s?.parentPhone ?? "", l.issuedOn, l.dueDate, late(l)];
+    });
+    const csv = "\ufeff" + [["Book", "Accession no", "Student", "Class", "Parent mobile", "Issued", "Due", "Days late"], ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+    const uri = `${FileSystem.cacheDirectory ?? ""}library-overdue-${today}.csv`;
+    await FileSystem.writeAsStringAsync(uri, csv);
+    await Sharing.shareAsync(uri, { mimeType: "text/csv", dialogTitle: "Overdue books" });
+  };
+
   if (loading) {
     return (
       <View style={[ui.center, { backgroundColor: c.background }]}>
@@ -147,6 +188,8 @@ export default function LibraryScreen() {
       </Text>
       <Chips<Tab> items={["Issued", "Overdue", "Books"]} value={tab} onChange={setTab} label={(x) => (x === "Overdue" ? `Overdue (${overdue.length})` : x)} color={SCHOOL_GREEN} />
       <TextInput mode="outlined" dense placeholder="Search" value={q} onChangeText={setQ} left={<TextInput.Icon icon="magnify" />} activeOutlineColor={SCHOOL_GREEN} />
+      {tab === "Books" ? <PillButton label="Add many books" icon="playlist-plus" variant="soft" color={SCHOOL_GREEN} onPress={() => setBulkOpen(true)} /> : null}
+      {tab === "Overdue" && overdue.length ? <PillButton label="Export overdue list (Excel)" icon="file-excel-outline" variant="soft" color={SCHOOL_GREEN} onPress={() => void exportOverdue().catch(() => setNote({ kind: "error", text: "Could not make the file." }))} /> : null}
     </View>
   );
 
@@ -246,6 +289,11 @@ export default function LibraryScreen() {
         <PillButton label="Issue" icon="book-arrow-right" color={SCHOOL_GREEN} onPress={() => void doIssue()} loading={busy} disabled={busy || !pickBook || !pickKid} style={{ marginTop: 14 }} />
       </Sheet>
 
+      <Sheet visible={bulkOpen} title="Add many books" onClose={() => setBulkOpen(false)}>
+        <Text style={{ color: c.textMuted }}>One book per line: Title, Author, Category, Copies, Shelf. Paste from Excel works too.</Text>
+        <TextInput mode="outlined" multiline numberOfLines={8} value={bulk} onChangeText={setBulk} placeholder="Panchatantra Tales, Vishnu Sharma, Stories, 2, A1" style={{ marginTop: 10, minHeight: 160 }} activeOutlineColor={SCHOOL_GREEN} />
+        <PillButton label={`Add ${bulk.split("\n").filter((l) => l.trim()).length} books`} icon="playlist-plus" color={SCHOOL_GREEN} onPress={() => void addBulk()} loading={busy} disabled={busy || !bulk.trim()} style={{ marginTop: 14 }} />
+      </Sheet>
       <Sheet visible={!!editBook} title={editBook?.i === -1 ? "Add book" : "Edit book"} onClose={() => setEditBook(null)}>
         {editBook ? (
           <>

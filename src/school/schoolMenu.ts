@@ -23,7 +23,8 @@ export type SchoolScreen =
   | "SchoolReports"
   | "SchoolUsers"
   | "SchoolOnlinePayments"
-  | "SchoolSettings";
+  | "SchoolSettings"
+  | "SchoolPick";
 
 export type MenuItem = {
   key: string;

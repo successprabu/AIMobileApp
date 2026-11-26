@@ -18,7 +18,12 @@ type Ctx = {
   /** null = not chosen yet (the person has both logins: the app asks). */
   activeApp: ActiveApp | null;
   setActiveApp: (a: ActiveApp | null) => Promise<void>;
+  /** Super admin: the school the ERP screens work on (the website's school picker). */
+  pickedSchool: { id: string; label: string } | null;
+  pickSchool: (p: { id: string; label: string } | null) => Promise<void>;
 };
+
+const PICK_KEY = "schoolPicked";
 
 const SchoolAuthContext = createContext<Ctx | undefined>(undefined);
 
@@ -26,6 +31,21 @@ export function SchoolAuthProvider({ children }: { children: React.ReactNode }) 
   const [school, setSchool] = useState<SchoolSession | null>(null);
   const [activeApp, setActive] = useState<ActiveApp | null>(null);
   const [ready, setReady] = useState(false);
+  const [picked, setPicked] = useState<{ id: string; label: string } | null>(null);
+  useEffect(() => {
+    void AsyncStorage.getItem(PICK_KEY).then((v) => {
+      try {
+        if (v) setPicked(JSON.parse(v) as { id: string; label: string });
+      } catch {
+        /* ignore */
+      }
+    });
+  }, []);
+  const pickSchool = useCallback(async (p: { id: string; label: string } | null) => {
+    setPicked(p);
+    if (p) await AsyncStorage.setItem(PICK_KEY, JSON.stringify(p));
+    else await AsyncStorage.removeItem(PICK_KEY);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -93,9 +113,17 @@ export function SchoolAuthProvider({ children }: { children: React.ReactNode }) 
     return () => clearTimeout(id);
   }, [school, schoolSignOut]);
 
+  // The super admin works on the school picked in the menu: screens read school.user.schoolId as for any admin.
+  const shown = useMemo(
+    () =>
+      school && school.user.role === "superadmin" && picked
+        ? { ...school, schoolName: picked.label, user: { ...school.user, schoolId: picked.id } }
+        : school,
+    [school, picked],
+  );
   const value = useMemo(
-    () => ({ school, ready, schoolSignIn, schoolSignOut, updateSchool, activeApp, setActiveApp }),
-    [school, ready, schoolSignIn, schoolSignOut, updateSchool, activeApp, setActiveApp],
+    () => ({ school: shown, ready, schoolSignIn, schoolSignOut, updateSchool, activeApp, setActiveApp, pickedSchool: picked, pickSchool }),
+    [shown, ready, schoolSignIn, schoolSignOut, updateSchool, activeApp, setActiveApp, picked, pickSchool],
   );
   return <SchoolAuthContext.Provider value={value}>{children}</SchoolAuthContext.Provider>;
 }

@@ -102,6 +102,7 @@ export default function SchoolDrawerContent(props: DrawerContentComponentProps) 
         </Text>
       </View>
       <ScrollView contentContainerStyle={{ paddingVertical: 8 }}>
+        {school.user.role === "superadmin" ? row("pick", "🔄", "Switch school", () => { close(); openSchoolScreen("SchoolPick"); }) : null}
         {!isParent ? row("home", "🏠", "Home", () => { close(); openSchoolScreen("SchoolHome"); }) : null}
         {isParent
           ? PARENT_ITEMS.map((p) => row(p.section, p.emoji, p.label, () => { close(); openSchoolScreen("SchoolHome", { section: p.section, at: Date.now() }); }))

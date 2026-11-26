@@ -3,7 +3,7 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSchoolAuth } from "../context/SchoolAuthContext";
 import { useAppTheme } from "../hooks/useAppTheme";
-import { HeaderBackground, HeaderTitle, MenuButton } from "../components/ui/AppBars";
+import SchoolHeader from "./SchoolHeader";
 import SchoolDrawerContent from "./SchoolDrawerContent";
 import { setSchoolStack } from "../school/schoolMenu";
 import DashboardScreen from "../screens/school/DashboardScreen";
@@ -19,6 +19,7 @@ import ReportsScreen from "../screens/school/ReportsScreen";
 import UsersScreen from "../screens/school/UsersScreen";
 import OnlinePaymentsScreen from "../screens/school/OnlinePaymentsScreen";
 import SchoolSettingsScreen from "../screens/school/SchoolSettingsScreen";
+import SchoolPickScreen from "../screens/school/SchoolPickScreen";
 import ParentHomeScreen from "../screens/school/ParentHomeScreen";
 import StaffHomeScreen from "../screens/school/StaffHomeScreen";
 import SchoolChangePasswordScreen from "../screens/school/SchoolChangePasswordScreen";
@@ -29,7 +30,6 @@ import CollectFeeScreen from "../screens/school/CollectFeeScreen";
 import AdmissionsScreen from "../screens/school/AdmissionsScreen";
 import BusAlertScreen from "../screens/school/BusAlertScreen";
 import SchoolBottomBar, { type ParentSection, type SchoolTabNav } from "../screens/school/SchoolBottomBar";
-import { SCHOOL_GREEN } from "../screens/school/schoolUi";
 import { View } from "react-native";
 
 export type SchoolStackParamList = {
@@ -54,13 +54,33 @@ export type SchoolStackParamList = {
   SchoolUsers: undefined;
   SchoolOnlinePayments: undefined;
   SchoolSettings: undefined;
+  SchoolPick: undefined;
 };
 
 const Stack = createNativeStackNavigator<SchoolStackParamList>();
 const Drawer = createDrawerNavigator();
 
-/** Detail screens keep the back arrow; every other School screen shows the menu button. */
-const DETAIL = new Set(["SchoolStudent", "SchoolStudentForm"]);
+const TITLES: Record<string, string> = {
+  SchoolAttendance: "Attendance",
+  SchoolMarks: "Marks",
+  SchoolPost: "Homework & circulars",
+  SchoolCollectFee: "Collect fee",
+  SchoolAdmissions: "Enquiries & applications",
+  SchoolBusAlert: "Bus alert",
+  SchoolDashboard: "Dashboard",
+  SchoolAi: "AI assistant",
+  SchoolStudents: "Students",
+  SchoolStudent: "Student",
+  SchoolFees: "Fees",
+  SchoolTransport: "Transport",
+  SchoolLibrary: "Library",
+  SchoolIdCards: "ID cards & hall tickets",
+  SchoolReports: "Reports",
+  SchoolUsers: "Staff & logins",
+  SchoolOnlinePayments: "Online payments",
+  SchoolSettings: "School settings",
+  SchoolPick: "Choose school",
+};
 
 /** Lets the side menu and bottom bar open screens in this stack. */
 function StackLink({ navigation }: { navigation: unknown }) {
@@ -91,12 +111,31 @@ function SchoolStack() {
   if (!school) return null;
   const isParent = school.user.role === "parent";
   const mustChange = !!school.user.mustChangePassword;
+  const titleFor = (name: string, params?: { id?: string }) =>
+    name === "SchoolHome"
+      ? school.schoolName ?? "School"
+      : name === "SchoolChangePassword"
+        ? mustChange
+          ? "New password"
+          : "Change password"
+        : name === "SchoolStudentForm"
+          ? params?.id
+            ? "Edit student"
+            : "New student"
+          : TITLES[name] ?? "School";
 
   return (
     <Stack.Navigator
       screenLayout={({ children, navigation, route }) => (
         <View style={{ flex: 1, backgroundColor: c.background }}>
           <StackLink navigation={navigation} />
+          <SchoolHeader
+            navigation={navigation as unknown as Parameters<typeof SchoolHeader>[0]["navigation"]}
+            routeKey={route.key}
+            routeName={route.name}
+            title={titleFor(route.name, route.params as { id?: string } | undefined)}
+            showMenu={!mustChange}
+          />
           <View style={{ flex: 1 }}>{children}</View>
           <SchoolBottomBar
             navigation={navigation as unknown as SchoolTabNav}
@@ -105,16 +144,12 @@ function SchoolStack() {
           />
         </View>
       )}
-      screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: SCHOOL_GREEN },
-        headerTintColor: "#fff",
-        headerShadowVisible: false,
-        headerBackground: () => <HeaderBackground color={SCHOOL_GREEN} />,
-        headerTitle: ({ children }) => <HeaderTitle tint="#fff">{children}</HeaderTitle>,
-        ...(DETAIL.has(route.name) || mustChange ? {} : { headerLeft: () => <MenuButton tint="#fff" /> }),
+      screenOptions={{
+        // Our own SchoolHeader (in screenLayout) replaces Android's header.
+        headerShown: false,
         contentStyle: { backgroundColor: c.background },
         animation: "slide_from_right",
-      })}
+      }}
     >
       {mustChange ? (
         <Stack.Screen name="SchoolChangePassword" component={SchoolChangePasswordScreen} options={{ title: "New password" }} />
@@ -145,6 +180,7 @@ function SchoolStack() {
           <Stack.Screen name="SchoolUsers" component={UsersScreen} options={{ title: "Staff & logins" }} />
           <Stack.Screen name="SchoolOnlinePayments" component={OnlinePaymentsScreen} options={{ title: "Online payments" }} />
           <Stack.Screen name="SchoolSettings" component={SchoolSettingsScreen} options={{ title: "School settings" }} />
+          <Stack.Screen name="SchoolPick" component={SchoolPickScreen} options={{ title: "Choose school" }} />
         </>
       )}
     </Stack.Navigator>

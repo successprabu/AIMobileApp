@@ -40,6 +40,11 @@ export default function StaffHomeScreen() {
       <Rise>
         <SchoolHero title={school.user.name} lines={[ROLE[school.user.role] ?? school.user.role]} />
       </Rise>
+      {school.user.schoolId === "*" ? (
+        <Pressable onPress={() => openSchoolScreen("SchoolPick")}>
+          <Notice kind="info" text="🏫 Super admin: tap here to choose the school to work on." />
+        </Pressable>
+      ) : null}
       {pending ? <Notice kind="info" text={`${pending} day${pending > 1 ? "s" : ""} of attendance waiting on this phone; it is sent when you are online.`} /> : null}
       {groups.map((g) => (
         <View key={g.section}>
