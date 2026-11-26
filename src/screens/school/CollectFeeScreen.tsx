@@ -150,7 +150,7 @@ export default function CollectFeeScreen() {
           </Section>
 
           {done ? (
-            <Section icon="check-circle" title={`Saved · receipt ${done.receiptNo}`}>
+            <Section icon="check-circle" title={`🎉 Saved · receipt ${done.receiptNo}`}>
               <Text style={{ color: c.text }}>
                 {inr(done.amount)} by {done.mode}. Balance now {inr(done.balance ?? 0)}. The parent gets a notification in the app.
               </Text>

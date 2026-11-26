@@ -18,9 +18,12 @@ import PostNoticeScreen from "../screens/school/PostNoticeScreen";
 import CollectFeeScreen from "../screens/school/CollectFeeScreen";
 import AdmissionsScreen from "../screens/school/AdmissionsScreen";
 import BusAlertScreen from "../screens/school/BusAlertScreen";
+import SchoolBottomBar, { type ParentSection, type SchoolTabNav } from "../screens/school/SchoolBottomBar";
+import { SCHOOL_GREEN } from "../screens/school/schoolUi";
+import { View } from "react-native";
 
 export type SchoolStackParamList = {
-  SchoolHome: undefined;
+  SchoolHome: { section?: ParentSection; at?: number } | undefined;
   SchoolChangePassword: undefined;
   SchoolAttendance: undefined;
   SchoolMarks: undefined;
@@ -101,13 +104,23 @@ export default function SchoolNavigator() {
 
   return (
     <Stack.Navigator
+      screenLayout={({ children, navigation, route }) => (
+        <View style={{ flex: 1, backgroundColor: c.background }}>
+          <View style={{ flex: 1 }}>{children}</View>
+          <SchoolBottomBar
+            navigation={navigation as unknown as SchoolTabNav}
+            routeName={route.name}
+            section={(route.params as { section?: ParentSection } | undefined)?.section}
+          />
+        </View>
+      )}
       screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: c.header },
-        headerTintColor: c.headerText,
+        headerStyle: { backgroundColor: SCHOOL_GREEN },
+        headerTintColor: "#fff",
         headerShadowVisible: false,
-        headerBackground: () => <HeaderBackground color={c.header} />,
-        headerTitle: ({ children }) => <HeaderTitle tint={c.headerText}>{children}</HeaderTitle>,
-        headerRight: () => <SchoolMenu tint={c.headerText} onChangePassword={() => navigation.navigate("SchoolChangePassword")} />,
+        headerBackground: () => <HeaderBackground color={SCHOOL_GREEN} />,
+        headerTitle: ({ children }) => <HeaderTitle tint="#fff">{children}</HeaderTitle>,
+        headerRight: () => <SchoolMenu tint="#fff" onChangePassword={() => navigation.navigate("SchoolChangePassword")} />,
         contentStyle: { backgroundColor: c.background },
         animation: "slide_from_right",
       })}
@@ -119,7 +132,7 @@ export default function SchoolNavigator() {
           <Stack.Screen
             name="SchoolHome"
             component={isParent ? ParentHomeScreen : StaffHomeScreen}
-            options={{ title: isParent ? school.schoolName ?? "School" : "School ERP" }}
+            options={{ title: school.schoolName ?? "School" }}
           />
           <Stack.Screen name="SchoolChangePassword" component={SchoolChangePasswordScreen} options={{ title: "Change password" }} />
           <Stack.Screen name="SchoolAttendance" component={AttendanceScreen} options={{ title: "Attendance" }} />

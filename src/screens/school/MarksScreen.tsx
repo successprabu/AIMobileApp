@@ -84,7 +84,7 @@ export default function MarksScreen() {
         }
         return { ...d, marks };
       });
-      setNote(errors.length ? { kind: "error", text: errors.join("\n") } : { kind: "success", text: `${subject} marks saved for ${cls} · ${exam.name}.` });
+      setNote(errors.length ? { kind: "error", text: errors.join("\n") } : { kind: "success", text: `📝 ${subject} marks saved for ${cls} · ${exam.name}.` });
     } catch (e) {
       setNote({ kind: "error", text: schoolError(e, "Could not save. Check the network and try again.") });
     } finally {

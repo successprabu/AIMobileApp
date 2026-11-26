@@ -141,7 +141,7 @@ export default function AttendanceScreen() {
     setNote(null);
     try {
       const n = await putAttendance(sid, date, records);
-      setNote({ kind: "success", text: `Saved ${n} for ${cls}${sec !== "All" && sections.length ? ` ${sec}` : ""} on ${day(date)}.` });
+      setNote({ kind: "success", text: `✅ Saved ${n} for ${cls}${sec !== "All" && sections.length ? ` ${sec}` : ""} on ${day(date)}.` });
       setDirty(false);
     } catch (e) {
       if (isOffline(e)) {

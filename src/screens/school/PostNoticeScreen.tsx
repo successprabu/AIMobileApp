@@ -90,7 +90,7 @@ export default function PostNoticeScreen() {
     try {
       const attachment = photo ? { fileId: await uploadCircularFile(sid, photo.dataUrl), name: `${TYPE_LABEL[type]} photo.jpg` } : null;
       await postCircular(sid, { type, title: title.trim(), text: text.trim(), classes: picked, dueDate: type === "homework" ? due : "", attachment });
-      setNote({ kind: "success", text: `Posted. Parents of ${picked.length ? picked.join(", ") : "all classes"} see it in the app and get a notification.` });
+      setNote({ kind: "success", text: `📣 Posted. Parents of ${picked.length ? picked.join(", ") : "all classes"} see it in the app and get a notification.` });
       setTitle("");
       setText("");
       setDue("");

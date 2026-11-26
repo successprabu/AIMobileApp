@@ -10,19 +10,20 @@ import { SCHOOL_SITE } from "../../api/school";
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, Rise } from "../../components/ui/AuthUi";
+import { SchoolHero } from "./schoolUi";
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
 
 type AppScreen = Exclude<keyof SchoolStackParamList, "SchoolHome" | "SchoolChangePassword">;
 
 /** In the app: each screen with the permission that shows it. */
-const IN_APP: { screen: AppScreen; label: string; icon: Icon; perms: string[] }[] = [
-  { screen: "SchoolAttendance", label: "Attendance", icon: "calendar-check", perms: ["attendance.students"] },
-  { screen: "SchoolMarks", label: "Enter marks", icon: "clipboard-text-outline", perms: ["marks.manage"] },
-  { screen: "SchoolPost", label: "Homework & circulars", icon: "bullhorn-outline", perms: ["circulars", "marks.manage", "students.manage"] },
-  { screen: "SchoolCollectFee", label: "Collect fee", icon: "cash-check", perms: ["fees.collect"] },
-  { screen: "SchoolAdmissions", label: "Enquiries & applications", icon: "inbox-arrow-down", perms: ["enquiries"] },
-  { screen: "SchoolBusAlert", label: "Bus alert", icon: "bus-alert", perms: ["transport"] },
+const IN_APP: { screen: AppScreen; label: string; icon: Icon; emoji: string; tint: string; perms: string[] }[] = [
+  { screen: "SchoolAttendance", label: "Attendance", icon: "calendar-check", emoji: "✅", tint: "#dcfce7", perms: ["attendance.students"] },
+  { screen: "SchoolMarks", label: "Enter marks", icon: "clipboard-text-outline", emoji: "📝", tint: "#e0e7ff", perms: ["marks.manage"] },
+  { screen: "SchoolPost", label: "Homework & circulars", icon: "bullhorn-outline", emoji: "📚", tint: "#fef3c7", perms: ["circulars", "marks.manage", "students.manage"] },
+  { screen: "SchoolCollectFee", label: "Collect fee", icon: "cash-check", emoji: "💰", tint: "#d1fae5", perms: ["fees.collect"] },
+  { screen: "SchoolAdmissions", label: "Enquiries & applications", icon: "inbox-arrow-down", emoji: "📥", tint: "#fce7f3", perms: ["enquiries"] },
+  { screen: "SchoolBusAlert", label: "Bus alert", icon: "bus-alert", emoji: "🚌", tint: "#ffedd5", perms: ["transport"] },
 ];
 
 /** On the website (bigger screens): same permissions as the website's menu. */
@@ -57,10 +58,16 @@ export default function StaffHomeScreen() {
   const can = (perms: string[]) => school.user.role === "superadmin" || perms.some((p) => school.permissions.includes(p));
   const pages = PAGES.filter((p) => can(p.perms));
   const screens = IN_APP.filter((p) => can(p.perms));
-  const card = (key: string, label: string, icon: Icon, onPress: () => void, i: number, web?: boolean) => (
+  const card = (key: string, label: string, icon: Icon, onPress: () => void, i: number, web?: boolean, emoji?: string, tint?: string) => (
     <Rise key={key} delay={i * 40} style={styles.cell}>
       <Pressable onPress={onPress} style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]} accessibilityRole="button" accessibilityLabel={label}>
-        <MaterialCommunityIcons name={icon} size={28} color={web ? c.textMuted : "#059669"} />
+        {emoji ? (
+          <View style={[styles.emojiTile, { backgroundColor: tint }]}>
+            <Text style={{ fontSize: 26 }}>{emoji}</Text>
+          </View>
+        ) : (
+          <MaterialCommunityIcons name={icon} size={28} color={c.textMuted} />
+        )}
         <Text style={{ color: c.text, fontWeight: "700", textAlign: "center" }}>{label}</Text>
         {web ? <MaterialCommunityIcons name="open-in-new" size={12} color={c.textMuted} /> : null}
       </Pressable>
@@ -70,23 +77,15 @@ export default function StaffHomeScreen() {
   return (
     <ScrollView style={{ backgroundColor: c.background }} contentContainerStyle={styles.wrap}>
       <Rise>
-        <View style={[styles.hero, { backgroundColor: c.primary }]}>
-          <MaterialCommunityIcons name="school" size={34} color="#fff" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>{school.schoolName ?? school.user.schoolId}</Text>
-            <Text style={styles.heroSub}>
-              {school.user.name} · {ROLE[school.user.role] ?? school.user.role}
-            </Text>
-          </View>
-        </View>
+        <SchoolHero title={school.user.name} lines={[ROLE[school.user.role] ?? school.user.role]} />
       </Rise>
       {pending ? <Notice kind="info" text={`${pending} day${pending > 1 ? "s" : ""} of attendance waiting on this phone; it is sent when you are online.`} /> : null}
       {screens.length ? (
-        <View style={styles.grid}>{screens.map((p, i) => card(p.screen, p.label, p.icon, () => navigation.navigate(p.screen), i))}</View>
+        <View style={styles.grid}>{screens.map((p, i) => card(p.screen, p.label, p.icon, () => navigation.navigate(p.screen), i, false, p.emoji, p.tint))}</View>
       ) : null}
       {pages.length ? (
         <>
-          <Text style={{ color: c.textMuted, fontWeight: "700", marginTop: 4 }}>On the website</Text>
+          <Text style={{ color: c.textMuted, fontWeight: "700", marginTop: 4 }}>🌐 On the website (bigger screens)</Text>
           <View style={styles.grid}>
             {pages.map((p, i) => card(p.path, p.label, p.icon, () => void Linking.openURL(`${SCHOOL_SITE}/admin/${p.path}`), i + screens.length, true))}
           </View>
@@ -97,7 +96,8 @@ export default function StaffHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, paddingBottom: 40, gap: 14 },
+  wrap: { padding: 16, paddingBottom: 24, gap: 14 },
+  emojiTile: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   hero: { flexDirection: "row", alignItems: "center", gap: 14, padding: 18, borderRadius: 20 },
   heroTitle: { color: "#fff", fontSize: 19, fontWeight: "800" },
   heroSub: { color: "#ffffffcc", marginTop: 2 },
