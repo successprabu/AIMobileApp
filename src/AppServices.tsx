@@ -10,6 +10,9 @@ import * as Application from "expo-application";
 import * as Notifications from "expo-notifications";
 import { useSchoolAuth } from "./context/SchoolAuthContext";
 import { registerSchoolPush } from "./school/push";
+import { useAuth } from "./context/AuthContext";
+import { registerMySuccessPush } from "./push/mysuccessPush";
+import { navigationRef } from "./navigation/navRef";
 
 const RELEASES = "https://api.github.com/repos/successprabu/AIMobileApp/releases/latest";
 const DOWNLOAD = "https://mysuccess.azurewebsites.net/download-app";
@@ -47,6 +50,20 @@ async function checkForUpdate() {
 export default function AppServices() {
   const { school, setActiveApp } = useSchoolAuth();
   const registeredFor = useRef<string | null>(null);
+  const { user } = useAuth();
+  const msRegistered = useRef<string | null>(null);
+
+  // DigiMoi / Mahal: register once per signed-in account.
+  useEffect(() => {
+    const key = user ? String(user.userName ?? user.token ?? "") : null;
+    if (!user?.token || !key) {
+      msRegistered.current = null;
+      return;
+    }
+    if (msRegistered.current === key) return;
+    msRegistered.current = key;
+    void registerMySuccessPush(user.token);
+  }, [user]);
 
   useEffect(() => {
     void checkForUpdate().catch(() => undefined);
@@ -66,13 +83,23 @@ export default function AppServices() {
   // Tapping a school notification opens the School part of the app.
   useEffect(() => {
     const open = (r: Notifications.NotificationResponse | null) => {
-      const data = r?.notification.request.content.data as { schoolId?: string } | undefined;
+      const data = r?.notification.request.content.data as { schoolId?: string; app?: string; screen?: string } | undefined;
       if (data?.schoolId && school) void setActiveApp("school");
+      else if (data?.app === "mysuccess" && user) {
+        // DigiMoi guest entry or Mahal booking request: open that list.
+        void setActiveApp("mysuccess");
+        const screen = data.screen === "guest-entries" ? "GuestEntries" : data.screen === "mahal-bookings" ? "MahalBookings" : null;
+        if (screen) {
+          setTimeout(() => {
+            if (navigationRef.isReady()) (navigationRef as unknown as { navigate: (n: string, p?: object) => void }).navigate("Home", { screen });
+          }, 700);
+        }
+      }
     };
     void Notifications.getLastNotificationResponseAsync().then(open).catch(() => undefined);
     const sub = Notifications.addNotificationResponseReceivedListener(open);
     return () => sub.remove();
-  }, [school, setActiveApp]);
+  }, [school, user, setActiveApp]);
 
   return null;
 }
