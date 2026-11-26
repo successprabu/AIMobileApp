@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
 import { ThemeProvider, useThemeContext } from "./src/context/ThemeContext";
 import { AuthProvider } from "./src/context/AuthContext";
+import { SchoolAuthProvider } from "./src/context/SchoolAuthContext";
 import { LanguageProvider } from "./src/context/LanguageContext";
 import { AutoSaveProvider } from "./src/context/AutoSaveContext";
 import RootNavigator from "./src/navigation/RootNavigator";
@@ -14,12 +15,14 @@ function AppInner() {
   return (
     <LanguageProvider>
       <AuthProvider>
+        <SchoolAuthProvider>
         <AutoSaveProvider>
         <PaperProvider theme={paperTheme}>
           <RootNavigator />
           <StatusBar style={mode === "dark" ? "light" : "dark"} />
         </PaperProvider>
         </AutoSaveProvider>
+        </SchoolAuthProvider>
       </AuthProvider>
     </LanguageProvider>
   );

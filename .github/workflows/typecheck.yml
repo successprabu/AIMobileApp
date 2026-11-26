@@ -1,0 +1,21 @@
+# Type-checks every branch except main (main builds and publishes the APK in android-apk.yml).
+# Push a branch to check the app compiles before merging to main.
+name: Type check
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit -p .

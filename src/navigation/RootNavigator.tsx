@@ -3,6 +3,9 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
+import { useSchoolAuth } from "../context/SchoolAuthContext";
+import SchoolNavigator from "./SchoolNavigator";
+import AppChooserScreen from "../screens/school/AppChooserScreen";
 import { useAppTheme } from "../hooks/useAppTheme";
 import LoginScreen from "../screens/LoginScreen";
 import RegistrationScreen from "../screens/RegistrationScreen";
@@ -15,6 +18,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function RootNavigator() {
   const { user, isReady } = useAuth();
+  const { school, ready: schoolReady, activeApp } = useSchoolAuth();
   const { theme, mode } = useAppTheme();
   const c = theme.colors;
 
@@ -30,7 +34,7 @@ export default function RootNavigator() {
     },
   };
 
-  if (!isReady) {
+  if (!isReady || !schoolReady) {
     return (
       <View style={[styles.centered, { backgroundColor: c.background }]}>
         <ActivityIndicator size="large" color={c.primary} />
@@ -40,7 +44,12 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      {user ? (
+      {user && school && !activeApp ? (
+        // Signed in to both DigiMoi / Mahal and School: ask which to open.
+        <AppChooserScreen />
+      ) : school && (!user || activeApp === "school") ? (
+        <SchoolNavigator />
+      ) : user ? (
         <AppDrawerNavigator />
       ) : (
         <Stack.Navigator

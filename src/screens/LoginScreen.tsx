@@ -22,6 +22,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LOGIN_API, LOGIN_USER_ACCOUNT_CHECK_API } from "../api/endpoints";
 import { useAuth } from "../context/AuthContext";
+import { useSchoolAuth } from "../context/SchoolAuthContext";
+import { schoolLogin, type SchoolSession } from "../api/school";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { useKeyboardAwareScroll } from "../hooks/useKeyboardAwareScroll";
 import type { AuthUser } from "../types/auth";
@@ -83,10 +85,16 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [welcome, setWelcome] = useState<AuthUser | null>(null);
+  /** Logins that worked: MySuccess (DigiMoi / Mahal) and/or School. Opened after the welcome animation. */
+  const [welcome, setWelcome] = useState<{ ms?: AuthUser; sc?: SchoolSession } | null>(null);
+  const { schoolSignIn, setActiveApp } = useSchoolAuth();
+  /** false when the MySuccess check found no account for this mobile number (it may still be a school login). */
+  const [msKnown, setMsKnown] = useState<boolean | null>(null);
+  const isMobile = (u: string) => /^\d+$/.test(u.trim());
 
   const validateLoginInput = (u: string, p: string): string | null => {
-    if (!/^\d+$/.test(u.trim())) {
+    // A mobile number (DigiMoi, Mahal, school parents) or a school username such as "myschool.admin".
+    if (!isMobile(u) && !/^[a-z0-9][a-z0-9._-]{2,59}$/i.test(u.trim())) {
       return t("mobile_invalid_mobile", {
         defaultValue: "Please enter a valid mobile number.",
       });
@@ -101,6 +109,8 @@ export default function LoginScreen() {
 
   const handleUsernameBlur = async () => {
     if (!username.trim()) return;
+    setMsKnown(null);
+    if (!isMobile(username)) return; // school staff username: no MySuccess account check
     setLoginError("");
     setCheckingUser(true);
     try {
@@ -124,6 +134,7 @@ export default function LoginScreen() {
           };
         });
 
+        setMsKnown(true);
         if (options.length === 1) {
           setUserType(options[0].userType);
           setUserTypeDescription(options[0].userTypeDescription);
@@ -134,7 +145,8 @@ export default function LoginScreen() {
           setUserTypeDescription(options[0].userTypeDescription);
         }
       } else {
-        setLoginError(t("no_user_found"));
+        // Not a DigiMoi / Mahal account; it may still be a school parent's mobile number.
+        setMsKnown(false);
         setUserTypes([]);
       }
     } catch {
@@ -155,38 +167,41 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const payload = {
-        username: username.trim(),
-        password,
-        userType,
-        userTypeDescription,
-      };
-      const response = await axios.post(LOGIN_API, payload);
-      const data = response.data as {
-        result?: boolean;
-        data?: AuthUser;
-        message?: string;
-      };
+      const u = username.trim();
+      // Try both services at once: DigiMoi / Mahal (MySuccess API) and the School ERP.
+      const msTry: Promise<{ ok: true; user: AuthUser } | { ok: false; message?: string }> =
+        isMobile(u) && msKnown !== false
+          ? axios
+              .post(LOGIN_API, { username: u, password, userType, userTypeDescription })
+              .then((response) => {
+                const data = response.data as { result?: boolean; data?: AuthUser; message?: string };
+                if (data.result && data.data?.token) {
+                  const decoded = jwtDecode<{ exp?: number }>(data.data.token);
+                  if (decoded.exp == null || decoded.exp > Date.now() / 1000) return { ok: true as const, user: data.data };
+                }
+                return { ok: false as const, message: data.message };
+              })
+              .catch((error: { response?: { data?: { message?: string } } }) => ({ ok: false as const, message: error.response?.data?.message }))
+          : Promise.resolve({ ok: false as const });
+      const scTry = schoolLogin(u, password).then(
+        (session) => ({ ok: true as const, session }),
+        (error: { response?: { status?: number; data?: { message?: string } } }) => ({
+          ok: false as const,
+          // Only show the school's message for a school-style username; for mobiles the MySuccess message is clearer.
+          message: !isMobile(u) || error.response?.status === 429 ? error.response?.data?.message : undefined,
+        }),
+      );
+      const [ms, sc] = await Promise.all([msTry, scTry]);
 
-      if (data.result && data.data?.token) {
-        const decoded = jwtDecode<{ exp?: number }>(data.data.token);
-        const now = Date.now() / 1000;
-        if (decoded.exp != null && decoded.exp > now) {
-          // Celebrate first; SuccessBurst signs in when it finishes (about a second).
-          setWelcome(data.data);
-        } else {
-          setLoginError(
-            t("session_expired", {
-              defaultValue: "Session expired. Please try again.",
-            })
-          );
-        }
+      if (ms.ok || sc.ok) {
+        // Both logins → the app asks which one to open; one login → open it.
+        await setActiveApp(ms.ok && sc.ok ? null : sc.ok ? "school" : "mysuccess");
+        setWelcome({ ms: ms.ok ? ms.user : undefined, sc: sc.ok ? sc.session : undefined });
       } else {
-        setLoginError(friendly(data.message) ?? t("mobile_login_failed", { defaultValue: "Login failed." }));
+        setLoginError(friendly(ms.message) ?? sc.message ?? t("wrong_mobile_or_password", { defaultValue: "Wrong mobile number or password. Please check and try again." }));
       }
-    } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      setLoginError(friendly(err.response?.data?.message) ?? t("an_error_occurred"));
+    } catch {
+      setLoginError(t("an_error_occurred"));
     } finally {
       setLoading(false);
     }
@@ -238,14 +253,15 @@ export default function LoginScreen() {
 
               <View ref={setFieldAnchorRef("username")}>
                 <TextInput
-                  label={t("mobile_number")}
+                  label={t("mobile_or_school_username", { defaultValue: "Mobile number or school username" })}
                   mode="outlined"
                   value={username}
                   onChangeText={(v) => { setUsername(v); clearNotes(); }}
                   onEndEditing={handleUsernameBlur}
                   onFocus={() => onFieldFocus("username")}
                   placeholder={t("enter_mobile_number")}
-                  keyboardType="phone-pad"
+                  keyboardType="default"
+                  autoCorrect={false}
                   autoCapitalize="none"
                   disabled={loading}
                   style={styles.field}
@@ -340,9 +356,14 @@ export default function LoginScreen() {
       </TouchableWithoutFeedback>
       {welcome ? (
         <SuccessBurst
-          title={t("signed_in_welcome", { defaultValue: "Welcome, {{name}}!", name: welcome.name ?? "" }).replace(/,\s*!$/, "!")}
+          title={t("signed_in_welcome", { defaultValue: "Welcome, {{name}}!", name: welcome.ms?.name ?? welcome.sc?.user.name ?? "" }).replace(/,\s*!$/, "!")}
           subtitle={t("signing_you_in", { defaultValue: "Opening your account…" })}
-          onDone={() => void signIn(welcome)}
+          onDone={() => {
+            void (async () => {
+              if (welcome.sc) await schoolSignIn(welcome.sc);
+              if (welcome.ms) await signIn(welcome.ms);
+            })();
+          }}
         />
       ) : null}
       <Sheet visible={chooseSignUp} title={t("sign_up_for", { defaultValue: "Sign up for" })} onClose={() => setChooseSignUp(false)}>

@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
+import { useSchoolAuth } from "../context/SchoolAuthContext";
 import { useLanguage, type LangCode } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { APP_DISPLAY_NAME, PRIMARY_PINK } from "../theme/themes";
@@ -216,6 +217,7 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const { school, setActiveApp } = useSchoolAuth();
   const { language, supportedLanguages, changeLanguage } = useLanguage();
   const { theme, mode, toggleMode } = useAppTheme();
   const c = theme.colors;
@@ -324,6 +326,16 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
             );
           })}
         </View>
+        {school ? (
+          <Pressable
+            onPress={() => void setActiveApp("school")}
+            style={({ pressed }) => [styles.logout, { backgroundColor: pressed ? "#10b9812e" : "#10b98117", transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            accessibilityRole="button"
+          >
+            <MaterialCommunityIcons name="school-outline" size={20} color="#047857" />
+            <Text style={{ color: "#047857", fontWeight: "800" }}>Open School app</Text>
+          </Pressable>
+        ) : null}
         <Pressable onPress={confirmLogout} style={({ pressed }) => [styles.logout, { backgroundColor: pressed ? `${c.danger}2e` : `${c.danger}17`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
           <MaterialCommunityIcons name="logout" size={18} color={c.danger} />
           <Text style={{ color: c.danger, fontWeight: "800" }}>{t("Logout")}</Text>
