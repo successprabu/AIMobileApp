@@ -46,7 +46,7 @@ export default function BusAlertScreen() {
     setNote(null);
     try {
       await sendBusAlert(sid, routeId, text.trim());
-      setNote({ kind: "success", text: "Sent. Parents on this route get a notification and see it in the app." });
+      setNote({ kind: "success", text: "🚌 Sent. Parents on this route get a notification and see it in the app." });
       setText("");
       void load();
     } catch (e) {

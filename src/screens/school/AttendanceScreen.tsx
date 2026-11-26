@@ -6,6 +6,8 @@ import { getAttendance, putAttendance, schoolError, schoolSettings, schoolStuden
 import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, PillButton } from "../../components/ui/AuthUi";
+import { getStaffAttendance, putStaffAttendance, staffMembers } from "../../api/schoolErp";
+import type { StaffMember } from "../../school/erp";
 import { flushAttendance, isOffline, pendingAttendance, queueAttendance } from "../../school/attendanceQueue";
 import { Chips, SCHOOL_GREEN, day, shiftDay, todayIso, ui } from "./schoolUi";
 
@@ -48,6 +50,14 @@ export default function AttendanceScreen() {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<{ kind: "info" | "error" | "success"; text: string } | null>(null);
   const [pending, setPending] = useState(0);
+  const can = (p: string) => school?.user.role === "superadmin" || !!school?.permissions.includes(p);
+  const kinds = [...(can("attendance.students") ? ["Students"] : []), ...(can("attendance.staff") ? ["Staff"] : [])] as ("Students" | "Staff")[];
+  const [kind, setKind] = useState<"Students" | "Staff">(kinds[0] ?? "Students");
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const isStaff = kind === "Staff";
+  useEffect(() => {
+    if (isStaff && !staff.length) void staffMembers(sid).then(setStaff).catch((e) => setNote({ kind: "error", text: schoolError(e, "Could not load staff.") }));
+  }, [isStaff, sid, staff.length]);
 
   const refreshPending = useCallback(async () => setPending((await pendingAttendance()).length), []);
 
@@ -86,11 +96,11 @@ export default function AttendanceScreen() {
     void (async () => {
       let rec: Record<string, AttStatus> = {};
       try {
-        rec = await getAttendance(sid, date);
+        rec = isStaff ? await getStaffAttendance(sid, date) : await getAttendance(sid, date);
       } catch {
         /* offline: start empty */
       }
-      const waiting = (await pendingAttendance()).find((p) => p.sid === sid && p.date === date);
+      const waiting = isStaff ? undefined : (await pendingAttendance()).find((p) => p.sid === sid && p.date === date);
       for (const [id, st] of Object.entries(waiting?.records ?? {})) {
         if (st) rec[id] = st;
         else delete rec[id];
@@ -103,19 +113,26 @@ export default function AttendanceScreen() {
     return () => {
       gone = true;
     };
-  }, [sid, date]);
+  }, [sid, date, isStaff]);
 
   const sections = useMemo(() => {
     const s = [...new Set(students.filter((x) => x.className === cls).map((x) => x.section || ""))].filter(Boolean).sort();
     return s.length > 1 ? ["All", ...s] : [];
   }, [students, cls]);
 
-  const list = useMemo(
+  const studentRows = useMemo(
     () =>
       students
         .filter((s) => s.className === cls && (sec === "All" || !sections.length || (s.section || "") === sec))
         .sort((a, b) => (Number(a.rollNo) || 9999) - (Number(b.rollNo) || 9999) || a.name.localeCompare(b.name)),
     [students, cls, sec, sections.length],
+  );
+  const list: { id: string; name: string; sub: string; rollNo?: string }[] = useMemo(
+    () =>
+      isStaff
+        ? staff.map((x) => ({ id: x.id, name: x.name, sub: x.designation || x.role }))
+        : studentRows.map((s) => ({ id: s.id, name: s.name, rollNo: s.rollNo, sub: `${s.className} ${s.section ?? ""} · ${s.admissionNo}` })),
+    [isStaff, staff, studentRows],
   );
 
   const set = (id: string, st: AttStatus) => {
@@ -140,11 +157,11 @@ export default function AttendanceScreen() {
     setSaving(true);
     setNote(null);
     try {
-      const n = await putAttendance(sid, date, records);
-      setNote({ kind: "success", text: `Saved ${n} for ${cls}${sec !== "All" && sections.length ? ` ${sec}` : ""} on ${day(date)}.` });
+      const n = isStaff ? await putStaffAttendance(sid, date, records) : await putAttendance(sid, date, records);
+      setNote({ kind: "success", text: `✅ Saved ${n} for ${isStaff ? "staff" : `${cls}${sec !== "All" && sections.length ? ` ${sec}` : ""}`} on ${day(date)}.` });
       setDirty(false);
     } catch (e) {
-      if (isOffline(e)) {
+      if (isOffline(e) && !isStaff) {
         await queueAttendance(sid, date, records);
         await refreshPending();
         setNote({ kind: "info", text: "No network. Saved on this phone; it is sent automatically when you are online." });
@@ -185,11 +202,12 @@ export default function AttendanceScreen() {
               </Text>
               <IconButton icon="chevron-right" disabled={date >= todayIso()} onPress={() => setDate(shiftDay(date, 1))} accessibilityLabel="Next day" />
             </View>
-            <Chips items={settings?.classes.filter((k) => students.some((s) => s.className === k)) ?? []} value={cls} onChange={(v) => { setCls(v); setSec("All"); }} color={SCHOOL_GREEN} />
-            {sections.length ? <Chips items={sections} value={sec} onChange={setSec} color={SCHOOL_GREEN} /> : null}
+            {kinds.length > 1 ? <Chips items={kinds} value={kind} onChange={setKind} color={SCHOOL_GREEN} /> : null}
+            {isStaff ? null : <Chips items={settings?.classes.filter((k) => students.some((s) => s.className === k)) ?? []} value={cls} onChange={(v) => { setCls(v); setSec("All"); }} color={SCHOOL_GREEN} />}
+            {!isStaff && sections.length ? <Chips items={sections} value={sec} onChange={setSec} color={SCHOOL_GREEN} /> : null}
             <View style={styles.summary}>
               <Text style={{ color: c.textMuted, flex: 1 }}>
-                {list.length} children · P {counts.P ?? 0} · A {counts.A ?? 0} · L {counts.L ?? 0} · ½ {counts.H ?? 0}
+                {list.length} {isStaff ? "staff" : "children"} · P {counts.P ?? 0} · A {counts.A ?? 0} · L {counts.L ?? 0} · ½ {counts.H ?? 0}
                 {counts["-"] ? ` · ${counts["-"]} not marked` : ""}
               </Text>
               <Pressable onPress={allPresent} hitSlop={8}>
@@ -198,7 +216,7 @@ export default function AttendanceScreen() {
             </View>
           </View>
         }
-        ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 24 }}>No children in this class.</Text>}
+        ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 24 }}>{isStaff ? "No staff logins yet." : "No children in this class."}</Text>}
         renderItem={({ item: s }) => (
           <View style={[styles.child, { backgroundColor: c.surface, borderColor: c.border }]}>
             <View style={{ flex: 1 }}>
@@ -206,9 +224,7 @@ export default function AttendanceScreen() {
                 {s.rollNo ? `${s.rollNo}. ` : ""}
                 {s.name}
               </Text>
-              <Text style={{ color: c.textMuted, fontSize: 12 }}>
-                {s.className} {s.section ?? ""} · {s.admissionNo}
-              </Text>
+              <Text style={{ color: c.textMuted, fontSize: 12 }}>{s.sub}</Text>
             </View>
             {STATUS.map((o) => {
               const on = marks[s.id] === o.k;

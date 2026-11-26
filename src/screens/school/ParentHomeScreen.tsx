@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRoute, type RouteProp } from "@react-navigation/native";
+import type { SchoolStackParamList } from "../../navigation/SchoolNavigator";
 import { Alert, AppState, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { ActivityIndicator, IconButton, Text, TextInput } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -22,7 +24,7 @@ import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, PillButton, Rise } from "../../components/ui/AuthUi";
 import Sheet from "../../components/ui/Sheet";
-import { SCHOOL_GREEN, shareReceiptPdf } from "./schoolUi";
+import { SCHOOL_GREEN, SchoolHero, shareReceiptPdf } from "./schoolUi";
 
 const inr = (n: number) => "₹" + Math.round(n).toLocaleString("en-IN");
 const day = (iso: string) => {
@@ -50,6 +52,28 @@ export default function ParentHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  // Bottom bar tabs jump to a part of this page.
+  const route = useRoute<RouteProp<SchoolStackParamList, "SchoolHome">>();
+  const scroller = useRef<ScrollView>(null);
+  const spots = useRef<Record<string, number>>({});
+  /** A section asked for before the page was laid out: scroll when it appears. */
+  const wanted = useRef<string | null>(null);
+  const spot = (key: string) => (e: { nativeEvent: { layout: { y: number } } }) => {
+    spots.current[key] = e.nativeEvent.layout.y;
+    if (wanted.current === key) {
+      wanted.current = null;
+      setTimeout(() => scroller.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - 8), animated: true }), 50);
+    }
+  };
+  useEffect(() => {
+    const sec = route.params?.section;
+    if (!sec) return;
+    if (sec !== "top" && spots.current[sec] == null) {
+      wanted.current = sec;
+      return;
+    }
+    scroller.current?.scrollTo({ y: sec === "top" ? 0 : Math.max(0, (spots.current[sec] ?? 0) - 8), animated: true });
+  }, [route.params?.at, route.params?.section]);
   const [payable, setPayable] = useState<Record<string, boolean>>({});
   const [payOpen, setPayOpen] = useState(false);
   const [payAmount, setPayAmount] = useState("");
@@ -171,7 +195,7 @@ export default function ParentHomeScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: c.background }]}>
-        <ActivityIndicator color={c.primary} />
+        <ActivityIndicator color={SCHOOL_GREEN} />
       </View>
     );
   }
@@ -187,6 +211,7 @@ export default function ParentHomeScreen() {
       <PillButton label="Continue to pay" icon="lock-outline" color={SCHOOL_GREEN} onPress={() => void startPay()} loading={payBusy} disabled={payBusy} style={{ marginTop: 14 }} />
     </Sheet>
     <ScrollView
+      ref={scroller}
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.wrap}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}
@@ -197,7 +222,7 @@ export default function ParentHomeScreen() {
       {children.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
           {children.map((ch, i) => (
-            <Pressable key={ch.student.id} onPress={() => setIdx(i)} style={[styles.chip, i === idx && { backgroundColor: c.primary, borderColor: c.primary }]}>
+            <Pressable key={ch.student.id} onPress={() => setIdx(i)} style={[styles.chip, i === idx && { backgroundColor: SCHOOL_GREEN, borderColor: SCHOOL_GREEN }]}>
               <Text style={{ color: i === idx ? "#fff" : c.text, fontWeight: "700" }}>{ch.student.name.split(" ")[0]}</Text>
             </Pressable>
           ))}
@@ -207,17 +232,10 @@ export default function ParentHomeScreen() {
       {child ? (
         <>
           <Rise>
-            <View style={styles.hello}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{child.student.name.charAt(0)}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{child.student.name}</Text>
-                <Text style={styles.muted}>
-                  Class {child.student.className} {child.student.section ?? ""} · {child.student.admissionNo} · {child.settings.academicYear}
-                </Text>
-              </View>
-            </View>
+            <SchoolHero
+              title={`${child.student.name} 🎒`}
+              lines={[`Class ${child.student.className} ${child.student.section ?? ""} · ${child.student.admissionNo}`, `${child.school.label} · ${child.settings.academicYear}`]}
+            />
           </Rise>
 
           <View style={styles.tiles}>
@@ -236,7 +254,8 @@ export default function ParentHomeScreen() {
             </View>
           ))}
 
-          <Section c={c} icon="calendar-month" title="Attendance">
+          <View onLayout={spot("attendance")} />
+          <Section c={c} icon="calendar-month" title="📅 Attendance">
             <AttendanceCalendar c={c} month={month} setMonth={setMonth} days={child.attendance} />
             {child.attendanceSummary.absences.length ? (
               <Text style={styles.small}>
@@ -245,10 +264,11 @@ export default function ParentHomeScreen() {
             ) : null}
           </Section>
 
-          <Section c={c} icon="bullhorn-outline" title={`Notices & homework${unread ? ` (${unread} new)` : ""}`}>
+          <View onLayout={spot("notices")} />
+          <Section c={c} icon="bullhorn-outline" title={`📚 Notices & homework${unread ? ` (${unread} new)` : ""}`}>
             {items.length ? (
               items.slice(0, 30).map((p) => (
-                <View key={p.id} style={[styles.post, !p.read && { borderColor: c.primary }]}>
+                <View key={p.id} style={[styles.post, !p.read && { borderColor: SCHOOL_GREEN }]}>
                   <Pressable onPress={() => togglePost(p)} style={styles.postHead}>
                     <MaterialCommunityIcons name={KIND[p.type].icon} size={22} color={KIND[p.type].color} />
                     <View style={{ flex: 1 }}>
@@ -265,8 +285,8 @@ export default function ParentHomeScreen() {
                       {p.text ? <Text style={{ color: c.text }}>{p.text}</Text> : null}
                       {p.attachment ? (
                         <Pressable onPress={() => void openAttachment(p)} style={styles.attach}>
-                          <MaterialCommunityIcons name="paperclip" size={18} color={c.primary} />
-                          <Text style={{ color: c.primary, fontWeight: "700" }}>{p.attachment.name}</Text>
+                          <MaterialCommunityIcons name="paperclip" size={18} color={SCHOOL_GREEN} />
+                          <Text style={{ color: SCHOOL_GREEN, fontWeight: "700" }}>{p.attachment.name}</Text>
                         </Pressable>
                       ) : null}
                       <Text style={styles.small}>— {p.createdBy}</Text>
@@ -275,11 +295,12 @@ export default function ParentHomeScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.muted}>No notices or homework yet.</Text>
+              <Text style={styles.muted}>🎉 No notices or homework yet.</Text>
             )}
           </Section>
 
-          <Section c={c} icon="cash-multiple" title="Fees">
+          <View onLayout={spot("fees")} />
+          <Section c={c} icon="cash-multiple" title="💰 Fees">
             <Row c={c} left={`Total for ${child.settings.academicYear}`} right={inr(child.fees.total)} />
             <Row c={c} left="Paid" right={inr(child.fees.paid)} />
             <Row c={c} left="Balance" right={inr(child.fees.balance)} bold bad={child.fees.balance > 0} />
@@ -290,7 +311,7 @@ export default function ParentHomeScreen() {
                   {p.receiptNo} · {day(p.date)} · {p.mode}
                 </Text>
                 <Text style={{ color: c.text, fontWeight: "700" }}>{inr(p.amount)}</Text>
-                <MaterialCommunityIcons name="share-variant" size={18} color={c.primary} />
+                <MaterialCommunityIcons name="share-variant" size={18} color={SCHOOL_GREEN} />
               </Pressable>
             ))}
             {child.fees.balance > 0 && payable[child.school.id] ? (
@@ -310,7 +331,8 @@ export default function ParentHomeScreen() {
             ) : null}
           </Section>
 
-          <Section c={c} icon="bus-school" title="Bus">
+          <View onLayout={spot("bus")} />
+          <Section c={c} icon="bus-school" title="🚌 Bus">
             {cc?.bus.name ? (
               <>
                 <Text style={{ color: c.text, fontWeight: "700" }}>
@@ -322,19 +344,19 @@ export default function ParentHomeScreen() {
                 </Text>
                 {cc.bus.driverPhone ? (
                   <Pressable onPress={() => void Linking.openURL(`tel:${cc.bus.driverPhone}`)} style={styles.attach}>
-                    <MaterialCommunityIcons name="phone" size={18} color={c.primary} />
-                    <Text style={{ color: c.primary, fontWeight: "700" }}>
+                    <MaterialCommunityIcons name="phone" size={18} color={SCHOOL_GREEN} />
+                    <Text style={{ color: SCHOOL_GREEN, fontWeight: "700" }}>
                       Driver {cc.bus.driverName ?? ""} · {cc.bus.driverPhone}
                     </Text>
                   </Pressable>
                 ) : null}
               </>
             ) : (
-              <Text style={styles.muted}>{child.student.name.split(" ")[0]} does not use the school bus.</Text>
+              <Text style={styles.muted}>{child.student.name.split(" ")[0]} does not use the school bus. 🚶</Text>
             )}
           </Section>
 
-          <Section c={c} icon="clipboard-text-outline" title="Report card">
+          <Section c={c} icon="clipboard-text-outline" title="🏆 Report card">
             {child.marks.length ? (
               child.marks.map((m) => (
                 <View key={m.examId} style={{ marginBottom: 10 }}>
@@ -344,19 +366,20 @@ export default function ParentHomeScreen() {
                 </View>
               ))
             ) : (
-              <Text style={styles.muted}>No marks yet.</Text>
+              <Text style={styles.muted}>📝 No marks yet.</Text>
             )}
           </Section>
 
-          <Section c={c} icon="library-shelves" title="Library books">
+          <Section c={c} icon="library-shelves" title="📖 Library books">
             {cc?.books.length ? (
               cc.books.map((b) => <Row key={b.id} c={c} left={b.title} right={`return by ${day(b.dueDate)}`} bad={b.dueDate < new Date().toISOString().slice(0, 10)} />)
             ) : (
-              <Text style={styles.muted}>No library books now.</Text>
+              <Text style={styles.muted}>📖 No library books now.</Text>
             )}
           </Section>
 
-          <Section c={c} icon="robot-happy-outline" title="Ask about your child">
+          <View onLayout={spot("ask")} />
+          <Section c={c} icon="robot-happy-outline" title="🤖 Ask about your child">
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 6 }}>
               {["How is the attendance?", "Any fee due?", "How were the last exam marks?", "வருகை எப்படி உள்ளது?"].map((q) => (
                 <Pressable key={q} onPress={() => void ask(q)} style={styles.chip}>
@@ -444,7 +467,7 @@ type Colors = ReturnType<typeof useAppTheme>["theme"]["colors"];
 function Tile({ c, icon, label, value, bad }: { c: Colors; icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; value: string; bad?: boolean }) {
   return (
     <View style={[tileStyles.tile, { backgroundColor: c.surface, borderColor: c.border }]}>
-      <MaterialCommunityIcons name={icon} size={22} color={c.primary} />
+      <MaterialCommunityIcons name={icon} size={22} color={SCHOOL_GREEN} />
       <Text style={{ color: bad ? c.danger : c.text, fontWeight: "800", fontSize: 18, marginTop: 4 }}>{value}</Text>
       <Text style={{ color: c.textMuted, fontSize: 12 }} numberOfLines={1}>
         {label}
@@ -453,11 +476,10 @@ function Tile({ c, icon, label, value, bad }: { c: Colors; icon: keyof typeof Ma
   );
 }
 
-function Section({ c, icon, title, children }: { c: Colors; icon: keyof typeof MaterialCommunityIcons.glyphMap; title: string; children: React.ReactNode }) {
+function Section({ c, title, children }: { c: Colors; icon: keyof typeof MaterialCommunityIcons.glyphMap; title: string; children: React.ReactNode }) {
   return (
     <View style={[tileStyles.section, { backgroundColor: c.surface, borderColor: c.border }]}>
       <View style={tileStyles.sectionHead}>
-        <MaterialCommunityIcons name={icon} size={20} color={c.primary} />
         <Text style={{ color: c.text, fontWeight: "800", fontSize: 16 }}>{title}</Text>
       </View>
       {children}
@@ -487,7 +509,7 @@ function makeStyles(c: Colors) {
     wrap: { padding: 16, paddingBottom: 40 },
     chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface },
     hello: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
-    avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: c.primary, alignItems: "center", justifyContent: "center" },
+    avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: SCHOOL_GREEN, alignItems: "center", justifyContent: "center" },
     avatarText: { color: "#fff", fontSize: 22, fontWeight: "800" },
     name: { color: c.text, fontSize: 20, fontWeight: "800" },
     muted: { color: c.textMuted },

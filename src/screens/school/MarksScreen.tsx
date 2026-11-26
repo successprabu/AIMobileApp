@@ -6,6 +6,8 @@ import { useSchoolAuth } from "../../context/SchoolAuthContext";
 import { useAppTheme } from "../../hooks/useAppTheme";
 import { Notice, PillButton } from "../../components/ui/AuthUi";
 import { loadSchoolBasics } from "./AttendanceScreen";
+import { saveRemark, schoolAi } from "../../api/schoolErp";
+import { IconButton } from "react-native-paper";
 import { Chips, SCHOOL_GREEN, ui } from "./schoolUi";
 
 /** Teacher: enter one subject's marks for a class and exam. */
@@ -25,6 +27,10 @@ export default function MarksScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<{ kind: "info" | "error" | "success"; text: string } | null>(null);
+  const canEdit = school?.user.role === "superadmin" || !!school?.permissions.includes("marks.manage");
+  const [mode, setMode] = useState<"Marks" | "Remarks">("Marks");
+  const [remarks, setRemarks] = useState<Record<string, string>>({});
+  const [rowBusy, setRowBusy] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -50,6 +56,37 @@ export default function MarksScreen() {
     () => students.filter((s) => s.className === cls).sort((a, b) => (a.section ?? "").localeCompare(b.section ?? "") || (Number(a.rollNo) || 9999) - (Number(b.rollNo) || 9999) || a.name.localeCompare(b.name)),
     [students, cls],
   );
+
+  useEffect(() => {
+    if (!examId) return;
+    setRemarks(Object.fromEntries(list.map((s) => [s.id, data.remarks[examId]?.[s.id] ?? ""])));
+  }, [examId, list, data]);
+
+  const draftRemark = async (id: string) => {
+    if (!examId) return;
+    setRowBusy(id);
+    try {
+      const r = await schoolAi({ task: "report-remark", schoolId: sid, studentId: id, examId });
+      setRemarks((x) => ({ ...x, [id]: r.text }));
+    } catch (e) {
+      setNote({ kind: "error", text: schoolError(e, "Could not draft the remark.") });
+    } finally {
+      setRowBusy("");
+    }
+  };
+  const keepRemark = async (id: string) => {
+    if (!examId) return;
+    setRowBusy(id);
+    try {
+      await saveRemark(sid, examId, id, (remarks[id] ?? "").trim());
+      setData((d) => ({ ...d, remarks: { ...d.remarks, [examId]: { ...(d.remarks[examId] ?? {}), [id]: (remarks[id] ?? "").trim() } } }));
+      setNote({ kind: "success", text: "💬 Remark saved. It shows on the report card." });
+    } catch (e) {
+      setNote({ kind: "error", text: schoolError(e, "Could not save the remark.") });
+    } finally {
+      setRowBusy("");
+    }
+  };
 
   // Fill the boxes with what is saved for this exam + subject.
   useEffect(() => {
@@ -84,7 +121,7 @@ export default function MarksScreen() {
         }
         return { ...d, marks };
       });
-      setNote(errors.length ? { kind: "error", text: errors.join("\n") } : { kind: "success", text: `${subject} marks saved for ${cls} · ${exam.name}.` });
+      setNote(errors.length ? { kind: "error", text: errors.join("\n") } : { kind: "success", text: `📝 ${subject} marks saved for ${cls} · ${exam.name}.` });
     } catch (e) {
       setNote({ kind: "error", text: schoolError(e, "Could not save. Check the network and try again.") });
     } finally {
@@ -110,17 +147,37 @@ export default function MarksScreen() {
         ListHeaderComponent={
           <View style={{ gap: 6, marginBottom: 8 }}>
             {note ? <Notice kind={note.kind} text={note.text} /> : null}
+            <Chips<"Marks" | "Remarks"> items={["Marks", "Remarks"]} value={mode} onChange={setMode} label={(m) => (m === "Marks" ? "📝 Marks" : "💬 Report card remarks")} color={SCHOOL_GREEN} />
             <Text style={[ui.label, { color: c.text }]}>Exam</Text>
             <Chips items={settings?.exams.map((e) => e.id) ?? []} value={examId} onChange={setExamId} label={(id) => settings?.exams.find((e) => e.id === id)?.name ?? id} color={SCHOOL_GREEN} />
             <Text style={[ui.label, { color: c.text }]}>Class</Text>
             <Chips items={settings?.classes.filter((k) => students.some((s) => s.className === k)) ?? []} value={cls} onChange={setCls} color={SCHOOL_GREEN} />
-            <Text style={[ui.label, { color: c.text }]}>Subject</Text>
-            <Chips items={settings?.subjects ?? []} value={subject} onChange={setSubject} color={SCHOOL_GREEN} />
-            {exam ? <Text style={{ color: c.textMuted, marginTop: 6 }}>Out of {exam.maxMarks}. Leave empty if absent.</Text> : null}
+            {mode === "Marks" ? (
+              <>
+                <Text style={[ui.label, { color: c.text }]}>Subject</Text>
+                <Chips items={settings?.subjects ?? []} value={subject} onChange={setSubject} color={SCHOOL_GREEN} />
+                {exam ? <Text style={{ color: c.textMuted, marginTop: 6 }}>Out of {exam.maxMarks}. Leave empty if absent.</Text> : null}
+              </>
+            ) : (
+              <Text style={{ color: c.textMuted, marginTop: 6 }}>Write or draft with ✨ AI, then tap 💾 to save each remark.</Text>
+            )}
           </View>
         }
         ListEmptyComponent={<Text style={{ color: c.textMuted, textAlign: "center", marginTop: 24 }}>No children in this class.</Text>}
-        renderItem={({ item: s }) => (
+        renderItem={({ item: s }) =>
+          mode === "Remarks" ? (
+            <View style={[styles.child, { backgroundColor: c.surface, borderColor: c.border, flexDirection: "column", alignItems: "stretch" }]}>
+              <Text style={{ color: c.text, fontWeight: "700" }}>{s.name}</Text>
+              <TextInput mode="outlined" dense multiline value={remarks[s.id] ?? ""} onChangeText={(v) => setRemarks((x) => ({ ...x, [s.id]: v }))} maxLength={600} activeOutlineColor={SCHOOL_GREEN} editable={canEdit} />
+              {canEdit ? (
+                <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                  {rowBusy === s.id ? <ActivityIndicator color={SCHOOL_GREEN} style={{ margin: 10 }} /> : null}
+                  <IconButton icon="creation" iconColor={SCHOOL_GREEN} onPress={() => void draftRemark(s.id)} disabled={!!rowBusy} accessibilityLabel="Draft with AI" />
+                  <IconButton icon="content-save-outline" iconColor={SCHOOL_GREEN} onPress={() => void keepRemark(s.id)} disabled={!!rowBusy} accessibilityLabel="Save remark" />
+                </View>
+              ) : null}
+            </View>
+          ) : (
           <View style={[styles.child, { backgroundColor: c.surface, borderColor: c.border }]}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: c.text, fontWeight: "700" }}>{s.name}</Text>
@@ -137,13 +194,15 @@ export default function MarksScreen() {
               style={styles.box}
               activeOutlineColor={SCHOOL_GREEN}
               accessibilityLabel={`${s.name} marks`}
+              editable={canEdit}
             />
           </View>
-        )}
+          )
+        }
       />
-      <View style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.border }]}>
+      {mode === "Marks" && canEdit ? <View style={[styles.bar, { backgroundColor: c.surface, borderTopColor: c.border }]}>
         <PillButton label="Save marks" icon="content-save-outline" color={SCHOOL_GREEN} onPress={() => void save()} loading={saving} disabled={saving || !list.length} />
-      </View>
+      </View> : null}
     </View>
   );
 }

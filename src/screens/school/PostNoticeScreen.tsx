@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Text, TextInput } from "react-native-paper";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { IconButton, Text, TextInput } from "react-native-paper";
+import { deleteCircular } from "../../api/schoolErp";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
@@ -90,7 +91,7 @@ export default function PostNoticeScreen() {
     try {
       const attachment = photo ? { fileId: await uploadCircularFile(sid, photo.dataUrl), name: `${TYPE_LABEL[type]} photo.jpg` } : null;
       await postCircular(sid, { type, title: title.trim(), text: text.trim(), classes: picked, dueDate: type === "homework" ? due : "", attachment });
-      setNote({ kind: "success", text: `Posted. Parents of ${picked.length ? picked.join(", ") : "all classes"} see it in the app and get a notification.` });
+      setNote({ kind: "success", text: `📣 Posted. Parents of ${picked.length ? picked.join(", ") : "all classes"} see it in the app and get a notification.` });
       setTitle("");
       setText("");
       setDue("");
@@ -152,7 +153,27 @@ export default function PostNoticeScreen() {
           <Text style={[ui.label, { color: c.text, marginTop: 24 }]}>Recently posted</Text>
           {recent.map((p) => (
             <View key={p.id} style={[styles.post, { borderColor: c.border, backgroundColor: c.surface }]}>
-              <Text style={{ color: c.text, fontWeight: "700" }}>{p.title}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ color: c.text, fontWeight: "700", flex: 1 }}>{p.title}</Text>
+                <IconButton
+                  icon="delete-outline"
+                  size={18}
+                  accessibilityLabel="Delete"
+                  onPress={() =>
+                    Alert.alert("Delete this post?", "Parents will no longer see it.", [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () =>
+                          void deleteCircular(sid, p.id)
+                            .then(() => setRecent((r) => r.filter((x) => x.id !== p.id)))
+                            .catch((e) => setNote({ kind: "error", text: schoolError(e, "Could not delete.") })),
+                      },
+                    ])
+                  }
+                />
+              </View>
               <Text style={{ color: c.textMuted, fontSize: 12 }}>
                 {TYPE_LABEL[p.type]} · {day(p.date)} · {p.classes?.length ? p.classes.join(", ") : "All classes"} · read by {p.readCount} of {p.audience}
               </Text>
