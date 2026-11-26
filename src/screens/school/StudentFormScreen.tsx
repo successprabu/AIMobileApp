@@ -45,7 +45,6 @@ export default function StudentFormScreen() {
   const [note, setNote] = useState<{ kind: "error" | "success"; text: string } | null>(null);
 
   useEffect(() => {
-    navigation.setOptions({ title: id ? "Edit student" : "New student" });
     void (async () => {
       try {
         const st = await getSettings(sid);
