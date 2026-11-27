@@ -62,9 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (userData: AuthUser) => {
-    await setStoredUserJson(JSON.stringify(userData));
+    // Show the app first; saving to the phone's secure storage can take a moment.
     setSessionEnded(false);
     setUser(userData);
+    await setStoredUserJson(JSON.stringify(userData));
   }, []);
 
   // The login expired: sign out and go back to the login screen (it shows "Your session has ended").

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ActivityIndicator,
@@ -91,6 +91,10 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   /** Logins that worked: MySuccess (DigiMoi / Mahal) and/or School. Opened after the welcome animation. */
   const [welcome, setWelcome] = useState<{ ms?: AuthUser; sc?: SchoolSession } | null>(null);
+  /** The mobile number last checked for a DigiMoi / Mahal account. */
+  const checkedFor = useRef("");
+  /** The welcome animation opens the account once, even if it reports "done" twice. */
+  const opened = useRef(false);
   const { schoolSignIn, setActiveApp } = useSchoolAuth();
   /** false when the MySuccess check found no account for this mobile number (it may still be a school login). */
   const [msKnown, setMsKnown] = useState<boolean | null>(null);
@@ -109,6 +113,7 @@ export default function LoginScreen() {
     setLoginError("");
     setUserTypes([]);
     setMsKnown(null);
+    checkedFor.current = "";
     void AsyncStorage.setItem(LOGIN_TAB_KEY, next);
   };
   const isSchool = tab === "school";
@@ -152,8 +157,12 @@ export default function LoginScreen() {
 
   const handleUsernameBlur = async () => {
     if (!username.trim()) return;
-    setMsKnown(null);
     if (isSchool || !isMobile(username)) return; // School tab: no MySuccess account check
+    // Same number as last time: nothing to check again (re-checking made the screen flicker).
+    const key = username.trim();
+    if (checkedFor.current === key) return;
+    checkedFor.current = key;
+    setMsKnown(null);
     setLoginError("");
     setCheckingUser(true);
     try {
@@ -332,7 +341,8 @@ export default function LoginScreen() {
                   activeOutlineColor={tint}
                   textColor={c.text}
                   left={<TextInput.Icon icon={isSchool ? "account-circle-outline" : "cellphone"} color={(f) => (f ? tint : c.textMuted)} />}
-                  right={checkingUser ? <TextInput.Icon icon={() => <ActivityIndicator size="small" color={c.primary} />} /> : undefined}
+                  // Always the same slot (spinner or nothing), so the box keeps its size while the number is checked.
+                  right={<TextInput.Icon icon={() => (checkingUser ? <ActivityIndicator size="small" color={c.primary} /> : <View style={{ width: 20 }} />)} disabled />}
                   returnKeyType="next"
                 />
               </View>
@@ -432,10 +442,11 @@ export default function LoginScreen() {
           title={t("signed_in_welcome", { defaultValue: "Welcome, {{name}}!", name: welcome.ms?.name ?? welcome.sc?.user.name ?? "" }).replace(/,\s*!$/, "!")}
           subtitle={t("signing_you_in", { defaultValue: "Opening your account…" })}
           onDone={() => {
-            void (async () => {
-              if (welcome.sc) await schoolSignIn(welcome.sc);
-              if (welcome.ms) await signIn(welcome.ms);
-            })();
+            if (opened.current) return;
+            opened.current = true;
+            // Both open the app at once and save the sign-in in the background (no wait after "Welcome").
+            if (welcome.sc) void schoolSignIn(welcome.sc);
+            if (welcome.ms) void signIn(welcome.ms);
           }}
         />
       ) : null}
