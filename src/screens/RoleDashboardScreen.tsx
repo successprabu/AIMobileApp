@@ -23,7 +23,7 @@ import StatCard from "../components/dashboard/StatCard";
 import { DASHBOARD_METRIC_COLORS } from "../constants/dashboardMetrics";
 import { useAuth } from "../context/AuthContext";
 import type { MainStackParamList } from "../navigation/types";
-import QuickActionGrid, { type QuickActionItem } from "../components/dashboard/QuickActionGrid";
+import MenuTiles from "../components/dashboard/MenuTiles";
 import { useTx } from "../i18n/site";
 import type { AuthUser } from "../types/auth";
 import type {
@@ -134,14 +134,6 @@ function MoitechDashboardScreen() {
     // Dashboard shortcuts open screens without params.
     navigation.navigate(screen as never);
   };
-  const familyActions: QuickActionItem[] = [
-    { screen: "GuestEntries", label: tx("Guest entries"), icon: "qrcode", color: "#6366f1" },
-    { screen: "ThankGivers", label: tx("Thank your givers"), icon: "whatsapp", color: "#16a34a" },
-    { screen: "Invitations", label: tx("Invitations"), icon: "email-heart-outline", color: "#db2777" },
-    { screen: "MoiBook", label: tx("Moi book"), icon: "book-open-variant", color: "#b45309" },
-    { screen: "MoiFamily", label: tx("Family live link"), icon: "share-variant", color: "#0ea5e9" },
-    ...(role !== "NU" ? [{ screen: "MoiReturn" as const, label: tx("Moi to return"), icon: "calendar-heart" as const, color: "#7c3aed" }] : []),
-  ];
 
   if (!["SU", "AU", "NU", "MU", "MS"].includes(role)) {
     return (
@@ -235,8 +227,6 @@ function MoitechDashboardScreen() {
                 />
               </DashboardMetricGrid>
 
-              <QuickActionGrid title={tx("Family tools")} actions={familyActions} onPress={go} />
-
               <Rise delay={420}>
                 <DashboardBalanceCard
                   label={t("mobile_net_balance", { defaultValue: "Receipts minus expenses" })}
@@ -244,6 +234,8 @@ function MoitechDashboardScreen() {
                   positive={netBalance >= 0}
                 />
               </Rise>
+
+              <MenuTiles role={role} />
             </View>
           ) : null}
 
@@ -256,7 +248,9 @@ function MoitechDashboardScreen() {
           ) : null}
         </>
       ) : role === "SU" && !hasCustomer ? (
-        <Card style={styles.infoCard} mode="elevated">
+        <>
+        <MenuTiles role={role} />
+        <Card style={[styles.infoCard, { marginTop: 14 }]} mode="elevated">
           <Card.Content style={styles.infoContent}>
             <MaterialCommunityIcons name="shield-account" size={32} color={c.primary} />
             <Text variant="titleMedium" style={styles.infoTitle}>
@@ -270,6 +264,7 @@ function MoitechDashboardScreen() {
             </Text>
           </Card.Content>
         </Card>
+        </>
       ) : null}
 
       {useDashboardApi ? (

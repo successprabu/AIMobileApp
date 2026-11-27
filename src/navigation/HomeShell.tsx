@@ -1,16 +1,16 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import ContextualFooter from "../components/ContextualFooter";
+import AppBottomBar from "../components/AppBottomBar";
 import MainStackNavigator from "./MainStackNavigator";
 
-/** Drawer Home screen: stack content + contextual footer (web-style header links). */
+/** Drawer Home screen: stack content + the emoji bottom bar. */
 export default function HomeShell() {
   return (
     <View style={styles.root}>
       <View style={styles.stack}>
         <MainStackNavigator />
       </View>
-      <ContextualFooter />
+      <AppBottomBar />
     </View>
   );
 }
