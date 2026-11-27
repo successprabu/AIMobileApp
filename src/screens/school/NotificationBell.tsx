@@ -30,7 +30,9 @@ function ParentBell() {
       setSeen(seenIds);
       const today = new Date().toISOString().slice(0, 10);
       const label = { homework: "📚 Homework", exam: "📝 Exam", circular: "📢 Circular" } as const;
-      const unread: ParentItem[] = posts
+      // One list for all children (a notice for two classes shows once).
+      const all = [...new Map(posts.flatMap((g) => g.items).map((p) => [p.id, p])).values()];
+      const unread: ParentItem[] = all
         .filter((p) => !p.read)
         .slice(0, 15)
         .map((p) => ({ key: `c${p.id}`, title: `${label[p.type]}: ${p.title}`, sub: `${day(p.date)}${p.dueDate ? ` · submit by ${day(p.dueDate)}` : ""}`, section: "notices" }));
