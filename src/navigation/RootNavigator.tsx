@@ -1,6 +1,7 @@
 import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import { navigationRef } from "./navRef";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import { useSchoolAuth } from "../context/SchoolAuthContext";
@@ -43,7 +44,7 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       {user && school && !activeApp ? (
         // Signed in to both DigiMoi / Mahal and School: ask which to open.
         <AppChooserScreen />

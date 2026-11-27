@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { unregisterMySuccessPush } from "../push/mysuccessPush";
 import axios from "axios";
 import type { AuthUser } from "../types/auth";
 import {
@@ -96,6 +97,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, endSession]);
 
   const signOut = useCallback(async () => {
+    try {
+      const raw = await getStoredUserJson();
+      await unregisterMySuccessPush(raw ? (JSON.parse(raw) as { token?: string }).token : undefined);
+    } catch {
+      /* never blocks signing out */
+    }
     await revokeSession();
     await clearStoredUser();
     setUser(null);

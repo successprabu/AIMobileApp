@@ -14,19 +14,36 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-/** Ask once for permission and tell the school server where to send. Never throws. */
-export async function registerSchoolPush(): Promise<void> {
+/**
+ * This phone's Firebase token, after asking for permission once (null without permission, without Firebase in
+ * this build, or on an emulator). Also creates the Android notification channels.
+ */
+export async function devicePushToken(): Promise<string | null> {
   try {
-    if (Platform.OS !== "android" || !Device.isDevice) return;
+    if (Platform.OS !== "android" || !Device.isDevice) return null;
     await Notifications.setNotificationChannelAsync("school", {
       name: "School: homework, fees, bus alerts",
       importance: Notifications.AndroidImportance.HIGH,
       lightColor: "#059669",
     });
+    await Notifications.setNotificationChannelAsync("mysuccess", {
+      name: "DigiMoi & Mahal: guest entries, booking requests",
+      importance: Notifications.AndroidImportance.HIGH,
+      lightColor: "#c2185b",
+    });
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted") status = (await Notifications.requestPermissionsAsync()).status;
-    if (status !== "granted") return;
-    const token = (await Notifications.getDevicePushTokenAsync()).data as string;
+    if (status !== "granted") return null;
+    return ((await Notifications.getDevicePushTokenAsync()).data as string) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ask once for permission and tell the school server where to send. Never throws. */
+export async function registerSchoolPush(): Promise<void> {
+  try {
+    const token = await devicePushToken();
     if (!token) return;
     await registerPushToken(token);
     await AsyncStorage.setItem(TOKEN_KEY, token);
