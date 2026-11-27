@@ -141,7 +141,7 @@ export function greeting(): string {
 }
 
 /** One emoji that floats up and down (a light, looping "GIF"). Still when the phone asks for less motion. */
-function Floaty({ emoji, size, delay, style }: { emoji: string; size: number; delay: number; style: object }) {
+export function Floaty({ emoji, size, delay, style }: { emoji: string; size: number; delay: number; style: object }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let loop: Animated.CompositeAnimation | null = null;
@@ -158,9 +158,10 @@ function Floaty({ emoji, size, delay, style }: { emoji: string; size: number; de
     return () => loop?.stop();
   }, [v, delay]);
   return (
-    <Animated.Text
+    <Animated.View
+      pointerEvents="none"
       style={[
-        { position: "absolute", fontSize: size },
+        { position: "absolute" },
         style,
         {
           transform: [
@@ -169,10 +170,11 @@ function Floaty({ emoji, size, delay, style }: { emoji: string; size: number; de
           ],
         },
       ]}
-      accessible={false}
     >
-      {emoji}
-    </Animated.Text>
+      <Text style={{ fontSize: size }} accessible={false}>
+        {emoji}
+      </Text>
+    </Animated.View>
   );
 }
 

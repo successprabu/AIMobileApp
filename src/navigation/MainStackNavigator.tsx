@@ -42,7 +42,7 @@ import ClientListScreen from "../screens/admin/ClientListScreen";
 import RegisterClientScreen from "../screens/admin/RegisterClientScreen";
 import EnquiriesScreen from "../screens/admin/EnquiriesScreen";
 import MoitechRegScreen from "../screens/admin/MoitechRegScreen";
-import { BackButton, HeaderBackground, HeaderTitle, MenuButton } from "../components/ui/AppBars";
+import AppHeader from "./AppHeader";
 import { useAppTheme } from "../hooks/useAppTheme";
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -58,13 +58,8 @@ export default function MainStackNavigator() {
         headerShown: true,
         animation: "slide_from_right",
         animationDuration: 280,
-        headerStyle: { backgroundColor: c.header },
-        headerTintColor: c.headerText,
-        headerTitleStyle: { fontWeight: "800" },
-        headerShadowVisible: false,
-        headerBackground: () => <HeaderBackground color={c.header} />,
-        headerTitle: ({ children }) => <HeaderTitle tint={c.headerText}>{children}</HeaderTitle>,
-        headerLeft: () => <MenuButton tint={c.headerText} />,
+        // Our own top bar (pages start below it; ☰ always works). Screens' setOptions title/headerRight still apply.
+        header: (p) => <AppHeader {...p} />,
         contentStyle: { backgroundColor: c.background },
       }}
     >
@@ -81,20 +76,8 @@ export default function MainStackNavigator() {
       <Stack.Screen name="MahalVendors" component={MahalVendorsScreen} />
       <Stack.Screen name="MahalReports" component={MahalReportsScreen} />
       {/* Forms open on top of a list, so they get a back arrow instead of the menu button. */}
-      <Stack.Screen
-        name="MahalForm"
-        component={MahalFormScreen}
-        options={({ navigation }) => ({
-          headerLeft: () => <BackButton tint={c.headerText} onPress={() => navigation.goBack()} />,
-        })}
-      />
-      <Stack.Screen
-        name="BookingForm"
-        component={BookingFormScreen}
-        options={({ navigation }) => ({
-          headerLeft: () => <BackButton tint={c.headerText} onPress={() => navigation.goBack()} />,
-        })}
-      />
+      <Stack.Screen name="MahalForm" component={MahalFormScreen} />
+      <Stack.Screen name="BookingForm" component={BookingFormScreen} />
       <Stack.Screen name="AddMoitechCustomer" component={MoitechRegScreen} />
       <Stack.Screen name="FunctionMaster" component={FunctionMasterScreen} />
       <Stack.Screen name="UserMaster" component={UserMasterScreen} />

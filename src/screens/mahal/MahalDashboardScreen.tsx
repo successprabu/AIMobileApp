@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import MenuTiles from "../../components/dashboard/MenuTiles";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Snackbar, Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -124,6 +125,9 @@ export default function MahalDashboardScreen() {
                 })}
               </View>
             </FadeIn>
+
+            <MenuTiles role={staff ? "MS" : "MU"} />
+            <View style={{ height: 12 }} />
 
             <FadeIn index={6} style={[styles.card, { backgroundColor: c.card }]}>
               <View style={styles.cardHead}>

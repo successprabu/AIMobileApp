@@ -80,10 +80,17 @@ export function SchoolAuthProvider({ children }: { children: React.ReactNode }) 
 
   const schoolSignIn = useCallback(async (s: SchoolSession) => {
     setSchoolToken(s.token);
-    const name = s.user.schoolId && s.user.schoolId !== "*" ? await schoolName(s.user.schoolId) : "All schools";
-    const next = { ...s, schoolName: name ?? s.schoolName };
-    setSchool(next);
-    await save(next);
+    // Open the School app at once; the school's name arrives a moment later.
+    const first = { ...s, schoolName: s.schoolName ?? (s.user.schoolId === "*" ? "All schools" : undefined) };
+    setSchool(first);
+    void save(first);
+    if (s.user.schoolId && s.user.schoolId !== "*") {
+      const name = await schoolName(s.user.schoolId).catch(() => null);
+      if (name) {
+        setSchool((prev) => (prev && prev.token === s.token ? { ...prev, schoolName: name } : prev));
+        await save({ ...first, schoolName: name });
+      }
+    }
   }, []);
 
   const updateSchool = useCallback(async (patch: Partial<SchoolSession>) => {

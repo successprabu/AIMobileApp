@@ -52,3 +52,51 @@ export const SCREEN_ICON: Partial<Record<keyof MainStackParamList, { icon: Icon;
 };
 
 export const screenIcon = (screen: keyof MainStackParamList) => SCREEN_ICON[screen] ?? { icon: "circle-outline" as Icon, color: "#c2185b" };
+
+/** Emoji and soft tile colour per screen (menu, dashboard tiles and bottom bar), same style as the School app. */
+export const SCREEN_EMOJI: Partial<Record<keyof MainStackParamList, { emoji: string; tint: string }>> = {
+  Dashboard: { emoji: "🏠", tint: "#fce7f3" },
+  ClientList: { emoji: "👥", tint: "#ede9fe" },
+  RegisterClient: { emoji: "➕", tint: "#dcfce7" },
+  Enquiries: { emoji: "📥", tint: "#e0f2fe" },
+  MahalBookings: { emoji: "📅", tint: "#fce7f3" },
+  BookingForm: { emoji: "📝", tint: "#fef3c7" },
+  MyMahals: { emoji: "🏛️", tint: "#ede9fe" },
+  FollowUps: { emoji: "📞", tint: "#ccfbf1" },
+  MahalExpenses: { emoji: "🧾", tint: "#fef3c7" },
+  MahalStaff: { emoji: "🧑‍💼", tint: "#e0f2fe" },
+  MahalReviews: { emoji: "⭐", tint: "#fef9c3" },
+  MahalVendors: { emoji: "🛍️", tint: "#fce7f3" },
+  MahalReports: { emoji: "📊", tint: "#e0e7ff" },
+  AddMoitechCustomer: { emoji: "💍", tint: "#dcfce7" },
+  FunctionMaster: { emoji: "🎊", tint: "#fef3c7" },
+  UserMaster: { emoji: "🧑‍🤝‍🧑", tint: "#f1f5f9" },
+  Transaction: { emoji: "💰", tint: "#d1fae5" },
+  TransactionList: { emoji: "🧾", tint: "#fce7f3" },
+  AddExpenses: { emoji: "💸", tint: "#ffedd5" },
+  ExpensesList: { emoji: "📒", tint: "#fee2e2" },
+  Others: { emoji: "🎁", tint: "#cffafe" },
+  OthersList: { emoji: "💎", tint: "#e0f2fe" },
+  Handover: { emoji: "🤝", tint: "#fef3c7" },
+  MoiGiven: { emoji: "🙏", tint: "#ede9fe" },
+  History: { emoji: "🕘", tint: "#f1f5f9" },
+  GuestEntries: { emoji: "📲", tint: "#e0e7ff" },
+  ThankGivers: { emoji: "💌", tint: "#dcfce7" },
+  Invitations: { emoji: "💒", tint: "#fce7f3" },
+  MoiBook: { emoji: "📖", tint: "#fef3c7" },
+  MoiFamily: { emoji: "👨‍👩‍👧", tint: "#e0f2fe" },
+  MoiReturn: { emoji: "🔁", tint: "#ede9fe" },
+  OldNotebooks: { emoji: "📓", tint: "#f1f5f9" },
+  Partner: { emoji: "🤝", tint: "#ccfbf1" },
+  IncomeReport: { emoji: "📈", tint: "#fce7f3" },
+  ExpensesReport: { emoji: "📉", tint: "#ffedd5" },
+  OthersReport: { emoji: "🎁", tint: "#dcfce7" },
+  RegionalReport: { emoji: "📍", tint: "#ede9fe" },
+  SummaryReport: { emoji: "📊", tint: "#f3e8ff" },
+  ThemeSettings: { emoji: "🎨", tint: "#fce7f3" },
+  ChangePassword: { emoji: "🔑", tint: "#e0f2fe" },
+  UserGuide: { emoji: "📘", tint: "#dcfce7" },
+  Help: { emoji: "🛟", tint: "#e0f2fe" },
+};
+
+export const screenEmoji = (screen: keyof MainStackParamList) => SCREEN_EMOJI[screen] ?? { emoji: "•", tint: "#f1f5f9" };

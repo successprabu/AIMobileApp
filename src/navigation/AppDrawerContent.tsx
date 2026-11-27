@@ -18,93 +18,9 @@ import { useLanguage, type LangCode } from "../context/LanguageContext";
 import { useAppTheme } from "../hooks/useAppTheme";
 import { APP_DISPLAY_NAME, PRIMARY_PINK } from "../theme/themes";
 import type { MainStackParamList } from "./types";
-import { screenIcon } from "../constants/screenIcons";
+import { screenEmoji, screenIcon } from "../constants/screenIcons";
 
-type Leaf = {
-  screen: keyof MainStackParamList;
-  titleKey: string;
-  roles: string[];
-};
-
-const SECTIONS: { key: string; titleKey: string; accent: string; items: Leaf[] }[] = [
-  {
-    key: "home",
-    titleKey: "home",
-    accent: PRIMARY_PINK,
-    items: [
-      { screen: "Dashboard", titleKey: "dashboard", roles: ["SU", "AU", "NU", "MU", "MS"] },
-      { screen: "ClientList", titleKey: "Clients", roles: ["SU"] },
-      { screen: "RegisterClient", titleKey: "registerClient", roles: ["SU"] },
-      { screen: "Enquiries", titleKey: "enquiries", roles: ["SU"] },
-      { screen: "MahalBookings", titleKey: "mahalBookings", roles: ["SU", "MU", "MS"] },
-      { screen: "MyMahals", titleKey: "myMahals", roles: ["SU", "MU"] },
-      { screen: "MahalExpenses", titleKey: "mahalExpenses", roles: ["MU"] },
-      { screen: "MahalExpenses", titleKey: "mahalExpensesStaff", roles: ["MS"] },
-      { screen: "FollowUps", titleKey: "followUps", roles: ["SU", "MU"] },
-      { screen: "MahalReports", titleKey: "mahalReports", roles: ["MU"] },
-      { screen: "MahalVendors", titleKey: "mahalVendors", roles: ["MU"] },
-      { screen: "MahalReviews", titleKey: "mahalReviews", roles: ["MU", "MS"] },
-      { screen: "MahalStaff", titleKey: "mahalStaff", roles: ["MU"] },
-      { screen: "AddMoitechCustomer", titleKey: "addMoiTechCustomer", roles: ["MU"] },
-    ],
-  },
-  {
-    key: "masters",
-    titleKey: "Masters",
-    accent: "#636e72",
-    items: [
-      { screen: "FunctionMaster", titleKey: "functionMaster", roles: ["SU", "AU"] },
-      { screen: "UserMaster", titleKey: "userMaster", roles: ["SU", "AU"] },
-    ],
-  },
-  {
-    key: "transactions",
-    titleKey: "transactions",
-    accent: "#00b894",
-    items: [
-      { screen: "Transaction", titleKey: "addTransaction", roles: ["SU", "AU", "NU"] },
-      { screen: "TransactionList", titleKey: "transactionList", roles: ["SU", "AU", "NU"] },
-      { screen: "GuestEntries", titleKey: "guestEntries", roles: ["SU", "AU", "NU"] },
-      { screen: "ThankGivers", titleKey: "thankGivers", roles: ["SU", "AU", "NU"] },
-      { screen: "Invitations", titleKey: "invitations", roles: ["SU", "AU", "NU"] },
-      { screen: "MoiBook", titleKey: "moiBook", roles: ["SU", "AU", "NU"] },
-      { screen: "MoiFamily", titleKey: "familyLiveLink", roles: ["SU", "AU", "NU"] },
-      { screen: "AddExpenses", titleKey: "addExpenses", roles: ["SU", "AU", "NU"] },
-      { screen: "ExpensesList", titleKey: "expensesList", roles: ["SU", "AU", "NU"] },
-      { screen: "Others", titleKey: "addOthers", roles: ["SU", "AU", "NU"] },
-      { screen: "OthersList", titleKey: "othersList", roles: ["SU", "AU", "NU"] },
-      { screen: "Handover", titleKey: "handOver", roles: ["SU", "AU", "NU"] },
-      { screen: "MoiGiven", titleKey: "moiGiven", roles: ["SU", "AU"] },
-      { screen: "MoiReturn", titleKey: "moiReturn", roles: ["SU", "AU"] },
-      { screen: "OldNotebooks", titleKey: "oldNotebooks", roles: ["SU", "AU"] },
-      { screen: "History", titleKey: "history", roles: ["SU", "AU"] },
-    ],
-  },
-  {
-    key: "reports",
-    titleKey: "Reports",
-    accent: "#6c5ce7",
-    items: [
-      { screen: "IncomeReport", titleKey: "receiptReport", roles: ["SU", "AU"] },
-      { screen: "ExpensesReport", titleKey: "expenseReport", roles: ["SU", "AU"] },
-      { screen: "OthersReport", titleKey: "othersReport", roles: ["SU", "AU"] },
-      { screen: "RegionalReport", titleKey: "locationAmountReport", roles: ["SU", "AU"] },
-      { screen: "SummaryReport", titleKey: "summaryReport", roles: ["SU", "AU"] },
-    ],
-  },
-  {
-    key: "more",
-    titleKey: "mobile_more",
-    accent: "#74b9ff",
-    items: [
-      { screen: "Partner", titleKey: "partnerDashboard", roles: ["AU", "MU"] },
-      { screen: "ThemeSettings", titleKey: "Theme Settings", roles: ["SU", "AU", "NU", "MU", "MS"] },
-      { screen: "ChangePassword", titleKey: "changePassword", roles: ["SU", "AU", "NU", "MU", "MS"] },
-      { screen: "UserGuide", titleKey: "userGuide", roles: ["SU", "AU", "NU", "MU", "MS"] },
-      { screen: "Help", titleKey: "help", roles: ["SU", "AU", "NU", "MU", "MS"] },
-    ],
-  },
-];
+import { APP_MENU as SECTIONS } from "../constants/appMenu";
 
 const LANG_LABEL: Record<LangCode, string> = {
   en: "EN",
@@ -143,7 +59,7 @@ function SlideIn({ index, play, children }: { index: number; play: number; child
 }
 
 /** A menu row: springs when pressed; the open screen gets a filled pill with a white marker that grows in. */
-function MenuRow({ label, icon, color, active, onPress, c }: { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string; active: boolean; onPress: () => void; c: ReturnType<typeof useAppTheme>["theme"]["colors"] }) {
+function MenuRow({ label, icon, color, emoji, tint, active, onPress, c }: { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string; emoji?: string; tint?: string; active: boolean; onPress: () => void; c: ReturnType<typeof useAppTheme>["theme"]["colors"] }) {
   const press = useRef(new Animated.Value(1)).current;
   const on = useRef(new Animated.Value(active ? 1 : 0)).current;
   useEffect(() => {
@@ -165,8 +81,8 @@ function MenuRow({ label, icon, color, active, onPress, c }: { label: string; ic
           style={[StyleSheet.absoluteFill, styles.activeFill, { backgroundColor: c.primary, opacity: on, transform: [{ scaleX: on.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }]}
         />
         <Animated.View pointerEvents="none" style={[styles.marker, { opacity: on, transform: [{ scaleY: on }] }]} />
-        <View style={[styles.itemIcon, { backgroundColor: active ? "rgba(255,255,255,0.22)" : `${color}1f` }]}>
-          <MaterialCommunityIcons name={icon} size={19} color={active ? "#fff" : color} />
+        <View style={[styles.itemIcon, { backgroundColor: active ? "rgba(255,255,255,0.25)" : emoji ? tint : `${color}1f` }]}>
+          {emoji ? <Text style={{ fontSize: 18 }}>{emoji}</Text> : <MaterialCommunityIcons name={icon} size={19} color={active ? "#fff" : color} />}
         </View>
         <Text style={[styles.itemLabel, { color: active ? "#fff" : c.text, fontWeight: active ? "800" : "600" }]} numberOfLines={1}>
           {label}
@@ -303,7 +219,7 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
       <DrawerContentScrollView {...props} style={{ flex: 1 }} contentContainerStyle={styles.scrollInner} showsVerticalScrollIndicator={false}>
         {sections.map((section) => {
           const isFolded = folded[section.key] ?? false;
-          const title = section.key === "more" ? t("mobile_more", { defaultValue: "More" }) : t(section.titleKey);
+          const title = section.key === "more" ? t("mobile_more", { defaultValue: "More" }) : t(section.titleKey, { defaultValue: section.titleKey });
           return (
             <View key={section.key} style={{ marginBottom: 6 }}>
               <SectionHead title={title} folded={isFolded} color={c.textMuted} onPress={() => setFolded((f) => ({ ...f, [section.key]: !isFolded }))} />
@@ -316,6 +232,8 @@ export default function AppDrawerContent(props: DrawerContentComponentProps) {
                         label={t(item.titleKey, { defaultValue: item.titleKey })}
                         icon={screenIcon(item.screen).icon}
                         color={screenIcon(item.screen).color}
+                        emoji={screenEmoji(item.screen).emoji}
+                        tint={screenEmoji(item.screen).tint}
                         active={activeScreen === item.screen}
                         onPress={() => go(item.screen)}
                         c={c}
