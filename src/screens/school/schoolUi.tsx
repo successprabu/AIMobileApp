@@ -158,9 +158,10 @@ export function Floaty({ emoji, size, delay, style }: { emoji: string; size: num
     return () => loop?.stop();
   }, [v, delay]);
   return (
-    <Animated.Text
+    <Animated.View
+      pointerEvents="none"
       style={[
-        { position: "absolute", fontSize: size },
+        { position: "absolute" },
         style,
         {
           transform: [
@@ -169,10 +170,11 @@ export function Floaty({ emoji, size, delay, style }: { emoji: string; size: num
           ],
         },
       ]}
-      accessible={false}
     >
-      {emoji}
-    </Animated.Text>
+      <Text style={{ fontSize: size }} accessible={false}>
+        {emoji}
+      </Text>
+    </Animated.View>
   );
 }
 
